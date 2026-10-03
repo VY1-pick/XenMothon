@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Lumen.UI</RootNamespace>
+    <AssemblyName>Lumen.UI</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Platforms>x64</Platforms>
+    <Platform Condition="'$(Platform)' == '' or '$(Platform)' == 'AnyCPU' or '$(Platform)' == 'Any CPU'">x64</Platform>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishProfile>win-x64.pubxml</PublishProfile>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <StartupObject>Lumen.UI.Program</StartupObject>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Version>0.8.0</Version>
+    <AssemblyVersion>0.8.0.0</AssemblyVersion>
+    <FileVersion>0.8.0.0</FileVersion>
+    <InformationalVersion>0.8.0</InformationalVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240607001" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.756" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Lumen.Core\Lumen.Core.csproj" />
+    <ProjectReference Include="..\Lumen.Contracts\Lumen.Contracts.csproj" />
+    <ProjectReference Include="..\Lumen.Application\Lumen.Application.csproj" />
+    <ProjectReference Include="..\Lumen.Infrastructure.Persistence\Lumen.Infrastructure.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\lumen-logo.png" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\lumen-logo.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\Catalog\*.jpg" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,226 @@
+﻿<Application
+    x:Class="Lumen.UI.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="LumenPageBrush" Color="#F3F7F5" />
+                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#DFFAF7F2" />
+                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#F8FBFA" />
+                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#F2FFFFFF" />
+                    <SolidColorBrush x:Key="LumenGlassBorderBrush" Color="#B8D8D1" />
+                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#D2DFDB" />
+                    <SolidColorBrush x:Key="LumenTextBrush" Color="#18211F" />
+                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#61716C" />
+                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#87958F" />
+                    <SolidColorBrush x:Key="LumenChipBrush" Color="#E4EEEB" />
+                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#D3EEE7" />
+                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#DDF3EE" />
+                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#FFF0EC" />
+                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#EDF6F3" />
+                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#F3F7F5" />
+                </ResourceDictionary>
+
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="LumenPageBrush" Color="#0B1415" />
+                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#18302FAD" />
+                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#111B1C" />
+                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#E51A2828" />
+                    <SolidColorBrush x:Key="LumenGlassBorderBrush" Color="#476D69" />
+                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#283E3D" />
+                    <SolidColorBrush x:Key="LumenTextBrush" Color="#F1F6F4" />
+                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#A7B9B3" />
+                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#72847F" />
+                    <SolidColorBrush x:Key="LumenChipBrush" Color="#172A29" />
+                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#234844" />
+                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#183B38" />
+                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#3A2825" />
+                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#0F1B1C" />
+                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#0B1415" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
+            <!-- Sea-glass + warm sand brand accent. No purple/blue UI gradient. -->
+            <LinearGradientBrush x:Key="LumenAccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#24C7C1" Offset="0" />
+                <GradientStop Color="#7BE3D5" Offset="0.58" />
+                <GradientStop Color="#DFF8F5" Offset="1" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="LumenAmbientGradientBrush" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#E8FAF8" Offset="0" />
+                <GradientStop Color="#F2FBFA" Offset="0.58" />
+                <GradientStop Color="#F6FEFD" Offset="1" />
+            </LinearGradientBrush>
+
+            <Style x:Key="LumenHeadingStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+
+            <Style x:Key="LumenBodyStyle" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
+            </Style>
+
+            <Style x:Key="LumenMutedStyle" TargetType="TextBlock" BasedOn="{StaticResource LumenBodyStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
+            </Style>
+
+            <!-- Custom button template avoids the stock Windows reveal/press treatment. -->
+            <Style x:Key="LumenGlassButtonStyle" TargetType="Button">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
+                <Setter Property="Background" Value="{ThemeResource LumenSurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="Padding" Value="14,9" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid x:Name="ButtonRoot">
+                                <Grid.RenderTransform>
+                                    <ScaleTransform ScaleX="1" ScaleY="1" />
+                                </Grid.RenderTransform>
+                                <Border x:Name="ButtonBorder"
+                                        Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="{TemplateBinding CornerRadius}"
+                                        Opacity="1">
+                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                      Padding="{TemplateBinding Padding}"
+                                                      Foreground="{TemplateBinding Foreground}" />
+                                </Border>
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup x:Name="CommonStates">
+                                        <VisualState x:Name="Normal" />
+                                        <VisualState x:Name="PointerOver">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                 To="1.012" Duration="0:0:0.07" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                 To="1.012" Duration="0:0:0.07" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonBorder"
+                                                                 Storyboard.TargetProperty="Opacity"
+                                                                 To="0.96" Duration="0:0:0.07" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Pressed">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                 To="0.985" Duration="0:0:0.06" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
+                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                 To="0.985" Duration="0:0:0.06" EnableDependentAnimation="True" />
+                                            </Storyboard>
+                                        </VisualState>
+                                        <VisualState x:Name="Disabled">
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="ButtonBorder"
+                                                                 Storyboard.TargetProperty="Opacity"
+                                                                 To="0.42" Duration="0:0:0.05" />
+                                            </Storyboard>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                    <VisualStateGroup x:Name="FocusStates">
+                                        <VisualState x:Name="Focused" />
+                                        <VisualState x:Name="Unfocused" />
+                                        <VisualState x:Name="PointerFocused" />
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="LumenAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Background" Value="{StaticResource LumenAccentGradientBrush}" />
+                <Setter Property="BorderBrush" Value="#56FFFFFF" />
+            </Style>
+
+            <Style x:Key="LumenIconButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="Width" Value="42" />
+                <Setter Property="Height" Value="42" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="CornerRadius" Value="13" />
+            </Style>
+
+            <Style x:Key="LumenNavButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="14" />
+                <Setter Property="Padding" Value="14,8" />
+                <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+            </Style>
+
+            <Style x:Key="LumenPillStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
+                <Setter Property="Background" Value="{ThemeResource LumenChipBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenSubtleBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="18" />
+                <Setter Property="Padding" Value="13,7" />
+            </Style>
+
+            <Style x:Key="LumenFilterButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="CornerRadius" Value="13" />
+                <Setter Property="MinWidth" Value="114" />
+                <Setter Property="Background" Value="{ThemeResource LumenSolidSurfaceBrush}" />
+            </Style>
+
+            <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#24C7C1" />
+            <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#1DA9A5" />
+            <SolidColorBrush x:Key="SystemControlHighlightAltAccentBrush" Color="#7BE3D5" />
+
+            <Style x:Key="LumenSettingsComboBoxStyle" TargetType="ComboBox">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
+                <Setter Property="Background" Value="{ThemeResource LumenSurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="12" />
+                <Setter Property="Padding" Value="10,6" />
+            </Style>
+
+            <Style x:Key="LumenSearchTextBoxStyle" TargetType="TextBox">
+                <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
+                <Setter Property="PlaceholderForeground" Value="{ThemeResource LumenFaintTextBrush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Padding" Value="6,8" />
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
+
