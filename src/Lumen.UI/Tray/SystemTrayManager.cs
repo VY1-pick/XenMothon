@@ -20,6 +20,7 @@ public sealed class SystemTrayManager : ISystemTrayManager
     private const uint CmdMute = 2006;
     private const uint CmdExit = 2007;
     private const uint NiifUser = 0x00000004;
+    private const uint NiifLargeIcon = 0x00000020;
 
     private readonly IWallpaperEngineOrchestrator _orchestrator;
     private readonly ILogger<SystemTrayManager> _logger;
@@ -85,6 +86,14 @@ public sealed class SystemTrayManager : ISystemTrayManager
             return;
         }
 
+        // Windows suppresses a balloon whose text is identical to the previous one unless the
+        // previous balloon was cleared first. Clear it, then show the new one.
+        _notifyIconData.uFlags = NativeMethods.NIF_INFO;
+        _notifyIconData.szInfoTitle = string.Empty;
+        _notifyIconData.szInfo = string.Empty;
+        _notifyIconData.dwInfoFlags = 0;
+        NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref _notifyIconData);
+
         // Vista and later use hBalloonIcon for NIIF_USER. hIcon alone only identifies
         // the notification-area icon and may leave the balloon's app-logo slot blank.
         _notifyIconData.uFlags = NativeMethods.NIF_INFO | NativeMethods.NIF_ICON;
@@ -92,7 +101,7 @@ public sealed class SystemTrayManager : ISystemTrayManager
         _notifyIconData.hBalloonIcon = _trayIconHandle;
         _notifyIconData.szInfoTitle = Truncate(title, 63);
         _notifyIconData.szInfo = Truncate(message, 255);
-        _notifyIconData.dwInfoFlags = NiifUser;
+        _notifyIconData.dwInfoFlags = NiifUser | NiifLargeIcon;
 
         if (!NativeMethods.Shell_NotifyIcon(NativeMethods.NIM_MODIFY, ref _notifyIconData))
         {

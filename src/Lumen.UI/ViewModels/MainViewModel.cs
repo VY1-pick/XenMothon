@@ -32,6 +32,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private int _selectedNavIndex = 0; // 0 = Explore, 1 = Library
     private StorageUsageInfo? _storageUsage;
     private WallpaperItemViewModel? _selectedWallpaper;
+    private Guid? _activeWallpaperId;
+    private string _activeWallpaperTitle = string.Empty;
+    private bool _isMuted;
+    private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -99,6 +103,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public Guid? ActiveWallpaperId => _activeWallpaperId;
+    public string ActiveWallpaperTitle => _activeWallpaperTitle;
+    public bool HasActiveWallpaper => _activeWallpaperId.HasValue;
+    public bool IsMuted => _isMuted;
+
     public bool HasWallpapers => _wallpapers.Count > 0;
     public bool IsEmpty => !_isLoading && _wallpapers.Count == 0;
 
@@ -150,10 +159,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         Wallpapers = new ReadOnlyObservableCollection<WallpaperItemViewModel>(_wallpapers);
 
+        _isMuted = _settingsService.CurrentSettings.DefaultMuted;
+        _exploreViewModel.WallpaperApplied += (_, e) => SetActiveWallpaper(e.Id, e.Title);
         _isPaused = _orchestrator.IsGloballyPaused;
         _orchestrator.GlobalPauseChanged += OnGlobalPauseChanged;
         _orchestrator.MonitorStateChanged += OnMonitorStateChanged;
-        _libraryService.LibraryChanged += async (_, _) => await RefreshLibraryAsync().ConfigureAwait(false);
+        _libraryService.LibraryChanged += (_, _) => RunOnUi(async () => await RefreshLibraryAsync());
 
         RefreshMonitorSummary();
     }
@@ -162,7 +173,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         await Task.WhenAll(
             RefreshLibraryAsync(),
-            _exploreViewModel.InitializeAsync()).ConfigureAwait(false);
+            _exploreViewModel.InitializeAsync());
     }
 
     public async Task RefreshLibraryAsync()
@@ -172,15 +183,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            var wallpapers = await _libraryService.GetWallpapersAsync().ConfigureAwait(false);
-            var usage = await _libraryService.GetStorageUsageAsync().ConfigureAwait(false);
+            var wallpapers = await _libraryService.GetWallpapersAsync();
+            var usage = await _libraryService.GetStorageUsageAsync();
 
             _wallpapers.Clear();
             foreach (var wp in wallpapers)
             {
                 string resolvedMedia = _storageManager.ResolveAbsolutePath(wp.FilePath);
                 string resolvedThumb = _storageManager.ResolveAbsolutePath(wp.ThumbnailPath);
-                _wallpapers.Add(new WallpaperItemViewModel(wp, resolvedThumb, resolvedMedia));
+                var itemVm = new WallpaperItemViewModel(wp, resolvedThumb, resolvedMedia)
+                {
+                    IsActive = _activeWallpaperId == wp.Id
+                };
+                itemVm.SetPlaybackState(_isPaused, _isMuted);
+                _wallpapers.Add(itemVm);
             }
 
             StorageUsage = usage;
@@ -211,12 +227,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            var results = await _importService.ImportFilesAsync(list).ConfigureAwait(false);
+            var results = await _importService.ImportFilesAsync(list);
             int successCount = results.Count(r => r.Success && !r.IsDuplicate);
             int duplicateCount = results.Count(r => r.IsDuplicate);
             int failCount = results.Count(r => !r.Success);
 
-            await RefreshLibraryAsync().ConfigureAwait(false);
+            await RefreshLibraryAsync();
 
             if (failCount > 0)
             {
@@ -287,7 +303,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             await _orchestrator.ApplyWallpaperAsync(
                 "PRIMARY_MONITOR",
                 activeWp,
-                playbackSettings).ConfigureAwait(false);
+                playbackSettings);
+            SetActiveWallpaper(item.Id, item.Title);
             StatusMessage = $"'{item.Title}' is now active on the desktop.";
         }
         catch (Exception ex)
@@ -309,11 +326,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            var result = await _libraryService.DeleteWallpaperAsync(item.Id).ConfigureAwait(false);
+            var result = await _libraryService.DeleteWallpaperAsync(item.Id);
             if (result.Success)
             {
                 _wallpapers.Remove(item);
-                StorageUsage = await _libraryService.GetStorageUsageAsync().ConfigureAwait(false);
+                StorageUsage = await _libraryService.GetStorageUsageAsync();
                 StatusMessage = $"Deleted '{item.Title}' from library.";
                 OnPropertyChanged(nameof(HasWallpapers));
                 OnPropertyChanged(nameof(IsEmpty));
@@ -337,8 +354,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            var result = await _libraryService.ReconcileLibraryAsync().ConfigureAwait(false);
-            await RefreshLibraryAsync().ConfigureAwait(false);
+            var result = await _libraryService.ReconcileLibraryAsync();
+            await RefreshLibraryAsync();
 
             StatusMessage = $"Reconciliation: {result.ValidWallpapers} valid, {result.MissingMediaIds.Count} missing, {result.RegeneratedThumbnailsCount} thumbnails rebuilt.";
         }
@@ -362,10 +379,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            bool success = await _libraryService.MigrateStorageRootAsync(newRootPath).ConfigureAwait(false);
+            bool success = await _libraryService.MigrateStorageRootAsync(newRootPath);
             if (success)
             {
-                await RefreshLibraryAsync().ConfigureAwait(false);
+                await RefreshLibraryAsync();
                 StatusMessage = "Storage root migrated successfully.";
                 return true;
             }
@@ -389,20 +406,24 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public async Task StopAllWallpapersAsync()
     {
-        await _orchestrator.StopAllAsync().ConfigureAwait(false);
+        await _orchestrator.StopAllAsync();
+        SetActiveWallpaper(null, string.Empty);
         StatusMessage = "All wallpapers stopped.";
     }
 
     public async Task ResumeAllWallpapersAsync()
     {
-        await _orchestrator.ResumeAllAsync().ConfigureAwait(false);
+        await _orchestrator.ResumeAllAsync();
         StatusMessage = "Wallpaper playback resumed.";
     }
 
     public async Task ToggleMuteAsync()
     {
-        await _orchestrator.ToggleMuteAllAsync().ConfigureAwait(false);
-        StatusMessage = "Wallpaper audio toggled.";
+        await _orchestrator.ToggleMuteAllAsync();
+        _isMuted = !_isMuted;
+        SyncPlaybackState();
+        OnPropertyChanged(nameof(IsMuted));
+        StatusMessage = _isMuted ? "Wallpaper audio muted." : "Wallpaper audio on.";
     }
 
     public async Task NextWallpaperAsync()
@@ -411,13 +432,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         int currentIndex = _selectedWallpaper == null ? -1 : _wallpapers.IndexOf(_selectedWallpaper);
         var next = _wallpapers[(currentIndex + 1) % _wallpapers.Count];
         SelectedWallpaper = next;
-        await SetAsWallpaperAsync(next).ConfigureAwait(false);
+        await SetAsWallpaperAsync(next);
     }
 
     public async Task TogglePauseResumeAsync()
     {
         _logger.LogInformation("Toggling global pause from main window UI.");
-        await _orchestrator.TogglePauseAllAsync().ConfigureAwait(false);
+        await _orchestrator.TogglePauseAllAsync();
     }
 
     public void HideToTray()
@@ -428,14 +449,53 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void OnGlobalPauseChanged(object? sender, bool isPaused)
     {
-        IsPaused = isPaused;
-        OnPropertyChanged(nameof(PauseButtonText));
-        StatusMessage = isPaused ? "Playback Paused" : "Playback Active";
+        RunOnUi(() =>
+        {
+            IsPaused = isPaused;
+            SyncPlaybackState();
+            OnPropertyChanged(nameof(PauseButtonText));
+            StatusMessage = isPaused ? "Playback Paused" : "Playback Active";
+        });
+    }
+
+    /// <summary>Orchestrator/library events may come from worker threads; UI-bound state must change on the UI thread.</summary>
+    private void RunOnUi(Action action)
+    {
+        if (_uiContext == null || SynchronizationContext.Current == _uiContext)
+        {
+            action();
+        }
+        else
+        {
+            _uiContext.Post(_ => action(), null);
+        }
+    }
+
+    private void SetActiveWallpaper(Guid? id, string title)
+    {
+        _activeWallpaperId = id;
+        _activeWallpaperTitle = title;
+        foreach (var wp in _wallpapers)
+        {
+            wp.IsActive = id.HasValue && wp.Id == id.Value;
+        }
+        SyncPlaybackState();
+        OnPropertyChanged(nameof(ActiveWallpaperId));
+        OnPropertyChanged(nameof(ActiveWallpaperTitle));
+        OnPropertyChanged(nameof(HasActiveWallpaper));
+    }
+
+    private void SyncPlaybackState()
+    {
+        foreach (var wp in _wallpapers)
+        {
+            wp.SetPlaybackState(_isPaused, _isMuted);
+        }
     }
 
     private void OnMonitorStateChanged(object? sender, (string MonitorDeviceId, Core.Enums.WallpaperState State) e)
     {
-        RefreshMonitorSummary();
+        RunOnUi(RefreshMonitorSummary);
     }
 
     private void RefreshMonitorSummary()

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Lumen.Core.Enums;
 using Lumen.Core.Models;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Lumen.UI.ViewModels;
 
@@ -59,6 +60,47 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
     public string ThumbnailPath => !string.IsNullOrEmpty(_resolvedThumbnailPath) && File.Exists(_resolvedThumbnailPath)
         ? _resolvedThumbnailPath
         : _resolvedMediaPath;
+
+    private BitmapImage? _thumbnailImage;
+    private bool _isActive;
+    private bool _isPaused;
+    private bool _isMuted;
+
+    public BitmapImage? ThumbnailImage
+    {
+        get
+        {
+            if (_thumbnailImage != null) return _thumbnailImage;
+            string path = ThumbnailPath;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
+            try
+            {
+                _thumbnailImage = new BitmapImage { DecodePixelWidth = 640 };
+                _thumbnailImage.UriSource = new Uri(path, UriKind.Absolute);
+            }
+            catch
+            {
+                _thumbnailImage = null;
+            }
+            return _thumbnailImage;
+        }
+    }
+
+    /// <summary>True while this wallpaper is the one currently running on the desktop.</summary>
+    public bool IsActive
+    {
+        get => _isActive;
+        set { if (_isActive != value) { _isActive = value; OnPropertyChanged(); } }
+    }
+
+    public string PauseGlyph => _isPaused ? "\uE768" : "\uE769";
+    public string MuteGlyph => _isMuted ? "\uE74F" : "\uE767";
+
+    public void SetPlaybackState(bool isPaused, bool isMuted)
+    {
+        if (_isPaused != isPaused) { _isPaused = isPaused; OnPropertyChanged(nameof(PauseGlyph)); }
+        if (_isMuted != isMuted) { _isMuted = isMuted; OnPropertyChanged(nameof(MuteGlyph)); }
+    }
 
     public bool IsApplying
     {

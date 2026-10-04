@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Windowing;
+using Windows.System;
 using Windows.UI;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -30,6 +31,9 @@ public sealed partial class MainWindow : Window
     private readonly IWindowManagementService _windowManager;
     private readonly SettingsViewModel _settingsViewModel;
     private readonly ISystemTrayManager _trayManager;
+    private Storyboard? _settingsStoryboard;
+    private Guid? _shownDetailsId;
+    private bool _syncingCategory;
 
     public MainViewModel ViewModel => _viewModel;
 
@@ -69,7 +73,9 @@ public sealed partial class MainWindow : Window
         // Bind items sources
         WallpaperGridView.ItemsSource = _viewModel.Wallpapers;
         ExploreGridView.ItemsSource = _viewModel.ExploreViewModel.SearchResults;
-        CategoryPillsItemsControl.ItemsSource = _viewModel.ExploreViewModel.Categories;
+        CategoryListView.ItemsSource = _viewModel.ExploreViewModel.Categories;
+        TagsListView.ItemsSource = _viewModel.ExploreViewModel.PopularTags;
+        DetailsTagsRepeater.ItemsSource = Array.Empty<string>();
 
         // Closing the window means "hide to tray" only when the shell accepted our tray icon.
         // If tray setup failed, shut down normally rather than leaving an unreachable hidden process.
@@ -93,6 +99,34 @@ public sealed partial class MainWindow : Window
         UpdateUiState();
         EnforceMinimumWindowSize();
         RootGrid.SizeChanged += OnRootGridSizeChanged;
+
+        // Caption button colours depend on the *actual* theme, which is only final after load
+        // and changes whenever the user switches theme (or Windows does, in System mode).
+        RootGrid.Loaded += (_, _) =>
+        {
+            ApplyCaptionColors();
+            if (RootGrid.Resources["OrbStoryboard"] is Storyboard orbs)
+            {
+                orbs.Begin();
+            }
+        };
+        RootGrid.ActualThemeChanged += (_, _) =>
+        {
+            ApplyCaptionColors();
+            UpdateUiState();
+        };
+
+        // Ctrl+K focuses the search box from anywhere.
+        var focusSearch = new KeyboardAccelerator { Key = VirtualKey.K, Modifiers = VirtualKeyModifiers.Control };
+        focusSearch.Invoked += (_, args) =>
+        {
+            _viewModel.SelectedNavIndex = 0;
+            UpdateUiState();
+            ExploreSearchBox.Focus(FocusState.Programmatic);
+            ExploreSearchBox.SelectAll();
+            args.Handled = true;
+        };
+        RootGrid.KeyboardAccelerators.Add(focusSearch);
 
         // Asynchronously load library and catalog items upon window creation
         _ = DispatcherQueue.TryEnqueue(async () =>
@@ -124,7 +158,7 @@ public sealed partial class MainWindow : Window
 
     private void UpdateUiState()
     {
-        // 1. Status Bar & Top Indicators
+        // 1. Status bar & top indicators
         StatusTextBlock.Text = _viewModel.StatusMessage;
         StorageSummaryTextBlock.Text = _viewModel.StorageSummary;
         PauseResumeIcon.Glyph = _viewModel.IsPaused ? "\uE768" : "\uE769";
@@ -132,69 +166,73 @@ public sealed partial class MainWindow : Window
         StorageRootTextBlock.Text = $"Location: {_viewModel.StorageRootText}";
         StorageUsageTextBlock.Text = _viewModel.StorageSummary;
 
-        // 2. Navigation state
-        if (_viewModel.IsExploreSelected)
-        {
-            ExploreContentGrid.Visibility = Visibility.Visible;
-            LibraryContentGrid.Visibility = Visibility.Collapsed;
-            SetNavigationVisualState(NavExploreButton, true);
-            SetNavigationVisualState(NavLibraryButton, false);
-        }
-        else
-        {
-            ExploreContentGrid.Visibility = Visibility.Collapsed;
-            LibraryContentGrid.Visibility = Visibility.Visible;
-            SetNavigationVisualState(NavExploreButton, false);
-            SetNavigationVisualState(NavLibraryButton, true);
-        }
+        // 2. Now playing bar
+        NowPlayingPanel.Visibility = _viewModel.HasActiveWallpaper ? Visibility.Visible : Visibility.Collapsed;
+        NowPlayingTitleTextBlock.Text = _viewModel.ActiveWallpaperTitle;
+        NowPlayingPauseIcon.Glyph = _viewModel.IsPaused ? "\uE768" : "\uE769";
+        NowPlayingMuteIcon.Glyph = _viewModel.IsMuted ? "\uE74F" : "\uE767";
 
-        // 3. Explore View State
+        // 3. Navigation
+        bool exploreSelected = _viewModel.IsExploreSelected;
+        ExploreContentGrid.Visibility = exploreSelected ? Visibility.Visible : Visibility.Collapsed;
+        LibraryContentGrid.Visibility = exploreSelected ? Visibility.Collapsed : Visibility.Visible;
+        SetNavigationVisualState(NavExploreButton, exploreSelected);
+        SetNavigationVisualState(NavLibraryButton, !exploreSelected);
+
+        // 4. Explore
         var explore = _viewModel.ExploreViewModel;
-        ExploreLoadingPanel.Visibility = explore.IsLoading ? Visibility.Visible : Visibility.Collapsed;
+        ExploreLoadingPanel.Visibility = explore.IsLoading && explore.SearchResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         ExploreEmptyStatePanel.Visibility = explore.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
-        ExploreGridView.Visibility = !explore.IsEmpty && !explore.IsLoading ? Visibility.Visible : Visibility.Collapsed;
-
+        ExploreGridView.Visibility = explore.SearchResults.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ExploreCountTextBlock.Text = explore.ResultCountText;
+        PaginationPill.Visibility = explore.HasMultiplePages ? Visibility.Visible : Visibility.Collapsed;
         PrevPageButton.IsEnabled = explore.HasPreviousPage;
         NextPageButton.IsEnabled = explore.HasNextPage;
         PageSummaryTextBlock.Text = explore.PageSummaryText;
+        SearchClearButton.Visibility = string.IsNullOrEmpty(ExploreSearchBox.Text) ? Visibility.Collapsed : Visibility.Visible;
 
-        // 4. Library View State
+        if (!ReferenceEquals(CategoryListView.SelectedItem, explore.SelectedCategory) && explore.SelectedCategory != null)
+        {
+            _syncingCategory = true;
+            CategoryListView.SelectedItem = explore.SelectedCategory;
+            _syncingCategory = false;
+        }
+
+        // 5. Library
         LoadingPanel.Visibility = _viewModel.IsLoading ? Visibility.Visible : Visibility.Collapsed;
         EmptyStatePanel.Visibility = _viewModel.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
         WallpaperGridView.Visibility = _viewModel.HasWallpapers ? Visibility.Visible : Visibility.Collapsed;
 
-        // 5. Details Modal Overlay
+        // 6. Details modal. Heavy content is rebuilt only when the shown item changes (no flicker).
         var details = explore.DetailsViewModel;
         if (details.IsOpen && details.Item != null)
         {
+            var item = details.Item;
             DetailsModalOverlay.Visibility = Visibility.Visible;
-            DetailsTitleTextBlock.Text = details.Item.Title;
-            DetailsAuthorTextBlock.Text = $"by {details.Item.Author} • {details.Item.CategoryName}";
-            DetailsDescriptionTextBlock.Text = details.Item.Description;
-            DetailsSpecsTextBlock.Text = $"Resolution  {details.Item.ResolutionText}\nSize  {details.Item.FormattedSize}\n{details.AspectRatioText} • {details.Item.DownloadsText} • {details.Item.RatingText}";
-            DetailsTagsTextBlock.Text = $"Tags: {details.FormattedTags}";
-            DetailsApplyButton.IsEnabled = details.Item.IsDownloaded;
-            DetailsSubscribeButton.Content = details.Item.IsDownloaded ? "Downloaded" : details.Item.IsDownloading ? $"{details.Item.DownloadProgress:F0}%" : details.Item.CanSubscribe ? "Download" : "Unavailable";
-            DetailsSubscribeButton.IsEnabled = details.Item.CanSubscribe;
 
-            if (!string.IsNullOrEmpty(details.Item.ThumbnailUrl))
+            if (_shownDetailsId != item.Id)
             {
-                try
-                {
-                    DetailsPreviewImage.Source = new BitmapImage(new Uri(ResolveCatalogAssetUri(details.Item.ThumbnailUrl), UriKind.Absolute));
-                }
-                catch
-                {
-                    DetailsPreviewImage.Source = null;
-                }
+                _shownDetailsId = item.Id;
+                DetailsTitleTextBlock.Text = item.Title;
+                DetailsAuthorTextBlock.Text = $"by {item.Author}  •  {item.CategoryName}";
+                DetailsDescriptionTextBlock.Text = item.Description;
+                DetailsSpecsTextBlock.Text = $"{item.ResolutionText}  •  {item.FormattedSize}  •  {details.AspectRatioText}";
+                DetailsStatsTextBlock.Text = $"{item.RatingText}   •   {item.DownloadsText}";
+                DetailsTagsRepeater.ItemsSource = item.Tags.Select(t => $"#{t}").ToList();
+                DetailsPreviewBrush.ImageSource = item.ThumbnailImage;
             }
+
+            DetailsApplyButton.IsEnabled = item.IsDownloaded;
+            DetailsSubscribeButton.Content = item.IsDownloaded ? "Downloaded ✓" : item.IsDownloading ? $"Downloading {item.DownloadProgress:F0}%" : item.CanSubscribe ? "Download" : "Unavailable";
+            DetailsSubscribeButton.IsEnabled = item.CanSubscribe;
         }
         else
         {
+            _shownDetailsId = null;
             DetailsModalOverlay.Visibility = Visibility.Collapsed;
         }
 
-        // 6. Global Error Bar
+        // 7. Global error bar
         string? activeError = _viewModel.ErrorMessage ?? explore.ErrorMessage;
         if (!string.IsNullOrEmpty(activeError))
         {
@@ -253,21 +291,13 @@ public sealed partial class MainWindow : Window
     private void OnNavExploreClicked(object sender, RoutedEventArgs e)
     {
         _viewModel.SelectedNavIndex = 0;
-        ExploreContentGrid.Visibility = Visibility.Visible;
-        LibraryContentGrid.Visibility = Visibility.Collapsed;
-        SetNavigationVisualState(NavExploreButton, true);
-        SetNavigationVisualState(NavLibraryButton, false);
-        FadeIn(ExploreContentGrid);
+        UpdateUiState();
     }
 
     private void OnNavLibraryClicked(object sender, RoutedEventArgs e)
     {
         _viewModel.SelectedNavIndex = 1;
-        ExploreContentGrid.Visibility = Visibility.Collapsed;
-        LibraryContentGrid.Visibility = Visibility.Visible;
-        SetNavigationVisualState(NavExploreButton, false);
-        SetNavigationVisualState(NavLibraryButton, true);
-        FadeIn(LibraryContentGrid);
+        UpdateUiState();
     }
 
     #endregion
@@ -279,6 +309,70 @@ public sealed partial class MainWindow : Window
         // InitializeComponent can raise TextChanged before the ViewModel is assigned.
         if (_viewModel is null || ExploreSearchBox is null) return;
         _viewModel.ExploreViewModel.SearchText = ExploreSearchBox.Text;
+        SearchClearButton.Visibility = string.IsNullOrEmpty(ExploreSearchBox.Text) ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void OnSearchKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Escape && !string.IsNullOrEmpty(ExploreSearchBox.Text))
+        {
+            ExploreSearchBox.Text = string.Empty;
+            e.Handled = true;
+        }
+    }
+
+    private void OnSearchClearClicked(object sender, RoutedEventArgs e)
+    {
+        ExploreSearchBox.Text = string.Empty;
+        ExploreSearchBox.Focus(FocusState.Programmatic);
+    }
+
+    private void OnTagItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is string tag)
+        {
+            ExploreSearchBox.Text = tag;
+            ExploreSearchBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void OnCardPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement card && card.FindName("HoverLayer") is UIElement hover)
+        {
+            hover.Opacity = 1;
+        }
+    }
+
+    private void OnCardPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement card && card.FindName("HoverLayer") is UIElement hover)
+        {
+            hover.Opacity = 0;
+        }
+    }
+
+    private void OnCatalogViewClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: CatalogItemViewModel item })
+        {
+            _viewModel.ExploreViewModel.OpenDetails(item);
+        }
+    }
+
+    private async void OnCardPauseClicked(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.TogglePauseResumeAsync();
+    }
+
+    private async void OnCardMuteClicked(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.ToggleMuteAsync();
+    }
+
+    private async void OnStopClicked(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.StopAllWallpapersAsync();
     }
 
     private void OnTypeFilterMenuClicked(object sender, RoutedEventArgs e)
@@ -326,15 +420,13 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnCategoryPillClicked(object sender, RoutedEventArgs e)
+    private void OnCategorySelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (sender is Button { Tag: string catId })
+        if (_syncingCategory || _viewModel is null) return;
+        if (CategoryListView.SelectedItem is CatalogCategory selected &&
+            !ReferenceEquals(selected, _viewModel.ExploreViewModel.SelectedCategory))
         {
-            var match = _viewModel.ExploreViewModel.Categories.FirstOrDefault(c => c.Id == catId);
-            if (match != null)
-            {
-                _viewModel.ExploreViewModel.SelectedCategory = match;
-            }
+            _viewModel.ExploreViewModel.SelectedCategory = selected;
         }
     }
 
@@ -358,14 +450,6 @@ public sealed partial class MainWindow : Window
         if (sender is Button { Tag: CatalogItemViewModel item })
         {
             await ConfirmAndSubscribeAsync(item);
-        }
-    }
-
-    private void OnCatalogItemClicked(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is CatalogItemViewModel item)
-        {
-            _viewModel.ExploreViewModel.OpenDetails(item);
         }
     }
 
@@ -427,10 +511,30 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnDetailsPreviewTapped(object sender, TappedRoutedEventArgs e)
+    private void OnDetailsPanelTapped(object sender, TappedRoutedEventArgs e)
     {
-        // Deliberately consume preview taps so they never close the detail drawer.
+        // Taps inside the dialog must never fall through to the backdrop and close it.
         e.Handled = true;
+    }
+
+    private void OnSettingsBackdropTapped(object sender, TappedRoutedEventArgs e)
+    {
+        AnimateSettingsPanel(opening: false);
+    }
+
+    private void OnSettingsTabClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string tab }) return;
+
+        SettingsGeneralSection.Visibility = tab == "General" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsAppearanceSection.Visibility = tab == "Appearance" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPlaybackSection.Visibility = tab == "Playback" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPerformanceSection.Visibility = tab == "Performance" ? Visibility.Visible : Visibility.Collapsed;
+
+        SetNavigationVisualState(SettingsTabGeneral, tab == "General");
+        SetNavigationVisualState(SettingsTabAppearance, tab == "Appearance");
+        SetNavigationVisualState(SettingsTabPlayback, tab == "Playback");
+        SetNavigationVisualState(SettingsTabPerformance, tab == "Performance");
     }
 
     private async Task<bool> ConfirmAndSubscribeAsync(CatalogItemViewModel item)
@@ -715,14 +819,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void OnWallpaperItemClicked(object sender, ItemClickEventArgs e)
-    {
-        if (e.ClickedItem is WallpaperItemViewModel item)
-        {
-            _viewModel.SelectedWallpaper = item;
-        }
-    }
-
     private async void OnPauseResumeClicked(object sender, RoutedEventArgs e)
     {
         await _viewModel.TogglePauseResumeAsync();
@@ -813,19 +909,40 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
+        }
+        catch
+        {
+            // Not supported on every shell; the default height still works.
+        }
+
+        ApplyCaptionColors();
+    }
+
+    /// <summary>
+    /// Colours the native Minimize/Maximize/Close glyphs for the *current* theme so they are always
+    /// legible on top of the glass backplate (light: deep teal, dark: pale mint).
+    /// </summary>
+    private void ApplyCaptionColors()
+    {
+        try
+        {
+            bool dark = RootGrid.ActualTheme == ElementTheme.Dark;
+            var fg = dark ? Color.FromArgb(255, 234, 251, 246) : Color.FromArgb(255, 11, 43, 41);
+            var fgInactive = dark ? Color.FromArgb(150, 234, 251, 246) : Color.FromArgb(150, 11, 43, 41);
+            var clear = Color.FromArgb(0, 0, 0, 0);
+
             var titleBar = AppWindow.TitleBar;
-            titleBar.BackgroundColor = Color.FromArgb(0, 0, 0, 0);
-            titleBar.InactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-            titleBar.ButtonBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-            titleBar.ButtonInactiveBackgroundColor = Color.FromArgb(0, 0, 0, 0);
-            titleBar.ButtonHoverBackgroundColor = Color.FromArgb(35, 53, 201, 181);
-            titleBar.ButtonPressedBackgroundColor = Color.FromArgb(65, 53, 201, 181);
-            titleBar.ButtonForegroundColor = RootGrid.ActualTheme == ElementTheme.Dark
-                ? Color.FromArgb(255, 235, 239, 247)
-                : Color.FromArgb(255, 40, 45, 58);
-            titleBar.ButtonInactiveForegroundColor = RootGrid.ActualTheme == ElementTheme.Dark
-                ? Color.FromArgb(210, 235, 239, 247)
-                : Color.FromArgb(190, 40, 45, 58);
+            titleBar.BackgroundColor = clear;
+            titleBar.InactiveBackgroundColor = clear;
+            titleBar.ButtonBackgroundColor = clear;
+            titleBar.ButtonInactiveBackgroundColor = clear;
+            titleBar.ButtonForegroundColor = fg;
+            titleBar.ButtonInactiveForegroundColor = fgInactive;
+            titleBar.ButtonHoverBackgroundColor = dark ? Color.FromArgb(70, 63, 240, 196) : Color.FromArgb(90, 46, 230, 184);
+            titleBar.ButtonHoverForegroundColor = fg;
+            titleBar.ButtonPressedBackgroundColor = dark ? Color.FromArgb(120, 63, 240, 196) : Color.FromArgb(150, 46, 230, 184);
+            titleBar.ButtonPressedForegroundColor = fg;
         }
         catch
         {
@@ -833,31 +950,14 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void SetNavigationVisualState(Button button, bool selected)
+    private static void SetNavigationVisualState(Button button, bool selected)
     {
-        bool isDark = RootGrid.ActualTheme == ElementTheme.Dark;
-        button.Background = selected
-            ? global::Microsoft.UI.Xaml.Application.Current.Resources["LumenChipActiveBrush"] as Brush
-            : new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
-        button.Foreground = selected
-            ? new SolidColorBrush(isDark ? Color.FromArgb(255, 239, 246, 243) : Color.FromArgb(255, 24, 33, 31))
-            : global::Microsoft.UI.Xaml.Application.Current.Resources["LumenMutedTextBrush"] as Brush;
-    }
-
-    private void FadeIn(UIElement element)
-    {
-        element.Opacity = 0.0;
-        var animation = new DoubleAnimation
+        var resources = global::Microsoft.UI.Xaml.Application.Current.Resources;
+        string key = selected ? "LumenNavButtonActiveStyle" : "LumenNavButtonStyle";
+        if (resources.TryGetValue(key, out var style) && style is Style navStyle)
         {
-            From = 0.0,
-            To = 1.0,
-            Duration = new Duration(TimeSpan.FromMilliseconds(120))
-        };
-        Storyboard.SetTarget(animation, element);
-        Storyboard.SetTargetProperty(animation, "Opacity");
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(animation);
-        storyboard.Begin();
+            button.Style = navStyle;
+        }
     }
 
     private void AnimateSettingsPanel(bool opening)
@@ -899,6 +999,7 @@ public sealed partial class MainWindow : Window
             storyboard.Completed += (_, _) => SettingsOverlay.Visibility = Visibility.Collapsed;
         }
 
+        _settingsStoryboard = storyboard;
         storyboard.Begin();
     }
 

@@ -9,56 +9,117 @@
             </ResourceDictionary.MergedDictionaries>
 
             <ResourceDictionary.ThemeDictionaries>
+                <!-- ============================ LIGHT: frosted mint ============================ -->
                 <ResourceDictionary x:Key="Light">
-                    <SolidColorBrush x:Key="LumenPageBrush" Color="#F3F7F5" />
-                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#DFFAF7F2" />
-                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#F8FBFA" />
-                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#F2FFFFFF" />
-                    <SolidColorBrush x:Key="LumenGlassBorderBrush" Color="#B8D8D1" />
-                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#D2DFDB" />
-                    <SolidColorBrush x:Key="LumenTextBrush" Color="#18211F" />
-                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#61716C" />
-                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#87958F" />
-                    <SolidColorBrush x:Key="LumenChipBrush" Color="#E4EEEB" />
-                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#D3EEE7" />
-                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#DDF3EE" />
-                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#FFF0EC" />
-                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#EDF6F3" />
-                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#F3F7F5" />
+                    <LinearGradientBrush x:Key="LumenPageBrush" StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#E6FBF4" Offset="0" />
+                        <GradientStop Color="#D5F4EE" Offset="0.55" />
+                        <GradientStop Color="#DDEFFA" Offset="1" />
+                    </LinearGradientBrush>
+
+                    <AcrylicBrush x:Key="LumenGlassBrush" TintColor="#FFFFFFFF" TintOpacity="0.38" TintLuminosityOpacity="0.55" FallbackColor="#CCF4FFFA" />
+                    <AcrylicBrush x:Key="LumenGlassStrongBrush" TintColor="#FFF4FFFB" TintOpacity="0.62" TintLuminosityOpacity="0.8" FallbackColor="#F2F4FFFB" />
+                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#9EFFFFFF" />
+                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#E8FAFFFD" />
+                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#F2F4FFFB" />
+                    <SolidColorBrush x:Key="LumenInputBrush" Color="#CCFFFFFF" />
+
+                    <LinearGradientBrush x:Key="LumenGlassBorderBrush" StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#F2FFFFFF" Offset="0" />
+                        <GradientStop Color="#6694E6D2" Offset="0.5" />
+                        <GradientStop Color="#99FFFFFF" Offset="1" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#4D6FC9B5" />
+
+                    <SolidColorBrush x:Key="LumenTextBrush" Color="#0B2B29" />
+                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#3F6A64" />
+                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#6C928C" />
+
+                    <SolidColorBrush x:Key="LumenChipBrush" Color="#66FFFFFF" />
+                    <SolidColorBrush x:Key="LumenChipHoverBrush" Color="#99FFFFFF" />
+                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#CC2EE6B8" />
+                    <SolidColorBrush x:Key="LumenChipActiveTextBrush" Color="#042B25" />
+                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#4D2EE6B8" />
+                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#33FF6B6B" />
+                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#00FFFFFF" />
+                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#E6FBF4" />
+                    <SolidColorBrush x:Key="LumenScrimBrush" Color="#660B2B29" />
+                    <SolidColorBrush x:Key="LumenOrbMintBrush" Color="#2EE6B8" />
+                    <SolidColorBrush x:Key="LumenOrbAquaBrush" Color="#4CC9F0" />
+                    <SolidColorBrush x:Key="LumenOrbVioletBrush" Color="#9AA8FF" />
                 </ResourceDictionary>
 
+                <!-- ============================ DARK: deep teal glass ============================ -->
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="LumenPageBrush" Color="#0B1415" />
-                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#18302FAD" />
-                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#111B1C" />
-                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#E51A2828" />
-                    <SolidColorBrush x:Key="LumenGlassBorderBrush" Color="#476D69" />
-                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#283E3D" />
-                    <SolidColorBrush x:Key="LumenTextBrush" Color="#F1F6F4" />
-                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#A7B9B3" />
-                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#72847F" />
-                    <SolidColorBrush x:Key="LumenChipBrush" Color="#172A29" />
-                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#234844" />
-                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#183B38" />
-                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#3A2825" />
-                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#0F1B1C" />
-                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#0B1415" />
+                    <LinearGradientBrush x:Key="LumenPageBrush" StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#041516" Offset="0" />
+                        <GradientStop Color="#08262A" Offset="0.55" />
+                        <GradientStop Color="#0A1F33" Offset="1" />
+                    </LinearGradientBrush>
+
+                    <AcrylicBrush x:Key="LumenGlassBrush" TintColor="#FF0C2F31" TintOpacity="0.42" TintLuminosityOpacity="0.5" FallbackColor="#CC0C2F31" />
+                    <AcrylicBrush x:Key="LumenGlassStrongBrush" TintColor="#FF0A2527" TintOpacity="0.68" TintLuminosityOpacity="0.8" FallbackColor="#F20A2527" />
+                    <SolidColorBrush x:Key="LumenSurfaceBrush" Color="#4D12393B" />
+                    <SolidColorBrush x:Key="LumenSolidSurfaceBrush" Color="#E60B2325" />
+                    <SolidColorBrush x:Key="LumenElevatedBrush" Color="#F20B2325" />
+                    <SolidColorBrush x:Key="LumenInputBrush" Color="#8008282B" />
+
+                    <LinearGradientBrush x:Key="LumenGlassBorderBrush" StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#55FFFFFF" Offset="0" />
+                        <GradientStop Color="#1A5CF0C8" Offset="0.5" />
+                        <GradientStop Color="#33FFFFFF" Offset="1" />
+                    </LinearGradientBrush>
+                    <SolidColorBrush x:Key="LumenSubtleBorderBrush" Color="#2E5CF0C8" />
+
+                    <SolidColorBrush x:Key="LumenTextBrush" Color="#EAFBF6" />
+                    <SolidColorBrush x:Key="LumenMutedTextBrush" Color="#9FC9C0" />
+                    <SolidColorBrush x:Key="LumenFaintTextBrush" Color="#6A948D" />
+
+                    <SolidColorBrush x:Key="LumenChipBrush" Color="#2612FFD0" />
+                    <SolidColorBrush x:Key="LumenChipHoverBrush" Color="#4012FFD0" />
+                    <SolidColorBrush x:Key="LumenChipActiveBrush" Color="#E63FF0C4" />
+                    <SolidColorBrush x:Key="LumenChipActiveTextBrush" Color="#032B25" />
+                    <SolidColorBrush x:Key="LumenAccentSoftBrush" Color="#403FF0C4" />
+                    <SolidColorBrush x:Key="LumenDangerSoftBrush" Color="#40FF6B6B" />
+                    <SolidColorBrush x:Key="LumenTitleBarBrush" Color="#00000000" />
+                    <SolidColorBrush x:Key="LumenBackdropBrush" Color="#041516" />
+                    <SolidColorBrush x:Key="LumenScrimBrush" Color="#99020B0C" />
+                    <SolidColorBrush x:Key="LumenOrbMintBrush" Color="#19D9A8" />
+                    <SolidColorBrush x:Key="LumenOrbAquaBrush" Color="#1BA6D6" />
+                    <SolidColorBrush x:Key="LumenOrbVioletBrush" Color="#5560E0" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
 
-            <!-- Sea-glass + warm sand brand accent. No purple/blue UI gradient. -->
+            <!-- Mint -> aqua brand gradient -->
             <LinearGradientBrush x:Key="LumenAccentGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#24C7C1" Offset="0" />
-                <GradientStop Color="#7BE3D5" Offset="0.58" />
-                <GradientStop Color="#DFF8F5" Offset="1" />
+                <GradientStop Color="#34F0C0" Offset="0" />
+                <GradientStop Color="#5FE3D6" Offset="0.55" />
+                <GradientStop Color="#6FD0F5" Offset="1" />
             </LinearGradientBrush>
 
             <LinearGradientBrush x:Key="LumenAmbientGradientBrush" StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#E8FAF8" Offset="0" />
-                <GradientStop Color="#F2FBFA" Offset="0.58" />
-                <GradientStop Color="#F6FEFD" Offset="1" />
+                <GradientStop Color="#16494A" Offset="0" />
+                <GradientStop Color="#0C2A3A" Offset="1" />
             </LinearGradientBrush>
 
+            <!-- Scrim used at the bottom of thumbnails so text stays legible without hiding the image -->
+            <LinearGradientBrush x:Key="LumenCardScrimBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#00020B0C" Offset="0" />
+                <GradientStop Color="#B3020B0C" Offset="1" />
+            </LinearGradientBrush>
+
+            <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#2EE6B8" />
+            <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#14B88F" />
+            <SolidColorBrush x:Key="SystemControlHighlightAltAccentBrush" Color="#7BEFD6" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOn" Color="#2EE6B8" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPointerOver" Color="#4FF0C8" />
+            <SolidColorBrush x:Key="ToggleSwitchFillOnPressed" Color="#1FCDA2" />
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="#2EE6B8" />
+            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#4FF0C8" />
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="#2EE6B8" />
+            <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#4FF0C8" />
+
+            <!-- ============================ TEXT ============================ -->
             <Style x:Key="LumenHeadingStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
                 <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
@@ -74,13 +135,28 @@
                 <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
             </Style>
 
-            <!-- Custom button template avoids the stock Windows reveal/press treatment. -->
+            <!-- ============================ GLASS CONTAINERS ============================ -->
+            <Style x:Key="LumenGlassCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource LumenGlassBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="22" />
+            </Style>
+
+            <Style x:Key="LumenGlassPanelStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource LumenGlassStrongBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="26" />
+            </Style>
+
+            <!-- ============================ BUTTONS ============================ -->
             <Style x:Key="LumenGlassButtonStyle" TargetType="Button">
                 <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
                 <Setter Property="FontWeight" Value="SemiBold" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
-                <Setter Property="Background" Value="{ThemeResource LumenSurfaceBrush}" />
+                <Setter Property="Background" Value="{ThemeResource LumenChipBrush}" />
                 <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="14" />
@@ -90,7 +166,7 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
-                            <Grid x:Name="ButtonRoot">
+                            <Grid x:Name="ButtonRoot" RenderTransformOrigin="0.5,0.5">
                                 <Grid.RenderTransform>
                                     <ScaleTransform ScaleX="1" ScaleY="1" />
                                 </Grid.RenderTransform>
@@ -98,53 +174,40 @@
                                         Background="{TemplateBinding Background}"
                                         BorderBrush="{TemplateBinding BorderBrush}"
                                         BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="{TemplateBinding CornerRadius}" />
+                                <Border x:Name="HoverOverlay"
+                                        Background="#FFFFFFFF"
                                         CornerRadius="{TemplateBinding CornerRadius}"
-                                        Opacity="1">
-                                    <ContentPresenter Content="{TemplateBinding Content}"
-                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
-                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                      Padding="{TemplateBinding Padding}"
-                                                      Foreground="{TemplateBinding Foreground}" />
-                                </Border>
+                                        Opacity="0"
+                                        IsHitTestVisible="False" />
+                                <ContentPresenter Content="{TemplateBinding Content}"
+                                                  ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  Padding="{TemplateBinding Padding}"
+                                                  Foreground="{TemplateBinding Foreground}" />
                                 <VisualStateManager.VisualStateGroups>
                                     <VisualStateGroup x:Name="CommonStates">
                                         <VisualState x:Name="Normal" />
                                         <VisualState x:Name="PointerOver">
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                 To="1.012" Duration="0:0:0.07" EnableDependentAnimation="True" />
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                 To="1.012" Duration="0:0:0.07" EnableDependentAnimation="True" />
-                                                <DoubleAnimation Storyboard.TargetName="ButtonBorder"
-                                                                 Storyboard.TargetProperty="Opacity"
-                                                                 To="0.96" Duration="0:0:0.07" />
+                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0.16" Duration="0:0:0.12" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="1.03" Duration="0:0:0.12" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="1.03" Duration="0:0:0.12" EnableDependentAnimation="True" />
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Pressed">
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
-                                                                 To="0.985" Duration="0:0:0.06" EnableDependentAnimation="True" />
-                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot"
-                                                                 Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
-                                                                 To="0.985" Duration="0:0:0.06" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0.26" Duration="0:0:0.06" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)" To="0.96" Duration="0:0:0.06" EnableDependentAnimation="True" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot" Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)" To="0.96" Duration="0:0:0.06" EnableDependentAnimation="True" />
                                             </Storyboard>
                                         </VisualState>
                                         <VisualState x:Name="Disabled">
                                             <Storyboard>
-                                                <DoubleAnimation Storyboard.TargetName="ButtonBorder"
-                                                                 Storyboard.TargetProperty="Opacity"
-                                                                 To="0.42" Duration="0:0:0.05" />
+                                                <DoubleAnimation Storyboard.TargetName="ButtonRoot" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.05" />
                                             </Storyboard>
                                         </VisualState>
-                                    </VisualStateGroup>
-                                    <VisualStateGroup x:Name="FocusStates">
-                                        <VisualState x:Name="Focused" />
-                                        <VisualState x:Name="Unfocused" />
-                                        <VisualState x:Name="PointerFocused" />
                                     </VisualStateGroup>
                                 </VisualStateManager.VisualStateGroups>
                             </Grid>
@@ -154,36 +217,48 @@
             </Style>
 
             <Style x:Key="LumenAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
-                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Foreground" Value="#04241F" />
                 <Setter Property="Background" Value="{StaticResource LumenAccentGradientBrush}" />
-                <Setter Property="BorderBrush" Value="#56FFFFFF" />
+                <Setter Property="BorderBrush" Value="#80FFFFFF" />
             </Style>
 
             <Style x:Key="LumenIconButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
-                <Setter Property="Width" Value="42" />
-                <Setter Property="Height" Value="42" />
+                <Setter Property="Width" Value="40" />
+                <Setter Property="Height" Value="40" />
                 <Setter Property="Padding" Value="0" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                <Setter Property="VerticalContentAlignment" Value="Center" />
-                <Setter Property="CornerRadius" Value="13" />
+                <Setter Property="CornerRadius" Value="20" />
+            </Style>
+
+            <!-- Small round buttons that float over thumbnails -->
+            <Style x:Key="LumenOverlayIconButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="Width" Value="36" />
+                <Setter Property="Height" Value="36" />
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="CornerRadius" Value="18" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Background" Value="#66041516" />
+                <Setter Property="BorderBrush" Value="#55FFFFFF" />
             </Style>
 
             <Style x:Key="LumenNavButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
                 <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderBrush" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="CornerRadius" Value="14" />
-                <Setter Property="Padding" Value="14,8" />
-                <Setter Property="FontFamily" Value="Segoe UI Variable Display" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Padding" Value="16,8" />
+            </Style>
+
+            <Style x:Key="LumenNavButtonActiveStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource LumenChipActiveTextBrush}" />
+                <Setter Property="Background" Value="{StaticResource LumenAccentGradientBrush}" />
+                <Setter Property="BorderBrush" Value="#80FFFFFF" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Padding" Value="16,8" />
             </Style>
 
             <Style x:Key="LumenPillStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="Foreground" Value="{ThemeResource LumenMutedTextBrush}" />
-                <Setter Property="Background" Value="{ThemeResource LumenChipBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource LumenSubtleBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="18" />
                 <Setter Property="Padding" Value="13,7" />
             </Style>
@@ -191,34 +266,69 @@
             <Style x:Key="LumenFilterButtonStyle" TargetType="Button" BasedOn="{StaticResource LumenGlassButtonStyle}">
                 <Setter Property="FontSize" Value="11" />
                 <Setter Property="Padding" Value="12,8" />
-                <Setter Property="CornerRadius" Value="13" />
-                <Setter Property="MinWidth" Value="114" />
-                <Setter Property="Background" Value="{ThemeResource LumenSolidSurfaceBrush}" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="MinWidth" Value="110" />
             </Style>
 
-            <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#24C7C1" />
-            <SolidColorBrush x:Key="SystemControlForegroundAccentBrush" Color="#1DA9A5" />
-            <SolidColorBrush x:Key="SystemControlHighlightAltAccentBrush" Color="#7BE3D5" />
+            <!-- Horizontal chips in a ListView (categories / tags) -->
+            <Style x:Key="LumenChipListViewItemStyle" TargetType="ListViewItem">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="Margin" Value="0,0,6,0" />
+                <Setter Property="MinHeight" Value="0" />
+                <Setter Property="MinWidth" Value="0" />
+                <Setter Property="UseSystemFocusVisuals" Value="False" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ListViewItem">
+                            <ListViewItemPresenter
+                                ContentTransitions="{TemplateBinding ContentTransitions}"
+                                Padding="{TemplateBinding Padding}"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                CornerRadius="17"
+                                SelectionCheckMarkVisualEnabled="False"
+                                CheckBrush="Transparent"
+                                CheckBoxBrush="Transparent"
+                                Background="{ThemeResource LumenChipBrush}"
+                                BorderBrush="{ThemeResource LumenSubtleBorderBrush}"
+                                BorderThickness="1"
+                                PointerOverBackground="{ThemeResource LumenChipHoverBrush}"
+                                PressedBackground="{ThemeResource LumenChipHoverBrush}"
+                                SelectedBackground="{ThemeResource LumenChipActiveBrush}"
+                                SelectedPointerOverBackground="{ThemeResource LumenChipActiveBrush}"
+                                SelectedPressedBackground="{ThemeResource LumenChipActiveBrush}"
+                                SelectedForeground="{ThemeResource LumenChipActiveTextBrush}"
+                                SelectedPointerOverForeground="{ThemeResource LumenChipActiveTextBrush}"
+                                SelectedPressedForeground="{ThemeResource LumenChipActiveTextBrush}"
+                                PointerOverForeground="{ThemeResource LumenTextBrush}"
+                                FocusBorderBrush="Transparent"
+                                FocusSecondaryBorderBrush="Transparent" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
 
+            <!-- ============================ INPUTS ============================ -->
             <Style x:Key="LumenSettingsComboBoxStyle" TargetType="ComboBox">
                 <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
                 <Setter Property="FontSize" Value="12" />
                 <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
-                <Setter Property="Background" Value="{ThemeResource LumenSurfaceBrush}" />
-                <Setter Property="BorderBrush" Value="{ThemeResource LumenGlassBorderBrush}" />
+                <Setter Property="Background" Value="{ThemeResource LumenInputBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenSubtleBorderBrush}" />
                 <Setter Property="BorderThickness" Value="1" />
                 <Setter Property="CornerRadius" Value="12" />
-                <Setter Property="Padding" Value="10,6" />
+                <Setter Property="Padding" Value="12,7" />
+                <Setter Property="HorizontalAlignment" Value="Stretch" />
             </Style>
 
             <Style x:Key="LumenSearchTextBoxStyle" TargetType="TextBox">
                 <Setter Property="FontFamily" Value="Segoe UI Variable Text" />
-                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontSize" Value="14" />
                 <Setter Property="Foreground" Value="{ThemeResource LumenTextBrush}" />
                 <Setter Property="PlaceholderForeground" Value="{ThemeResource LumenFaintTextBrush}" />
                 <Setter Property="Background" Value="Transparent" />
                 <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Padding" Value="6,8" />
+                <Setter Property="Padding" Value="8,10" />
             </Style>
         </ResourceDictionary>
     </Application.Resources>

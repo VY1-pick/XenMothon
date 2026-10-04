@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Lumen.Core.Enums;
 using Lumen.Core.Models.Catalog;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Lumen.UI.ViewModels;
 
@@ -67,6 +68,33 @@ public sealed class CatalogItemViewModel : INotifyPropertyChanged
         }
     }
 
+    private BitmapImage? _thumbnailImage;
+
+    /// <summary>Decoded at card size (not full size) so a grid of thumbnails stays light on memory.</summary>
+    public BitmapImage? ThumbnailImage
+    {
+        get
+        {
+            if (_thumbnailImage != null) return _thumbnailImage;
+            string source = ThumbnailSource;
+            if (string.IsNullOrWhiteSpace(source)) return null;
+            try
+            {
+                _thumbnailImage = new BitmapImage { DecodePixelWidth = 640 };
+                _thumbnailImage.UriSource = new Uri(source, UriKind.Absolute);
+            }
+            catch
+            {
+                _thumbnailImage = null;
+            }
+            return _thumbnailImage;
+        }
+    }
+
+    public string TypeGlyph => _item.Type == WallpaperType.Video ? "\uE714" : "\uEB9F";
+
+    public string QualityBadgeText => _item.Height >= 2160 ? "4K" : (_item.Type == WallpaperType.Video ? "VIDEO" : "IMAGE");
+
     public string PreviewUrl => _item.PreviewUrl;
 
     public CatalogDownloadState DownloadState
@@ -87,7 +115,13 @@ public sealed class CatalogItemViewModel : INotifyPropertyChanged
     public double DownloadProgress
     {
         get => _downloadProgress;
-        set => SetField(ref _downloadProgress, value);
+        set
+        {
+            if (SetField(ref _downloadProgress, value))
+            {
+                OnPropertyChanged(nameof(ActionButtonText));
+            }
+        }
     }
 
     public bool IsDownloading => _downloadState == CatalogDownloadState.Downloading;
@@ -99,7 +133,7 @@ public sealed class CatalogItemViewModel : INotifyPropertyChanged
         CatalogDownloadState.Downloading => $"{DownloadProgress:F0}%",
         CatalogDownloadState.Downloaded => "Installed",
         CatalogDownloadState.Failed => "Retry",
-        _ => "Subscribe"
+        _ => "Download"
     };
 
     public CatalogItemViewModel(CatalogItem item, CatalogDownloadState initialState = CatalogDownloadState.NotDownloaded)

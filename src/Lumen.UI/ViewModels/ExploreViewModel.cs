@@ -25,6 +25,7 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
     private readonly ObservableCollection<CatalogCategory> _categories = [];
     private readonly ObservableCollection<CatalogItemViewModel> _featuredItems = [];
     private readonly ObservableCollection<CatalogItemViewModel> _searchResults = [];
+    private readonly ObservableCollection<string> _popularTags = [];
 
     private CatalogCategory? _selectedCategory;
     private string _searchText = string.Empty;
@@ -40,12 +41,17 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
 
     private CancellationTokenSource? _debounceCts;
     private readonly object _debounceLock = new();
+    private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ReadOnlyObservableCollection<CatalogCategory> Categories { get; }
     public ReadOnlyObservableCollection<CatalogItemViewModel> FeaturedItems { get; }
     public ReadOnlyObservableCollection<CatalogItemViewModel> SearchResults { get; }
+    public ReadOnlyObservableCollection<string> PopularTags { get; }
+
+    /// <summary>Raised after a catalog item was applied to the desktop (id, title).</summary>
+    public event EventHandler<(Guid Id, string Title)>? WallpaperApplied;
 
     public CatalogDetailsViewModel DetailsViewModel { get; } = new();
 
@@ -119,6 +125,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasNextPage));
                 OnPropertyChanged(nameof(HasPreviousPage));
                 OnPropertyChanged(nameof(PageSummaryText));
+                OnPropertyChanged(nameof(ResultCountText));
+                OnPropertyChanged(nameof(HasMultiplePages));
             }
         }
     }
@@ -133,6 +141,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(HasNextPage));
                 OnPropertyChanged(nameof(HasPreviousPage));
                 OnPropertyChanged(nameof(PageSummaryText));
+                OnPropertyChanged(nameof(ResultCountText));
+                OnPropertyChanged(nameof(HasMultiplePages));
             }
         }
     }
@@ -145,6 +155,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             if (SetField(ref _totalCount, value))
             {
                 OnPropertyChanged(nameof(PageSummaryText));
+                OnPropertyChanged(nameof(ResultCountText));
+                OnPropertyChanged(nameof(HasMultiplePages));
                 OnPropertyChanged(nameof(IsEmpty));
             }
         }
@@ -152,7 +164,9 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
 
     public bool HasNextPage => _currentPage < _totalPages;
     public bool HasPreviousPage => _currentPage > 1;
-    public string PageSummaryText => _totalCount > 0 ? $"Page {_currentPage} of {_totalPages} ({_totalCount} wallpapers)" : "0 wallpapers";
+    public string PageSummaryText => $"{_currentPage} / {_totalPages}";
+    public string ResultCountText => _totalCount == 1 ? "1 wallpaper" : $"{_totalCount} wallpapers";
+    public bool HasMultiplePages => _totalPages > 1;
 
     public bool IsLoading
     {
@@ -198,6 +212,7 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         Categories = new ReadOnlyObservableCollection<CatalogCategory>(_categories);
         FeaturedItems = new ReadOnlyObservableCollection<CatalogItemViewModel>(_featuredItems);
         SearchResults = new ReadOnlyObservableCollection<CatalogItemViewModel>(_searchResults);
+        PopularTags = new ReadOnlyObservableCollection<string>(_popularTags);
 
         _catalogService.DownloadStateChanged += OnCatalogDownloadStateChanged;
     }
@@ -210,7 +225,7 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         try
         {
             // 1. Load categories
-            var categories = await _catalogService.GetCategoriesAsync().ConfigureAwait(false);
+            var categories = await _catalogService.GetCategoriesAsync();
             _categories.Clear();
             foreach (var cat in categories)
             {
@@ -224,8 +239,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             }
 
             // 2. Load featured items
-            var featured = await _catalogService.GetFeaturedAsync(limit: 6).ConfigureAwait(false);
-            var featuredStates = await _catalogService.GetDownloadStatesAsync(featured.Select(f => f.Id)).ConfigureAwait(false);
+            var featured = await _catalogService.GetFeaturedAsync(limit: 6);
+            var featuredStates = await _catalogService.GetDownloadStatesAsync(featured.Select(f => f.Id));
 
             _featuredItems.Clear();
             foreach (var f in featured)
@@ -234,8 +249,23 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
                 _featuredItems.Add(new CatalogItemViewModel(f, state));
             }
 
+            // 2b. Trending tags: most frequent tags across the most popular wallpapers
+            var popular = await _catalogService.GetPopularAsync(limit: 40);
+            var topTags = popular
+                .SelectMany(i => i.Tags)
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(g => g.Count())
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .Take(14)
+                .Select(g => g.Key);
+            _popularTags.Clear();
+            foreach (var tag in topTags)
+            {
+                _popularTags.Add(tag);
+            }
+
             // 3. Initial search query
-            await ExecuteSearchAsync(resetPage: true).ConfigureAwait(false);
+            await ExecuteSearchAsync(resetPage: true);
         }
         catch (Exception ex)
         {
@@ -269,13 +299,13 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             },
             SortBy = _selectedSortOption,
             PageNumber = _currentPage,
-            PageSize = 12
+            PageSize = 24
         };
 
         try
         {
-            var page = await _catalogService.SearchAsync(query, ct).ConfigureAwait(false);
-            var downloadStates = await _catalogService.GetDownloadStatesAsync(page.Items.Select(x => x.Id), ct).ConfigureAwait(false);
+            var page = await _catalogService.SearchAsync(query, ct);
+            var downloadStates = await _catalogService.GetDownloadStatesAsync(page.Items.Select(x => x.Id), ct);
 
             _searchResults.Clear();
             foreach (var item in page.Items)
@@ -335,9 +365,9 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
 
         try
         {
-            await _catalogService.SubscribeAsync(item.Model, progress).ConfigureAwait(false);
+            await _catalogService.SubscribeAsync(item.Model, progress);
             // Reconcile/refresh library
-            await _libraryService.GetWallpapersAsync().ConfigureAwait(false);
+            await _libraryService.GetWallpapersAsync();
         }
         catch (Exception ex)
         {
@@ -350,7 +380,7 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        var existing = await _libraryService.GetWallpaperByIdAsync(item.Id).ConfigureAwait(false);
+        var existing = await _libraryService.GetWallpaperByIdAsync(item.Id);
         if (existing == null || existing.IsMissing)
         {
             ErrorMessage = $"'{item.Title}' must be subscribed and downloaded before setting as desktop wallpaper.";
@@ -370,7 +400,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             Height = existing.Height
         };
 
-        await _orchestrator.ApplyWallpaperAsync("PRIMARY_MONITOR", activeWp).ConfigureAwait(false);
+        await _orchestrator.ApplyWallpaperAsync("PRIMARY_MONITOR", activeWp);
+        WallpaperApplied?.Invoke(this, (existing.Id, existing.Title));
     }
 
     public void OpenDetails(CatalogItemViewModel item)
@@ -392,35 +423,51 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             _debounceCts = new CancellationTokenSource();
             var token = _debounceCts.Token;
 
-            _ = Task.Run(async () =>
+            // Runs on the caller (UI) thread so collection updates stay on the UI thread.
+            _ = DebounceCoreAsync(token);
+        }
+    }
+
+    private async Task DebounceCoreAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(300, token);
+            if (!token.IsCancellationRequested)
             {
-                try
-                {
-                    await Task.Delay(300, token).ConfigureAwait(false);
-                    if (!token.IsCancellationRequested)
-                    {
-                        await ExecuteSearchAsync(resetPage: true, token).ConfigureAwait(false);
-                    }
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            }, token);
+                await ExecuteSearchAsync(resetPage: true, token);
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 
     private void OnCatalogDownloadStateChanged(object? sender, (Guid CatalogItemId, CatalogDownloadState State) e)
     {
-        var target = _searchResults.FirstOrDefault(x => x.Id == e.CatalogItemId);
+        // The catalog service raises this from worker threads; item ViewModels are bound to the UI.
+        if (_uiContext != null && SynchronizationContext.Current != _uiContext)
+        {
+            _uiContext.Post(_ => ApplyDownloadState(e.CatalogItemId, e.State), null);
+        }
+        else
+        {
+            ApplyDownloadState(e.CatalogItemId, e.State);
+        }
+    }
+
+    private void ApplyDownloadState(Guid id, CatalogDownloadState state)
+    {
+        var target = _searchResults.FirstOrDefault(x => x.Id == id);
         if (target != null)
         {
-            target.DownloadState = e.State;
+            target.DownloadState = state;
         }
 
-        var featuredTarget = _featuredItems.FirstOrDefault(x => x.Id == e.CatalogItemId);
+        var featuredTarget = _featuredItems.FirstOrDefault(x => x.Id == id);
         if (featuredTarget != null)
         {
-            featuredTarget.DownloadState = e.State;
+            featuredTarget.DownloadState = state;
         }
     }
 

@@ -95,35 +95,8 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
         var settingsViewModel = _serviceProvider.GetRequiredService<SettingsViewModel>();
         _mainWindow = new MainWindow(viewModel, _windowManager, settingsViewModel, _trayManager);
 
-        // 6. Wire Tray Callbacks
-        _trayManager.OpenRequested += (s, e) =>
-        {
-            _mainWindow.DispatcherQueue.TryEnqueue(() =>
-            {
-                _windowManager.ShowAndActivate();
-            });
-        };
-
-        _trayManager.PauseResumeRequested += async (s, e) =>
-        {
-            try
-            {
-                await _orchestrator.TogglePauseAllAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "Failed to toggle wallpaper pause state from the tray menu.");
-            }
-        };
-
-        _trayManager.ExitRequested += (s, e) =>
-        {
-            _mainWindow.DispatcherQueue.TryEnqueue(() =>
-            {
-                Shutdown();
-            });
-        };
-
+        // 6. Tray callbacks are wired once, inside MainWindow. Wiring them here as well made
+        // Pause/Resume fire twice (pause then immediately resume) and Exit run twice.
         _trayManager.Initialize();
         _ = CheckForUpdatesInBackgroundAsync();
 
