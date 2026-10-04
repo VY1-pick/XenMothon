@@ -11,7 +11,7 @@ public sealed class ApplicationSettings
     public string StoragePath { get; set; } = string.Empty;
     public bool StartWithWindows { get; set; } = true;
     public bool StartMinimizedToTray { get; set; } = true;
-    public string Theme { get; set; } = "Light";
+    public string Theme { get; set; } = "Dark";
     /// <summary>Enables the production HTTP catalog provider. Disabled by default to preserve offline-first behavior.</summary>
     public bool UseRemoteCatalog { get; set; } = false;
     /// <summary>Base URL for the catalog API, for example https://catalog.example.com/.</summary>

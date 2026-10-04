@@ -131,7 +131,7 @@ public sealed class CatalogItemViewModel : INotifyPropertyChanged
     public string ActionButtonText => _downloadState switch
     {
         CatalogDownloadState.Downloading => $"{DownloadProgress:F0}%",
-        CatalogDownloadState.Downloaded => "Installed",
+        CatalogDownloadState.Downloaded => "Set wallpaper",
         CatalogDownloadState.Failed => "Retry",
         _ => "Download"
     };

@@ -18,7 +18,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly ILogger<SettingsViewModel> _logger;
 
     private string _displayName = "Guest";
-    private string _theme = "Light";
+    private string _theme = "Dark";
     private bool _startWithWindows = true;
     private bool _startMinimizedToTray = true;
     private int _globalTargetFps = 60;
@@ -164,7 +164,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private void LoadFromSettings(ApplicationSettings settings)
     {
         _displayName = settings.DisplayName;
-        _theme = settings.Theme is "Dark" or "System" ? settings.Theme : "Light";
+        _theme = "Dark"; // Lumen is dark-only.
         _startWithWindows = settings.StartWithWindows;
         _startMinimizedToTray = settings.StartMinimizedToTray;
         _globalTargetFps = Math.Clamp(settings.GlobalTargetFps, 15, 240);

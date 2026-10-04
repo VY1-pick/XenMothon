@@ -152,7 +152,15 @@ public static class AppCompositionRoot
         services.AddSingleton<Func<WallpaperType, IWallpaperRenderer>>(sp =>
         {
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-            return type => WallpaperRendererFactory.CreateRenderer(type, loggerFactory);
+            return type =>
+            {
+                var inner = WallpaperRendererFactory.CreateRenderer(type, loggerFactory);
+                return new DesktopWallpaperRenderer(
+                    inner,
+                    sp.GetRequiredService<IDesktopWallpaperHost>(),
+                    sp.GetRequiredService<MonitorTopologyService>(),
+                    loggerFactory.CreateLogger<DesktopWallpaperRenderer>());
+            };
         });
 
         services.AddSingleton<IWallpaperEngineOrchestrator>(sp =>

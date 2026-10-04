@@ -221,6 +221,12 @@ public sealed class DesktopWallpaperHost : IDesktopWallpaperHost
             }, IntPtr.Zero);
         }
 
+        // Windows 11 24H2+: the WorkerW is a child of Progman instead of a top-level sibling.
+        if (workerw == IntPtr.Zero)
+        {
+            workerw = DesktopNativeMethods.FindWindowEx(progman, IntPtr.Zero, "WorkerW", null);
+        }
+
         return workerw;
     }
 

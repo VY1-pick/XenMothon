@@ -32,6 +32,10 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
     private WallpaperType? _selectedTypeFilter;
     private CatalogResolutionFilter _selectedResolutionFilter = CatalogResolutionFilter.All;
     private CatalogSortOption _selectedSortOption = CatalogSortOption.Relevance;
+    private CatalogOrientationFilter _selectedOrientation = CatalogOrientationFilter.All;
+    private double _minRating;
+    private int _maxDurationSeconds;
+    private bool _syncingChips;
 
     private int _currentPage = 1;
     private int _totalPages = 1;
@@ -54,6 +58,47 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
     public event EventHandler<(Guid Id, string Title)>? WallpaperApplied;
 
     public CatalogDetailsViewModel DetailsViewModel { get; } = new();
+
+    // ---- Advanced filter panel (chips are the single source of truth for what the user picked) ----
+    public FilterChipGroup TypeGroup { get; } = new(false);
+    public FilterChipGroup SortGroup { get; } = new(false);
+    public FilterChipGroup ResolutionGroup { get; } = new(false);
+    public FilterChipGroup OrientationGroup { get; } = new(false);
+    public FilterChipGroup DurationGroup { get; } = new(false);
+    public FilterChipGroup TagGroup { get; } = new(true);
+
+    public double MinRating
+    {
+        get => _minRating;
+        set
+        {
+            value = Math.Clamp(Math.Round(value * 2) / 2, 0, 5);
+            if (SetField(ref _minRating, value))
+            {
+                OnPropertyChanged(nameof(MinRatingText));
+                OnFiltersChanged();
+            }
+        }
+    }
+
+    public string MinRatingText => _minRating <= 0 ? "Any rating" : $"★ {_minRating:0.0} and up";
+
+    public CatalogOrientationFilter SelectedOrientation => _selectedOrientation;
+
+    /// <summary>Number of non-default filters (search text excluded) — shown as a badge on the Filters button.</summary>
+    public int ActiveFilterCount =>
+        (_selectedTypeFilter != null ? 1 : 0) +
+        (_selectedResolutionFilter != CatalogResolutionFilter.All ? 1 : 0) +
+        (_selectedSortOption != CatalogSortOption.Relevance ? 1 : 0) +
+        (_selectedOrientation != CatalogOrientationFilter.All ? 1 : 0) +
+        (_maxDurationSeconds > 0 ? 1 : 0) +
+        (_minRating > 0 ? 1 : 0) +
+        TagGroup.SelectedChips.Count();
+
+    public bool HasActiveFilters => ActiveFilterCount > 0;
+    public string TypeLabel => TypeGroup.Selected?.Label ?? "All types";
+    public string ResolutionLabel => ResolutionGroup.Selected?.Label ?? "Any size";
+    public string SortLabel => SortGroup.Selected?.Label ?? "Relevance";
 
     public CatalogCategory? SelectedCategory
     {
@@ -86,7 +131,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         {
             if (SetField(ref _selectedTypeFilter, value))
             {
-                _ = ExecuteSearchAsync(resetPage: true);
+                SyncChip(TypeGroup, value);
+                OnFiltersChanged();
             }
         }
     }
@@ -98,7 +144,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         {
             if (SetField(ref _selectedResolutionFilter, value))
             {
-                _ = ExecuteSearchAsync(resetPage: true);
+                SyncChip(ResolutionGroup, value);
+                OnFiltersChanged();
             }
         }
     }
@@ -110,7 +157,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         {
             if (SetField(ref _selectedSortOption, value))
             {
-                _ = ExecuteSearchAsync(resetPage: true);
+                SyncChip(SortGroup, value);
+                OnFiltersChanged();
             }
         }
     }
@@ -196,6 +244,8 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
 
     public bool HasError => !string.IsNullOrEmpty(_errorMessage);
 
+    public void ClearError() => ErrorMessage = null;
+
     public ExploreViewModel(
         IExploreCatalogService catalogService,
         ILibraryService libraryService,
@@ -215,6 +265,121 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
         PopularTags = new ReadOnlyObservableCollection<string>(_popularTags);
 
         _catalogService.DownloadStateChanged += OnCatalogDownloadStateChanged;
+        BuildFilterChips();
+    }
+
+    private void BuildFilterChips()
+    {
+        TypeGroup.Add("All types", null, true);
+        TypeGroup.Add("Videos", WallpaperType.Video);
+        TypeGroup.Add("Images", WallpaperType.Image);
+
+        SortGroup.Add("Relevance", CatalogSortOption.Relevance, true);
+        SortGroup.Add("Most popular", CatalogSortOption.Popular);
+        SortGroup.Add("Newest", CatalogSortOption.Newest);
+        SortGroup.Add("Top rated", CatalogSortOption.Rating);
+        SortGroup.Add("A → Z", CatalogSortOption.TitleAsc);
+        SortGroup.Add("Z → A", CatalogSortOption.TitleDesc);
+
+        ResolutionGroup.Add("Any size", CatalogResolutionFilter.All, true);
+        ResolutionGroup.Add("1080p", CatalogResolutionFilter.FHD_1080p);
+        ResolutionGroup.Add("1440p", CatalogResolutionFilter.QHD_1440p);
+        ResolutionGroup.Add("4K", CatalogResolutionFilter.UHD_4K);
+
+        OrientationGroup.Add("Any shape", CatalogOrientationFilter.All, true);
+        OrientationGroup.Add("Landscape", CatalogOrientationFilter.Landscape);
+        OrientationGroup.Add("Portrait", CatalogOrientationFilter.Portrait);
+        OrientationGroup.Add("Ultrawide", CatalogOrientationFilter.Ultrawide);
+
+        DurationGroup.Add("Any length", 0, true);
+        DurationGroup.Add("≤ 15 s", 15);
+        DurationGroup.Add("≤ 30 s", 30);
+        DurationGroup.Add("≤ 1 min", 60);
+        DurationGroup.Add("≤ 2 min", 120);
+        DurationGroup.Add("≤ 5 min", 300);
+
+        TypeGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            SelectedTypeFilter = TypeGroup.Selected?.Value as WallpaperType?;
+        };
+        SortGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            if (SortGroup.Selected?.Value is CatalogSortOption o) SelectedSortOption = o;
+        };
+        ResolutionGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            if (ResolutionGroup.Selected?.Value is CatalogResolutionFilter r) SelectedResolutionFilter = r;
+        };
+        OrientationGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            if (OrientationGroup.Selected?.Value is CatalogOrientationFilter o)
+            {
+                _selectedOrientation = o;
+                OnFiltersChanged();
+            }
+        };
+        DurationGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            _maxDurationSeconds = DurationGroup.Selected?.Value is int sec ? sec : 0;
+            OnFiltersChanged();
+        };
+        TagGroup.SelectionChanged += (_, _) =>
+        {
+            if (_syncingChips) return;
+            OnFiltersChanged();
+        };
+    }
+
+    private void SyncChip(FilterChipGroup group, object? value)
+    {
+        _syncingChips = true;
+        try { group.SelectValue(value); }
+        finally { _syncingChips = false; }
+    }
+
+    private void OnFiltersChanged()
+    {
+        OnPropertyChanged(nameof(ActiveFilterCount));
+        OnPropertyChanged(nameof(HasActiveFilters));
+        OnPropertyChanged(nameof(TypeLabel));
+        OnPropertyChanged(nameof(ResolutionLabel));
+        OnPropertyChanged(nameof(SortLabel));
+        DebounceAndSearch();
+    }
+
+    /// <summary>Puts every filter (but not the search text or category) back to its default and searches once.</summary>
+    public void ResetAdvancedFilters()
+    {
+        _syncingChips = true;
+        try
+        {
+            TypeGroup.Reset(false);
+            SortGroup.Reset(false);
+            ResolutionGroup.Reset(false);
+            OrientationGroup.Reset(false);
+            DurationGroup.Reset(false);
+            TagGroup.Reset(false);
+
+            _selectedTypeFilter = null;
+            _selectedSortOption = CatalogSortOption.Relevance;
+            _selectedResolutionFilter = CatalogResolutionFilter.All;
+            _selectedOrientation = CatalogOrientationFilter.All;
+            _maxDurationSeconds = 0;
+            _minRating = 0;
+        }
+        finally { _syncingChips = false; }
+
+        OnPropertyChanged(nameof(MinRating));
+        OnPropertyChanged(nameof(MinRatingText));
+        OnPropertyChanged(nameof(SelectedTypeFilter));
+        OnPropertyChanged(nameof(SelectedSortOption));
+        OnPropertyChanged(nameof(SelectedResolutionFilter));
+        OnFiltersChanged();
     }
 
     public async Task InitializeAsync()
@@ -264,6 +429,23 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
                 _popularTags.Add(tag);
             }
 
+            // Every tag in the popular set becomes a pickable chip in the advanced filter panel.
+            var allTags = popular
+                .SelectMany(i => i.Tags)
+                .GroupBy(t => t, StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(g => g.Count())
+                .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
+                .Take(48)
+                .Select(g => g.Key)
+                .ToList();
+            _syncingChips = true;
+            try
+            {
+                TagGroup.Clear();
+                foreach (var tag in allTags) TagGroup.Add(tag, tag);
+            }
+            finally { _syncingChips = false; }
+
             // 3. Initial search query
             await ExecuteSearchAsync(resetPage: true);
         }
@@ -295,7 +477,11 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             {
                 CategoryId = _selectedCategory?.Id,
                 Type = _selectedTypeFilter,
-                Resolution = _selectedResolutionFilter
+                Resolution = _selectedResolutionFilter,
+                Orientation = _selectedOrientation,
+                MaxDuration = _maxDurationSeconds > 0 ? TimeSpan.FromSeconds(_maxDurationSeconds) : null,
+                MinRating = _minRating > 0 ? _minRating : null,
+                Tags = TagGroup.SelectedChips.Select(c => c.Label).ToArray() is { Length: > 0 } tags ? tags : null
             },
             SortBy = _selectedSortOption,
             PageNumber = _currentPage,
@@ -400,8 +586,16 @@ public sealed class ExploreViewModel : INotifyPropertyChanged
             Height = existing.Height
         };
 
-        await _orchestrator.ApplyWallpaperAsync("PRIMARY_MONITOR", activeWp);
-        WallpaperApplied?.Invoke(this, (existing.Id, existing.Title));
+        try
+        {
+            await _orchestrator.ApplyWallpaperAsync("PRIMARY_MONITOR", activeWp);
+            WallpaperApplied?.Invoke(this, (existing.Id, existing.Title));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to apply wallpaper '{Title}'.", item.Title);
+            ErrorMessage = $"Could not set '{item.Title}': {ex.Message}";
+        }
     }
 
     public void OpenDetails(CatalogItemViewModel item)
