@@ -10,48 +10,108 @@
     Title="Lumen — Live Wallpaper Platform">
 
     <Grid x:ConnectionId='2' x:Name="RootGrid" Background="{ThemeResource LumenPageBrush}">
+        <Grid.Resources>
+            <Style x:Key="SettingRowStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource LumenSurfaceBrush}" />
+                <Setter Property="BorderBrush" Value="{ThemeResource LumenSubtleBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="16" />
+                <Setter Property="Padding" Value="16,12" />
+            </Style>
+
+            <Style x:Key="SettingTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource LumenBodyStyle}">
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="FontSize" Value="13" />
+            </Style>
+
+            <Style x:Key="SettingHintStyle" TargetType="TextBlock" BasedOn="{StaticResource LumenMutedStyle}">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+            </Style>
+
+            <ScalarTransition x:Key="LumenFadeTransition" Duration="0:0:0.18" />
+
+            <!-- Ambient orbs drift slowly behind the glass -->
+            <Storyboard x:Key="OrbStoryboard" RepeatBehavior="Forever" AutoReverse="True">
+                <DoubleAnimation Storyboard.TargetName="OrbATransform" Storyboard.TargetProperty="TranslateX" From="-40" To="120" Duration="0:0:16">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OrbATransform" Storyboard.TargetProperty="TranslateY" From="0" To="90" Duration="0:0:19">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OrbBTransform" Storyboard.TargetProperty="TranslateX" From="60" To="-130" Duration="0:0:21">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OrbBTransform" Storyboard.TargetProperty="TranslateY" From="40" To="-80" Duration="0:0:17">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OrbCTransform" Storyboard.TargetProperty="TranslateX" From="-60" To="80" Duration="0:0:23">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation Storyboard.TargetName="OrbCTransform" Storyboard.TargetProperty="TranslateY" From="-40" To="70" Duration="0:0:20">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut" /></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
-            <RowDefinition Height="52" />
-            <RowDefinition Height="80" />
+            <RowDefinition Height="48" />
+            <RowDefinition Height="74" />
             <RowDefinition Height="*" />
-            <RowDefinition Height="42" />
+            <RowDefinition Height="56" />
         </Grid.RowDefinitions>
 
-        <!-- ========================= CUSTOM TITLE BAR ========================= -->
-        <Grid x:ConnectionId='3' x:Name="AppTitleBar"
-              Grid.Row="0"
-              Background="{ThemeResource LumenTitleBarBrush}"
-              Padding="18,0,150,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
-                <Border Width="34" Height="34" CornerRadius="11" Background="#14000000" Padding="2">
-                    <Image Source="ms-appx:///Assets/lumen-logo.png" Stretch="Uniform" />
-                </Border>
-                <StackPanel VerticalAlignment="Center" Spacing="-1">
-                    <TextBlock Text="Lumen"
-                               Style="{StaticResource LumenHeadingStyle}"
-                               FontSize="18" />
-                    <TextBlock Text="Live wallpapers, without the clutter"
-                               Style="{StaticResource LumenMutedStyle}"
-                               FontSize="10.5" />
-                </StackPanel>
-            </StackPanel>
-
-
+        <!-- ========================= AMBIENT BACKGROUND ========================= -->
+        <Grid Grid.RowSpan="4" IsHitTestVisible="False">
+            <Grid x:ConnectionId='147' x:Name="OrbA" Width="620" Height="620" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-200,-220,0,0" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><CompositeTransform x:ConnectionId='152' x:Name="OrbATransform" /></Grid.RenderTransform>
+                <Ellipse Fill="{ThemeResource LumenOrbMintBrush}" Opacity="0.14" />
+                <Ellipse Fill="{ThemeResource LumenOrbMintBrush}" Opacity="0.16" Margin="90" />
+                <Ellipse Fill="{ThemeResource LumenOrbMintBrush}" Opacity="0.22" Margin="190" />
+            </Grid>
+            <Grid x:ConnectionId='148' x:Name="OrbB" Width="700" Height="700" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-260,-300" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><CompositeTransform x:ConnectionId='151' x:Name="OrbBTransform" /></Grid.RenderTransform>
+                <Ellipse Fill="{ThemeResource LumenOrbAquaBrush}" Opacity="0.14" />
+                <Ellipse Fill="{ThemeResource LumenOrbAquaBrush}" Opacity="0.16" Margin="110" />
+                <Ellipse Fill="{ThemeResource LumenOrbAquaBrush}" Opacity="0.22" Margin="220" />
+            </Grid>
+            <Grid x:ConnectionId='149' x:Name="OrbC" Width="480" Height="480" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="260,-60,0,0" RenderTransformOrigin="0.5,0.5">
+                <Grid.RenderTransform><CompositeTransform x:ConnectionId='150' x:Name="OrbCTransform" /></Grid.RenderTransform>
+                <Ellipse Fill="{ThemeResource LumenOrbVioletBrush}" Opacity="0.10" />
+                <Ellipse Fill="{ThemeResource LumenOrbVioletBrush}" Opacity="0.12" Margin="80" />
+                <Ellipse Fill="{ThemeResource LumenOrbVioletBrush}" Opacity="0.16" Margin="160" />
+            </Grid>
         </Grid>
 
-        <!-- ========================= APP TOOLBAR / NAV ========================= -->
-        <Grid Grid.Row="1" Padding="18,10">
-            <Border Background="{ThemeResource LumenSurfaceBrush}"
-                    BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="22"
-                    Padding="10,7">
+        <!-- ========================= CUSTOM TITLE BAR ========================= -->
+        <!-- Glass "tab" behind the native caption buttons so Minimize/Maximize/Close are always visible -->
+        <Border x:ConnectionId='3' x:Name="CaptionBackplate"
+                Grid.Row="0"
+                Width="142"
+                Height="48"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                CornerRadius="0,0,0,22"
+                Background="{ThemeResource LumenGlassStrongBrush}"
+                BorderBrush="{ThemeResource LumenGlassBorderBrush}"
+                BorderThickness="1,0,0,1" />
+
+        <Grid x:ConnectionId='4' x:Name="AppTitleBar"
+              Grid.Row="0"
+              Background="{ThemeResource LumenTitleBarBrush}"
+              Padding="20,0,150,0">
+            <StackPanel Orientation="Horizontal" Spacing="11" VerticalAlignment="Center">
+                <Border Width="30" Height="30" CornerRadius="10" Background="{ThemeResource LumenAccentSoftBrush}" Padding="3">
+                    <Image Source="ms-appx:///Assets/lumen-logo.png" Stretch="Uniform" />
+                </Border>
+                <TextBlock Text="Lumen" Style="{StaticResource LumenHeadingStyle}" FontSize="16" VerticalAlignment="Center" />
+                <TextBlock Text="live wallpapers" Style="{StaticResource LumenMutedStyle}" FontSize="11" VerticalAlignment="Center" Margin="2,2,0,0" />
+            </StackPanel>
+        </Grid>
+
+        <!-- ========================= TOP NAV ========================= -->
+        <Grid Grid.Row="1" Padding="20,4,20,8">
+            <Border Style="{StaticResource LumenGlassCardStyle}" CornerRadius="28" Padding="10,8">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
@@ -59,23 +119,15 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <!-- Segmented navigation -->
-                    <Border Grid.Column="0"
-                            Background="{ThemeResource LumenChipBrush}"
-                            CornerRadius="17"
-                            Padding="4">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                            <Button x:ConnectionId='111' x:Name="NavExploreButton"
-                                    Style="{StaticResource LumenNavButtonStyle}"
-                                                               >
+                    <Border Grid.Column="0" Background="{ThemeResource LumenChipBrush}" CornerRadius="21" Padding="4">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <Button x:ConnectionId='145' x:Name="NavExploreButton" Style="{StaticResource LumenNavButtonActiveStyle}"                            >
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE71E;" FontSize="14" />
                                     <TextBlock Text="Explore" />
                                 </StackPanel>
                             </Button>
-                            <Button x:ConnectionId='112' x:Name="NavLibraryButton"
-                                    Style="{StaticResource LumenNavButtonStyle}"
-                                                               >
+                            <Button x:ConnectionId='146' x:Name="NavLibraryButton" Style="{StaticResource LumenNavButtonStyle}"                            >
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="&#xE8F1;" FontSize="14" />
                                     <TextBlock Text="Library" />
@@ -84,45 +136,25 @@
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Grid.Column="1"
-                               Text="Discover. Collect. Set the mood."
-                               Style="{StaticResource LumenMutedStyle}"
-                               FontSize="12"
-                               VerticalAlignment="Center"
-                               HorizontalAlignment="Center" />
-
-                    <!-- Compact actions -->
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="7">
-                        <Button x:ConnectionId='106' x:Name="ImportButton"
-                                Style="{StaticResource LumenAccentButtonStyle}"
-                                                             >
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:ConnectionId='140' x:Name="ImportButton" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20" Padding="16,9"                              >
                             <StackPanel Orientation="Horizontal" Spacing="7">
-                                <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                <FontIcon Glyph="&#xE710;" FontSize="13" />
                                 <TextBlock Text="Import" />
                             </StackPanel>
                         </Button>
-
-                        <Button x:ConnectionId='107' x:Name="RefreshButton"
-                                Style="{StaticResource LumenIconButtonStyle}"
-                                                        >
-                            <FontIcon Glyph="&#xE777;" FontSize="15" />
+                        <Button x:ConnectionId='141' x:Name="RefreshButton" Style="{StaticResource LumenIconButtonStyle}"                         >
+                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
                             <ToolTipService.ToolTip>Refresh</ToolTipService.ToolTip>
                         </Button>
-
-                        <Button x:ConnectionId='108' x:Name="PauseResumeButton"
-                                Style="{StaticResource LumenIconButtonStyle}"
-                                                            >
-                            <FontIcon x:ConnectionId='110' x:Name="PauseResumeIcon" Glyph="&#xE769;" FontSize="15" />
+                        <Button x:ConnectionId='142' x:Name="PauseResumeButton" Style="{StaticResource LumenIconButtonStyle}"                             >
+                            <FontIcon x:ConnectionId='144' x:Name="PauseResumeIcon" Glyph="&#xE769;" FontSize="14" />
                             <ToolTipService.ToolTip>Pause / Resume wallpapers</ToolTipService.ToolTip>
                         </Button>
-
-                        <Button x:ConnectionId='109' x:Name="SettingsButton"
-                                Style="{StaticResource LumenIconButtonStyle}"
-                                                         >
-                            <FontIcon Glyph="&#xE713;" FontSize="15" />
+                        <Button x:ConnectionId='143' x:Name="SettingsButton" Style="{StaticResource LumenIconButtonStyle}"                          >
+                            <FontIcon Glyph="&#xE713;" FontSize="14" />
                             <ToolTipService.ToolTip>Settings</ToolTipService.ToolTip>
                         </Button>
-
                     </StackPanel>
                 </Grid>
             </Border>
@@ -130,513 +162,413 @@
 
         <!-- ========================= MAIN CONTENT ========================= -->
         <Grid Grid.Row="2">
-            <InfoBar x:ConnectionId='6' x:Name="ErrorNotificationBar"
+            <InfoBar x:ConnectionId='14' x:Name="ErrorNotificationBar"
                      IsOpen="False"
                      Severity="Error"
                      IsClosable="True"
                      VerticalAlignment="Top"
-                     Margin="20,4,20,0"
+                     Margin="24,4,24,0"
                      Canvas.ZIndex="30" />
 
-            <!-- Ambient background accent -->
-            <Border HorizontalAlignment="Left"
-                    VerticalAlignment="Top"
-                    Width="380"
-                    Height="230"
-                    Margin="-80,-60,0,0"
-                    CornerRadius="160"
-                    Background="#223AD9FF"
-                    Opacity="0.35" />
-            <Border HorizontalAlignment="Right"
-                    VerticalAlignment="Bottom"
-                    Width="320"
-                    Height="220"
-                    Margin="0,0,-90,-80"
-                    CornerRadius="150"
-                    Background="#26D54CFF"
-                    Opacity="0.22" />
-
             <!-- ========================= EXPLORE ========================= -->
-            <Grid x:ConnectionId='7' x:Name="ExploreContentGrid" Padding="20,6,20,10" Visibility="Visible">
+            <Grid x:ConnectionId='15' x:Name="ExploreContentGrid" Padding="20,2,20,0" Visibility="Visible">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Hero search surface -->
-                <Border Grid.Row="0"
-                        Background="{ThemeResource LumenSurfaceBrush}"
-                        BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="24"
-                        Padding="18,14"
-                        Margin="0,0,0,10">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-
-                        <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
-                            <TextBlock Text="Find your next atmosphere"
-                                       Style="{StaticResource LumenHeadingStyle}"
-                                       FontSize="19" />
-                            <TextBlock Text="Search by mood, creator, tag or category"
-                                       Style="{StaticResource LumenMutedStyle}"
-                                       FontSize="11" />
-                        </StackPanel>
-
-                        <Border Grid.Column="1"
-                                Width="430"
-                                Margin="20,0,8,0"
-                                Background="{ThemeResource LumenSolidSurfaceBrush}"
-                                BorderBrush="{ThemeResource LumenSubtleBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="15"
-                                Padding="11,0">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <Border Width="28" Height="28" CornerRadius="10" Background="{ThemeResource LumenAccentSoftBrush}" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE721;" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{ThemeResource LumenTextBrush}" />
-                                </Border>
-                                <TextBox x:ConnectionId='105' x:Name="ExploreSearchBox"
-                                         Grid.Column="1"
-                                         Style="{StaticResource LumenSearchTextBoxStyle}"
-                                         PlaceholderText="Search by atmosphere, creator, tag…"
-                                                                           />
-                                <Border Grid.Column="2" Background="{ThemeResource LumenChipBrush}" BorderBrush="{ThemeResource LumenSubtleBorderBrush}" BorderThickness="1" CornerRadius="8" Padding="7,4" VerticalAlignment="Center">
-                                    <TextBlock Text="Ctrl K" Style="{StaticResource LumenMutedStyle}" FontSize="9" />
-                                </Border>
-                            </Grid>
-                        </Border>
-
-                    </Grid>
-                </Border>
-
-                <!-- Categories + filters -->
-                <Grid Grid.Row="1" Margin="0,0,0,10">
+                <!-- Search + filters -->
+                <Grid Grid.Row="0" Margin="0,0,0,10" ColumnSpacing="8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0"
-                            Background="{ThemeResource LumenSurfaceBrush}"
-                            BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="15"
-                            Padding="5,4"
-                            Margin="0,0,8,0"
-                            Height="44">
-                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxWidth="620">
-                            <ItemsControl x:ConnectionId='102' x:Name="CategoryPillsItemsControl">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <ItemsWrapGrid Orientation="Horizontal" MaximumRowsOrColumns="1" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate                                 >
-                                    <Button x:ConnectionId='104'                               
-                                                             
-                                            Style="{StaticResource LumenPillStyle}"
-                                            Margin="2"
-                                                                          />
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
+                            Height="48"
+                            Style="{StaticResource LumenGlassCardStyle}"
+                            CornerRadius="24"
+                            Padding="14,0,10,0">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Glyph="&#xE721;" FontSize="15" Foreground="{ThemeResource LumenMutedTextBrush}" VerticalAlignment="Center" />
+                            <TextBox x:ConnectionId='138' x:Name="ExploreSearchBox"
+                                     Grid.Column="1"
+                                     VerticalAlignment="Center"
+                                     Style="{StaticResource LumenSearchTextBoxStyle}"
+                                     PlaceholderText="Search wallpapers, creators, moods, tags…"
+                                                                      
+                                                              >
+                                <TextBox.Resources>
+                                    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                                    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                                </TextBox.Resources>
+                            </TextBox>
+                            <Button x:ConnectionId='139' x:Name="SearchClearButton"
+                                    Grid.Column="2"
+                                    Style="{StaticResource LumenIconButtonStyle}"
+                                    Width="30" Height="30" CornerRadius="15"
+                                    Visibility="Collapsed"
+                                                                >
+                                <FontIcon Glyph="&#xE711;" FontSize="11" />
+                            </Button>
+                            <Border Grid.Column="3" Background="{ThemeResource LumenChipBrush}" CornerRadius="9" Padding="8,4" VerticalAlignment="Center">
+                                <TextBlock Text="Ctrl K" Style="{StaticResource LumenMutedStyle}" FontSize="10" />
+                            </Border>
+                        </Grid>
                     </Border>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="7" VerticalAlignment="Top">
-                        <Button x:ConnectionId='84' x:Name="TypeFilterButton" Style="{StaticResource LumenFilterButtonStyle}">
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <Button x:ConnectionId='120' x:Name="TypeFilterButton" Style="{StaticResource LumenFilterButtonStyle}" Height="48" CornerRadius="24">
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <FontIcon Glyph="&#xE81E;" FontSize="13" />
-                                <TextBlock x:ConnectionId='98' x:Name="TypeFilterLabel" Text="All types" />
+                                <TextBlock x:ConnectionId='134' x:Name="TypeFilterLabel" Text="All types" />
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem x:ConnectionId='99' Text="All types" Tag="0"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='100' Text="Videos" Tag="1"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='101' Text="Images" Tag="2"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='135' Text="All types" Tag="0"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='136' Text="Videos" Tag="1"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='137' Text="Images" Tag="2"                                 />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
 
-                        <Button x:ConnectionId='85' x:Name="ResolutionFilterButton" Style="{StaticResource LumenFilterButtonStyle}">
+                        <Button x:ConnectionId='121' x:Name="ResolutionFilterButton" Style="{StaticResource LumenFilterButtonStyle}" Height="48" CornerRadius="24">
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <FontIcon Glyph="&#xE91B;" FontSize="13" />
-                                <TextBlock x:ConnectionId='93' x:Name="ResolutionFilterLabel" Text="All sizes" />
+                                <TextBlock x:ConnectionId='129' x:Name="ResolutionFilterLabel" Text="All sizes" />
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem x:ConnectionId='94' Text="All sizes" Tag="0"                                       />
-                                    <MenuFlyoutItem x:ConnectionId='95' Text="1080p FHD" Tag="1"                                       />
-                                    <MenuFlyoutItem x:ConnectionId='96' Text="1440p QHD" Tag="2"                                       />
-                                    <MenuFlyoutItem x:ConnectionId='97' Text="4K UHD" Tag="3"                                       />
+                                    <MenuFlyoutItem x:ConnectionId='130' Text="All sizes" Tag="0"                                       />
+                                    <MenuFlyoutItem x:ConnectionId='131' Text="1080p FHD" Tag="1"                                       />
+                                    <MenuFlyoutItem x:ConnectionId='132' Text="1440p QHD" Tag="2"                                       />
+                                    <MenuFlyoutItem x:ConnectionId='133' Text="4K UHD" Tag="3"                                       />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
 
-                        <Button x:ConnectionId='86' x:Name="SortFilterButton" Style="{StaticResource LumenFilterButtonStyle}">
+                        <Button x:ConnectionId='122' x:Name="SortFilterButton" Style="{StaticResource LumenFilterButtonStyle}" Height="48" CornerRadius="24">
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <FontIcon Glyph="&#xE8CB;" FontSize="13" />
-                                <TextBlock x:ConnectionId='87' x:Name="SortFilterLabel" Text="Relevance" />
+                                <TextBlock x:ConnectionId='123' x:Name="SortFilterLabel" Text="Relevance" />
                             </StackPanel>
                             <Button.Flyout>
                                 <MenuFlyout>
-                                    <MenuFlyoutItem x:ConnectionId='88' Text="Relevance" Tag="0"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='89' Text="Most popular" Tag="1"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='90' Text="Newest" Tag="2"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='91' Text="Top rated" Tag="3"                                 />
-                                    <MenuFlyoutItem x:ConnectionId='92' Text="Title A–Z" Tag="4"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='124' Text="Relevance" Tag="0"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='125' Text="Most popular" Tag="1"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='126' Text="Newest" Tag="2"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='127' Text="Top rated" Tag="3"                                 />
+                                    <MenuFlyoutItem x:ConnectionId='128' Text="Title A–Z" Tag="4"                                 />
                                 </MenuFlyout>
                             </Button.Flyout>
                         </Button>
                     </StackPanel>
                 </Grid>
 
-                <!-- Results -->
-                <Grid Grid.Row="2">
-                    <StackPanel x:ConnectionId='70' x:Name="ExploreLoadingPanel"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                Spacing="10"
-                                Visibility="Collapsed">
-                        <ProgressRing IsActive="True" Width="42" Height="42" />
-                        <TextBlock Text="Curating your wallpapers..." Style="{StaticResource LumenMutedStyle}" />
-                    </StackPanel>
+                <!-- Categories -->
+                <Grid Grid.Row="1" Margin="0,0,0,6" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ListView x:ConnectionId='116' x:Name="CategoryListView"
+                              Grid.Column="0"
+                              SelectionMode="Single"
+                              IsItemClickEnabled="False"
+                              ItemContainerStyle="{StaticResource LumenChipListViewItemStyle}"
+                              ScrollViewer.HorizontalScrollMode="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                              ScrollViewer.VerticalScrollMode="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              Height="40"
+                                                                           >
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
+                            <DataTemplate                                 >
+                                <TextBlock x:ConnectionId='119'                             FontSize="12" FontWeight="SemiBold" Padding="15,8" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock x:ConnectionId='117' x:Name="ExploreCountTextBlock" Grid.Column="1" Style="{StaticResource LumenMutedStyle}" FontSize="12" VerticalAlignment="Center" />
+                </Grid>
 
-                    <StackPanel x:ConnectionId='71' x:Name="ExploreEmptyStatePanel"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Center"
-                                MaxWidth="420"
-                                Spacing="12"
-                                Visibility="Collapsed">
-                        <Border Width="84" Height="84" CornerRadius="30" Background="{StaticResource LumenAccentGradientBrush}" HorizontalAlignment="Center">
-                            <TextBlock Text="✦" Foreground="White" FontSize="38" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <TextBlock Text="Nothing matched that vibe"
-                                   Style="{StaticResource LumenHeadingStyle}"
-                                   FontSize="23"
-                                   HorizontalAlignment="Center" />
-                        <TextBlock Text="Try another keyword or clear the filters and explore a little wider."
-                                   Style="{StaticResource LumenMutedStyle}"
-                                   TextAlignment="Center"
-                                   TextWrapping="Wrap" />
-                        <Button x:ConnectionId='83' Content="Reset filters"
-                                Style="{StaticResource LumenAccentButtonStyle}"
-                                                             
-                                HorizontalAlignment="Center" />
+                <!-- Trending tags -->
+                <Grid Grid.Row="2" Margin="0,0,0,8" ColumnSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE8EC;" FontSize="12" Foreground="{ThemeResource LumenMutedTextBrush}" />
+                        <TextBlock Text="Trending" Style="{StaticResource LumenMutedStyle}" FontSize="12" FontWeight="SemiBold" />
                     </StackPanel>
-
-                    <GridView x:ConnectionId='72' x:Name="ExploreGridView"
+                    <ListView x:ConnectionId='113' x:Name="TagsListView"
+                              Grid.Column="1"
                               SelectionMode="None"
                               IsItemClickEnabled="True"
-                                                              
-                              Padding="2"
+                              ItemContainerStyle="{StaticResource LumenChipListViewItemStyle}"
+                              ScrollViewer.HorizontalScrollMode="Auto"
+                              ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                              ScrollViewer.VerticalScrollMode="Disabled"
+                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                              Height="34"
+                                                        >
+                        <ListView.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsStackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListView.ItemsPanel>
+                        <ListView.ItemTemplate>
+                            <DataTemplate                      >
+                                <TextBlock x:ConnectionId='115'                 FontSize="11.5" Padding="12,6" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+
+                <!-- Results -->
+                <Grid Grid.Row="3">
+                    <StackPanel x:ConnectionId='94' x:Name="ExploreLoadingPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" Visibility="Collapsed">
+                        <ProgressRing IsActive="True" Width="40" Height="40" />
+                        <TextBlock Text="Curating wallpapers…" Style="{StaticResource LumenMutedStyle}" />
+                    </StackPanel>
+
+                    <StackPanel x:ConnectionId='95' x:Name="ExploreEmptyStatePanel" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="420" Spacing="12" Visibility="Collapsed">
+                        <Border Width="76" Height="76" CornerRadius="38" Background="{StaticResource LumenAccentGradientBrush}" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE721;" FontSize="30" Foreground="#04241F" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="Nothing matched that vibe" Style="{StaticResource LumenHeadingStyle}" FontSize="22" HorizontalAlignment="Center" />
+                        <TextBlock Text="Try another keyword, or reset the filters and look a little wider."
+                                   Style="{StaticResource LumenMutedStyle}" TextAlignment="Center" TextWrapping="Wrap" />
+                        <Button x:ConnectionId='112' Content="Reset filters" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20" HorizontalAlignment="Center"                               />
+                    </StackPanel>
+
+                    <GridView x:ConnectionId='96' x:Name="ExploreGridView"
+                              SelectionMode="None"
+                              IsItemClickEnabled="False"
+                              Padding="0,0,0,64"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ScrollViewer.VerticalScrollBarVisibility="Auto">
                         <GridView.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <ItemsWrapGrid MaximumRowsOrColumns="4" Orientation="Horizontal" />
+                                <ItemsWrapGrid Orientation="Horizontal" />
                             </ItemsPanelTemplate>
                         </GridView.ItemsPanel>
                         <GridView.ItemTemplate>
                             <DataTemplate                                     >
-                                <Border x:ConnectionId='74' Width="292"
-                                        Height="270"
-                                        Margin="4"
+                                <!-- Thumbnail-first card: the image IS the card. Text only appears on a soft scrim. -->
+                                <Border x:ConnectionId='102' Width="268"
+                                        Height="168"
+                                        Margin="6"
                                         CornerRadius="22"
-                                        Background="{ThemeResource LumenSurfaceBrush}"
                                         BorderBrush="{ThemeResource LumenGlassBorderBrush}"
                                         BorderThickness="1"
-                                                                    >
+                                                                    
+                                                                             
+                                                                           >
+                                    <Border.Background>
+                                        <ImageBrush x:ConnectionId='103'                                       Stretch="UniformToFill" />
+                                    </Border.Background>
                                     <Grid>
-                                        <Border CornerRadius="23" Background="{StaticResource LumenAmbientGradientBrush}" />
-                                        <Image x:ConnectionId='75'                                  
-                                               Stretch="UniformToFill"
-                                               Opacity="0.96" />
-                                        <Rectangle Fill="#B80B1020" />
-                                        <Border VerticalAlignment="Top"
-                                                HorizontalAlignment="Left"
-                                                Margin="12"
-                                                Background="#CCFFFFFF"
-                                                CornerRadius="11"
-                                                Padding="8,5">
+                                        <Border VerticalAlignment="Bottom" Height="76" CornerRadius="0,0,21,21" Background="{StaticResource LumenCardScrimBrush}" IsHitTestVisible="False" />
+
+                                        <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,12" IsHitTestVisible="False">
+                                            <TextBlock x:ConnectionId='110'                       Foreground="White" FontFamily="Segoe UI Variable Display" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock x:ConnectionId='111'                        Foreground="#CCFFFFFF" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+
+                                        <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" CornerRadius="12" Padding="8,4" Background="#66041516" BorderBrush="#33FFFFFF" BorderThickness="1" IsHitTestVisible="False">
                                             <StackPanel Orientation="Horizontal" Spacing="5">
-                                                <TextBlock Text="★" FontSize="11" Foreground="#B67A00" />
-                                                <TextBlock x:ConnectionId='82'                            FontSize="10" Foreground="#303747" FontWeight="SemiBold" />
-                                            </StackPanel>
-                                        </Border>
-                                        <Border VerticalAlignment="Top"
-                                                HorizontalAlignment="Right"
-                                                Margin="12"
-                                                Background="#3A0B1415"
-                                                CornerRadius="11"
-                                                Padding="8,5">
-                                            <StackPanel Orientation="Horizontal" Spacing="5">
-                                                <FontIcon Glyph="&#xE768;" FontSize="10" Foreground="White" />
-                                                <TextBlock x:ConnectionId='81'                               FontSize="10" Foreground="White" FontWeight="SemiBold" />
+                                                <FontIcon x:ConnectionId='108'                            FontSize="10" Foreground="White" />
+                                                <TextBlock x:ConnectionId='109'                                  FontSize="10" FontWeight="SemiBold" Foreground="White" />
                                             </StackPanel>
                                         </Border>
 
-                                        <Border VerticalAlignment="Bottom"
-                                                Margin="10"
-                                                Padding="15"
-                                                CornerRadius="18"
-                                                Background="#D90B1020"
-                                                BorderBrush="#42FFFFFF"
-                                                BorderThickness="1">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                    <RowDefinition Height="Auto" />
-                                                </Grid.RowDefinitions>
-                                                <TextBlock x:ConnectionId='76'                      
-                                                           Grid.Row="0"
-                                                           Foreground="White"
-                                                           FontFamily="Segoe UI Variable Display"
-                                                           FontSize="17"
-                                                           FontWeight="SemiBold"
-                                                           TextTrimming="CharacterEllipsis" />
-                                                <TextBlock x:ConnectionId='77'                       
-                                                           Grid.Row="1"
-                                                           Foreground="#D9E3F1"
-                                                           FontSize="11"
-                                                           Margin="0,2,0,0" />
-                                                <Grid Grid.Row="2" Margin="0,9,0,0">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*" />
-                                                        <ColumnDefinition Width="Auto" />
-                                                    </Grid.ColumnDefinitions>
-                                                    <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                                        <TextBlock x:ConnectionId='79'                                Foreground="#C5D2DC" FontSize="10" />
-                                                        <TextBlock Text="•" Foreground="#7F928C" FontSize="10" />
-                                                        <TextBlock x:ConnectionId='80'                               Foreground="#C5D2DC" FontSize="10" />
-                                                    </StackPanel>
-                                                    <Button x:ConnectionId='78' Grid.Column="1"
-                                                                          
-                                                                                             
-                                                            Style="{StaticResource LumenAccentButtonStyle}"
-                                                            Padding="12,7"
-                                                                                                />
-                                                </Grid>
-                                            </Grid>
+                                        <Border x:ConnectionId='104' HorizontalAlignment="Right" VerticalAlignment="Top" Margin="12" Width="24" Height="24" CornerRadius="12" Background="{StaticResource LumenAccentGradientBrush}"                                                 IsHitTestVisible="False">
+                                            <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="#04241F" />
                                         </Border>
+
+                                        <!-- Hover layer: actions only when the pointer is over the card -->
+                                        <Grid x:Name="HoverLayer" Opacity="0" Background="#66020B0C">
+                                            <Grid.OpacityTransition>
+                                                <ScalarTransition Duration="0:0:0.18" />
+                                            </Grid.OpacityTransition>
+                                            <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <Button x:ConnectionId='106' Style="{StaticResource LumenOverlayIconButtonStyle}"                                            >
+                                                    <FontIcon Glyph="&#xE7B3;" FontSize="14" />
+                                                    <ToolTipService.ToolTip>Details</ToolTipService.ToolTip>
+                                                </Button>
+                                                <Button x:ConnectionId='107' Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="18" Padding="16,8"                                                                                                   />
+                                            </StackPanel>
+                                        </Grid>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </GridView.ItemTemplate>
                     </GridView>
-                </Grid>
 
-                <Border Grid.Row="3"
-                        Margin="0,4,0,0"
-                        HorizontalAlignment="Center"
-                        Background="{ThemeResource LumenSurfaceBrush}"
-                        BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="18"
-                        Padding="5">
-                    <Grid MinWidth="190" MaxWidth="220">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <Button x:ConnectionId='67' x:Name="PrevPageButton" Width="30" Height="28" Padding="0" Content="‹" Style="{StaticResource LumenGlassButtonStyle}"                           />
-                        <TextBlock x:ConnectionId='68' x:Name="PageSummaryTextBlock" Grid.Column="1" Style="{StaticResource LumenMutedStyle}" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="10" />
-                        <Button x:ConnectionId='69' x:Name="NextPageButton" Grid.Column="2" Width="30" Height="28" Padding="0" Content="›" Style="{StaticResource LumenGlassButtonStyle}"                           />
-                    </Grid>
-                </Border>
+                    <!-- Compact pagination that floats; hidden when everything fits on one page -->
+                    <Border x:ConnectionId='97' x:Name="PaginationPill"
+                            VerticalAlignment="Bottom"
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,10"
+                            Style="{StaticResource LumenGlassPanelStyle}"
+                            CornerRadius="18"
+                            Padding="4"
+                            Visibility="Collapsed">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Button x:ConnectionId='98' x:Name="PrevPageButton" Style="{StaticResource LumenIconButtonStyle}" Width="28" Height="28" CornerRadius="14"                          >
+                                <FontIcon Glyph="&#xE76B;" FontSize="10" />
+                            </Button>
+                            <TextBlock x:ConnectionId='99' x:Name="PageSummaryTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="11" VerticalAlignment="Center" MinWidth="34" TextAlignment="Center" />
+                            <Button x:ConnectionId='100' x:Name="NextPageButton" Style="{StaticResource LumenIconButtonStyle}" Width="28" Height="28" CornerRadius="14"                          >
+                                <FontIcon Glyph="&#xE76C;" FontSize="10" />
+                            </Button>
+                        </StackPanel>
+                    </Border>
+                </Grid>
             </Grid>
 
             <!-- ========================= LIBRARY ========================= -->
-            <Grid x:ConnectionId='8' x:Name="LibraryContentGrid"
+            <Grid x:ConnectionId='16' x:Name="LibraryContentGrid"
                   Visibility="Collapsed"
-                  Padding="20,6,20,10"
+                  Padding="20,2,20,0"
                   AllowDrop="True"
                                            
                                    >
-
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <Border Grid.Row="0"
-                        Background="{ThemeResource LumenSurfaceBrush}"
-                        BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="24"
-                        Padding="18,13"
-                        Margin="0,0,0,10">
-                    <Grid>
+                <Border Grid.Row="0" Style="{StaticResource LumenGlassCardStyle}" CornerRadius="26" Padding="20,12" Margin="0,0,0,10">
+                    <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="1">
-                            <TextBlock Text="Your collection"
-                                       Style="{StaticResource LumenHeadingStyle}"
-                                       FontSize="20" />
-                            <TextBlock Text="Big visuals first. Everything else stays out of the way."
-                                       Style="{StaticResource LumenMutedStyle}"
-                                       FontSize="11" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Your collection" Style="{StaticResource LumenHeadingStyle}" FontSize="19" />
+                            <TextBlock Text="Drop files anywhere here to import them." Style="{StaticResource LumenMutedStyle}" FontSize="11" />
                         </StackPanel>
-                        <Button x:ConnectionId='60' x:Name="StorageButton"
-                                Grid.Column="1"
-                                Style="{StaticResource LumenGlassButtonStyle}"
-                                Margin="8,0,0,0">
+                        <Button x:ConnectionId='87' x:Name="StorageButton" Grid.Column="1" Style="{StaticResource LumenGlassButtonStyle}" CornerRadius="20">
                             <StackPanel Orientation="Horizontal" Spacing="7">
                                 <FontIcon Glyph="&#xE7B8;" FontSize="14" />
                                 <TextBlock Text="Storage" />
                             </StackPanel>
                             <Button.Flyout>
-                                <Flyout x:ConnectionId='62' x:Name="StorageFlyout">
+                                <Flyout x:ConnectionId='89' x:Name="StorageFlyout">
                                     <StackPanel Spacing="10" Width="330" Padding="8">
                                         <TextBlock Text="Storage management" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                        <TextBlock x:ConnectionId='63' x:Name="StorageRootTextBlock" TextWrapping="Wrap" Style="{StaticResource LumenMutedStyle}" FontSize="11" />
-                                        <TextBlock x:ConnectionId='64' x:Name="StorageUsageTextBlock" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
+                                        <TextBlock x:ConnectionId='90' x:Name="StorageRootTextBlock" TextWrapping="Wrap" Style="{StaticResource LumenMutedStyle}" FontSize="11" />
+                                        <TextBlock x:ConnectionId='91' x:Name="StorageUsageTextBlock" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
                                         <MenuFlyoutSeparator />
-                                        <Button x:ConnectionId='65' x:Name="ReconcileButton" Content="Reconcile &amp; rebuild library" HorizontalAlignment="Stretch"                            />
-                                        <Button x:ConnectionId='66' x:Name="ChangeStorageRootButton" Content="Change storage root…" HorizontalAlignment="Stretch"                                    />
+                                        <Button x:ConnectionId='92' x:Name="ReconcileButton" Content="Reconcile &amp; rebuild library" HorizontalAlignment="Stretch"                            />
+                                        <Button x:ConnectionId='93' x:Name="ChangeStorageRootButton" Content="Change storage root…" HorizontalAlignment="Stretch"                                    />
                                     </StackPanel>
                                 </Flyout>
                             </Button.Flyout>
                         </Button>
-                        <Button x:ConnectionId='61' Grid.Column="2"
-                                Style="{StaticResource LumenAccentButtonStyle}"
-                                Margin="8,0,0,0"
-                                                             >
+                        <Button x:ConnectionId='88' Grid.Column="2" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20"                              >
                             <StackPanel Orientation="Horizontal" Spacing="7">
-                                <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                <FontIcon Glyph="&#xE710;" FontSize="13" />
                                 <TextBlock Text="Add wallpaper" />
                             </StackPanel>
                         </Button>
                     </Grid>
                 </Border>
 
-                <StackPanel x:ConnectionId='49' x:Name="LoadingPanel"
-                            Grid.RowSpan="2"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            Spacing="10"
-                            Visibility="Collapsed">
+                <StackPanel x:ConnectionId='70' x:Name="LoadingPanel" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10" Visibility="Collapsed">
                     <ProgressRing IsActive="True" Width="44" Height="44" />
                     <TextBlock Text="Loading your collection…" Style="{StaticResource LumenMutedStyle}" />
                 </StackPanel>
 
-                <StackPanel x:ConnectionId='50' x:Name="EmptyStatePanel"
-                            Grid.RowSpan="2"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Center"
-                            MaxWidth="430"
-                            Spacing="12"
-                            Visibility="Collapsed">
-                    <Border Width="100" Height="100" CornerRadius="34" Background="{StaticResource LumenAccentGradientBrush}" HorizontalAlignment="Center">
-                        <TextBlock Text="✦" Foreground="White" FontSize="48" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <StackPanel x:ConnectionId='71' x:Name="EmptyStatePanel" Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="430" Spacing="12" Visibility="Collapsed">
+                    <Border Width="92" Height="92" CornerRadius="46" Background="{StaticResource LumenAccentGradientBrush}" HorizontalAlignment="Center">
+                        <FontIcon Glyph="&#xE8F1;" FontSize="38" Foreground="#04241F" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>
-                    <TextBlock Text="Your library is still a blank canvas"
-                               Style="{StaticResource LumenHeadingStyle}"
-                               FontSize="24"
-                               HorizontalAlignment="Center" />
-                    <TextBlock Text="Drop a wallpaper here or pull one from Explore. Lumen will generate and reuse thumbnails so you can pick by sight, not by filename."
-                               Style="{StaticResource LumenMutedStyle}"
-                               TextAlignment="Center"
-                               TextWrapping="Wrap" />
-                    <Button x:ConnectionId='59' Content="Import wallpapers"
-                            Style="{StaticResource LumenAccentButtonStyle}"
-                            HorizontalAlignment="Center"
-                                                          />
+                    <TextBlock Text="Your library is a blank canvas" Style="{StaticResource LumenHeadingStyle}" FontSize="23" HorizontalAlignment="Center" />
+                    <TextBlock Text="Drop a wallpaper here, or download one from Explore. Thumbnails make it easy to pick by sight."
+                               Style="{StaticResource LumenMutedStyle}" TextAlignment="Center" TextWrapping="Wrap" />
+                    <Button x:ConnectionId='86' Content="Import wallpapers" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20" HorizontalAlignment="Center"                               />
                 </StackPanel>
 
-                <GridView x:ConnectionId='51' x:Name="WallpaperGridView"
+                <GridView x:ConnectionId='72' x:Name="WallpaperGridView"
                           Grid.Row="1"
-                          SelectionMode="Single"
-                          IsItemClickEnabled="True"
-                                                            
-                          Padding="2"
+                          SelectionMode="None"
+                          IsItemClickEnabled="False"
+                          Padding="0,0,0,12"
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <GridView.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <ItemsWrapGrid MaximumRowsOrColumns="3" Orientation="Horizontal" />
+                            <ItemsWrapGrid Orientation="Horizontal" />
                         </ItemsPanelTemplate>
                     </GridView.ItemsPanel>
                     <GridView.ItemTemplate>
                         <DataTemplate                                       >
-                            <Border x:ConnectionId='53' Width="350"
-                                    Height="258"
-                                    Margin="4"
-                                    CornerRadius="23"
-                                    Background="{ThemeResource LumenSurfaceBrush}"
+                            <Border x:ConnectionId='74' Width="300"
+                                    Height="188"
+                                    Margin="6"
+                                    CornerRadius="22"
                                     BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                                    BorderThickness="1">
+                                    BorderThickness="1"
+                                                                         
+                                                                       >
+                                <Border.Background>
+                                    <ImageBrush x:ConnectionId='75'                                       Stretch="UniformToFill" />
+                                </Border.Background>
                                 <Grid>
-                                    <Border CornerRadius="25" Background="{StaticResource LumenAmbientGradientBrush}" />
-                                    <Image x:ConnectionId='54'                                 Stretch="UniformToFill" Opacity="0.98" />
-                                    <Rectangle Fill="#B80B1020" />
+                                    <Border VerticalAlignment="Bottom" Height="80" CornerRadius="0,0,21,21" Background="{StaticResource LumenCardScrimBrush}" IsHitTestVisible="False" />
 
-                                    <Border HorizontalAlignment="Right"
-                                            VerticalAlignment="Top"
-                                            Margin="12"
-                                            Background="#AAFFFFFF"
-                                            CornerRadius="11"
-                                            Padding="9,5">
-                                        <TextBlock x:ConnectionId='58'                          
-                                                   FontSize="10"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="#20293A" />
+                                    <StackPanel VerticalAlignment="Bottom" Margin="16,0,16,12" IsHitTestVisible="False">
+                                        <TextBlock x:ConnectionId='84'                       Foreground="White" FontFamily="Segoe UI Variable Display" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock x:ConnectionId='85'                             Foreground="#CCFFFFFF" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+
+                                    <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="12" CornerRadius="12" Padding="8,4" Background="#66041516" BorderBrush="#33FFFFFF" BorderThickness="1" IsHitTestVisible="False">
+                                        <TextBlock x:ConnectionId='83'                           FontSize="10" FontWeight="SemiBold" Foreground="White" />
                                     </Border>
 
-                                    <Border VerticalAlignment="Bottom"
-                                            Margin="10"
-                                            Padding="16"
-                                            CornerRadius="19"
-                                            Background="#DF0B1020"
-                                            BorderBrush="#45FFFFFF"
-                                            BorderThickness="1">
-                                        <Grid>
-                                            <Grid.RowDefinitions>
-                                                <RowDefinition Height="Auto" />
-                                                <RowDefinition Height="Auto" />
-                                            </Grid.RowDefinitions>
-                                            <TextBlock x:ConnectionId='55'                      
-                                                       Style="{StaticResource LumenHeadingStyle}"
-                                                       Foreground="White"
-                                                       FontSize="18"
-                                                       TextTrimming="CharacterEllipsis" />
-                                            <Grid Grid.Row="1" Margin="0,7,0,0">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock x:ConnectionId='56'                            
-                                                           Foreground="#BDCADB"
-                                                           FontSize="11"
-                                                           VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis" />
-                                                <Button x:ConnectionId='57' Grid.Column="1"
-                                                        Content="Set wallpaper"
-                                                                      
-                                                                                    
-                                                        Style="{StaticResource LumenAccentButtonStyle}"
-                                                        Padding="12,7" />
-                                            </Grid>
-                                        </Grid>
-                                    </Border>
+                                    <!-- Per-wallpaper playback controls, shown while this wallpaper is the active one -->
+                                    <StackPanel x:ConnectionId='76' Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="10"                                            >
+                                        <Border Background="{StaticResource LumenAccentGradientBrush}" CornerRadius="12" Padding="8,4" VerticalAlignment="Center">
+                                            <TextBlock Text="NOW PLAYING" FontSize="9" FontWeight="Bold" Foreground="#04241F" />
+                                        </Border>
+                                        <Button x:ConnectionId='79' Style="{StaticResource LumenOverlayIconButtonStyle}" Width="32" Height="32" CornerRadius="16"                           >
+                                            <FontIcon x:ConnectionId='82'                                          FontSize="13" />
+                                        </Button>
+                                        <Button x:ConnectionId='80' Style="{StaticResource LumenOverlayIconButtonStyle}" Width="32" Height="32" CornerRadius="16"                          >
+                                            <FontIcon x:ConnectionId='81'                                         FontSize="13" />
+                                        </Button>
+                                    </StackPanel>
+
+                                    <Grid x:Name="HoverLayer" Opacity="0" Background="#66020B0C">
+                                        <Grid.OpacityTransition>
+                                            <ScalarTransition Duration="0:0:0.18" />
+                                        </Grid.OpacityTransition>
+                                        <Button x:ConnectionId='78' Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20" Padding="20,9" HorizontalAlignment="Center" VerticalAlignment="Center"                                            >
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <FontIcon Glyph="&#xE768;" FontSize="12" />
+                                                <TextBlock Text="Set wallpaper" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -644,149 +576,136 @@
                 </GridView>
             </Grid>
 
-            <!-- ========================= SETTINGS DRAWER ========================= -->
-            <Grid x:ConnectionId='9' x:Name="SettingsOverlay"
-                  Visibility="Collapsed"
-                  Background="#3A0B1415"
-                  Canvas.ZIndex="80">
-                <Border x:ConnectionId='23' x:Name="SettingsPanel"
-                        Width="520"
+            <!-- ========================= SETTINGS ========================= -->
+            <Grid x:ConnectionId='17' x:Name="SettingsOverlay" Visibility="Collapsed" Canvas.ZIndex="80">
+                <Border x:ConnectionId='35' Background="{ThemeResource LumenScrimBrush}"                                   />
+                <Border x:ConnectionId='36' x:Name="SettingsPanel"
+                        Width="560"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Stretch"
-                        Margin="0,0,18,0"
-                        CornerRadius="24"
-                        Background="{ThemeResource LumenElevatedBrush}"
-                        BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                        BorderThickness="1">
+                        Margin="0,6,20,10"
+                        Style="{StaticResource LumenGlassPanelStyle}">
                     <Grid>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Drawer header -->
-                        <Grid Grid.Row="0" Padding="24,22,24,16">
+                        <Grid Grid.Row="0" Padding="26,24,22,12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="3">
-                                <StackPanel Orientation="Horizontal" Spacing="10">
-                                    <Border Width="38" Height="38" CornerRadius="13" Background="{StaticResource LumenAccentGradientBrush}">
-                                        <FontIcon Glyph="&#xE713;" Foreground="White" FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Border>
-                                    <StackPanel>
-                                        <TextBlock Text="Settings" Style="{StaticResource LumenHeadingStyle}" FontSize="24" />
-                                        <TextBlock Text="Tune Lumen until it feels like yours."
-                                                   Style="{StaticResource LumenMutedStyle}"
-                                                   FontSize="11" />
-                                    </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="14">
+                                <Border Width="44" Height="44" CornerRadius="16" Background="{StaticResource LumenAccentGradientBrush}">
+                                    <FontIcon Glyph="&#xE713;" Foreground="#04241F" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="Settings" Style="{StaticResource LumenHeadingStyle}" FontSize="24" />
+                                    <TextBlock Text="Make Lumen feel like yours." Style="{StaticResource LumenMutedStyle}" FontSize="12" />
                                 </StackPanel>
                             </StackPanel>
-                            <Button x:ConnectionId='48' Grid.Column="1"
-                                    Style="{StaticResource LumenIconButtonStyle}"
-                                                                  >
-                                <FontIcon Glyph="&#xE711;" FontSize="14" />
+                            <Button x:ConnectionId='69' Grid.Column="1" Style="{StaticResource LumenIconButtonStyle}"                               >
+                                <FontIcon Glyph="&#xE711;" FontSize="13" />
                                 <ToolTipService.ToolTip>Close settings</ToolTipService.ToolTip>
                             </Button>
                         </Grid>
 
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Padding="24,0,24,24" Spacing="13">
+                        <!-- Section tabs -->
+                        <Border Grid.Row="1" Margin="22,0,22,10" Background="{ThemeResource LumenChipBrush}" CornerRadius="20" Padding="4">
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button x:ConnectionId='65' x:Name="SettingsTabGeneral" Tag="General" Style="{StaticResource LumenNavButtonActiveStyle}" HorizontalAlignment="Stretch" Padding="6,8"                             >
+                                    <StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE713;" FontSize="12" /><TextBlock Text="General" FontSize="12" /></StackPanel>
+                                </Button>
+                                <Button x:ConnectionId='66' x:Name="SettingsTabAppearance" Grid.Column="1" Tag="Appearance" Style="{StaticResource LumenNavButtonStyle}" HorizontalAlignment="Stretch" Padding="6,8"                             >
+                                    <StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE790;" FontSize="12" /><TextBlock Text="Look" FontSize="12" /></StackPanel>
+                                </Button>
+                                <Button x:ConnectionId='67' x:Name="SettingsTabPlayback" Grid.Column="2" Tag="Playback" Style="{StaticResource LumenNavButtonStyle}" HorizontalAlignment="Stretch" Padding="6,8"                             >
+                                    <StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE768;" FontSize="12" /><TextBlock Text="Playback" FontSize="12" /></StackPanel>
+                                </Button>
+                                <Button x:ConnectionId='68' x:Name="SettingsTabPerformance" Grid.Column="3" Tag="Performance" Style="{StaticResource LumenNavButtonStyle}" HorizontalAlignment="Stretch" Padding="6,8"                             >
+                                    <StackPanel Orientation="Horizontal" Spacing="6"><FontIcon Glyph="&#xE9D9;" FontSize="12" /><TextBlock Text="Speed" FontSize="12" /></StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                            <Grid Padding="22,0,22,18">
                                 <!-- General -->
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="14">
-                                        <StackPanel Orientation="Horizontal" Spacing="9">
-                                            <TextBlock Text="◉" FontSize="16" Foreground="#35BFAE" />
-                                            <StackPanel>
-                                                <TextBlock Text="General" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                                <TextBlock Text="Identity and startup behavior" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+                                <StackPanel x:ConnectionId='40' x:Name="SettingsGeneralSection" Spacing="10">
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="200" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Display name" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Used for your local profile" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <TextBox x:ConnectionId='64' x:Name="SettingsDisplayNameTextBox" Grid.Column="1" CornerRadius="12"                                            />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Start with Windows" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Launch quietly in the background at sign-in" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='63' x:Name="SettingsStartWithWindowsToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                             />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Start minimized to tray" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Stay out of the way after sign-in" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='62' x:Name="SettingsStartMinimizedToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                           />
+                                        </Grid>
+                                    </Border>
+                                    <Border Background="{ThemeResource LumenAccentSoftBrush}" CornerRadius="16" Padding="16,12">
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <FontIcon Glyph="&#xE946;" FontSize="16" Foreground="{ThemeResource LumenTextBrush}" VerticalAlignment="Top" />
+                                            <StackPanel Spacing="2">
+                                                <TextBlock Text="Closing Lumen" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="The window hides to the system tray. Use the tray menu to exit completely." Style="{StaticResource SettingHintStyle}" MaxWidth="400" />
                                             </StackPanel>
                                         </StackPanel>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="210" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Display name" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Used for your local profile" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
-                                            </StackPanel>
-                                            <TextBox x:ConnectionId='47' x:Name="SettingsDisplayNameTextBox" Grid.Column="1"                                            />
-                                        </Grid>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Start with Windows" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Launch in the background when Windows starts" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                            <ToggleSwitch x:ConnectionId='46' x:Name="SettingsStartWithWindowsToggle" Grid.Column="1"                                             />
-                                        </Grid>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Start minimized to tray" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Stay quiet after sign-in" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
-                                            </StackPanel>
-                                            <ToggleSwitch x:ConnectionId='45' x:Name="SettingsStartMinimizedToggle" Grid.Column="1"                                           />
-                                        </Grid>
-
-                                        <Border Background="{ThemeResource LumenAccentSoftBrush}" CornerRadius="14" Padding="11,9">
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Closing Lumen" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="The window closes to the system tray. Use the tray menu to exit Lumen completely." Style="{StaticResource LumenMutedStyle}" FontSize="10.5" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                </Border>
+                                    </Border>
+                                </StackPanel>
 
                                 <!-- Appearance -->
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="14">
-                                        <StackPanel Orientation="Horizontal" Spacing="9">
-                                            <TextBlock Text="✦" FontSize="18" Foreground="#D28A54" />
-                                            <StackPanel>
-                                                <TextBlock Text="Appearance" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                                <TextBlock Text="Choose the visual personality" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+                                <StackPanel x:ConnectionId='41' x:Name="SettingsAppearanceSection" Spacing="10" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="190" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Theme" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Light, dark, or follow Windows" Style="{StaticResource SettingHintStyle}" />
                                             </StackPanel>
-                                        </StackPanel>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="190" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Theme" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Light, dark or follow Windows" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
-                                            </StackPanel>
-                                            <ComboBox x:ConnectionId='44' x:Name="SettingsThemeComboBox" Grid.Column="1" Style="{StaticResource LumenSettingsComboBoxStyle}"                                          >
+                                            <ComboBox x:ConnectionId='61' x:Name="SettingsThemeComboBox" Grid.Column="1" Style="{StaticResource LumenSettingsComboBoxStyle}"                                          >
                                                 <ComboBoxItem Content="Light" />
                                                 <ComboBoxItem Content="Dark" />
                                                 <ComboBoxItem Content="System" />
                                             </ComboBox>
                                         </Grid>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="190" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Wallpaper scaling" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Default fit mode for newly applied wallpapers" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" TextWrapping="Wrap" />
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="190" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Wallpaper scaling" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Default fit mode for new wallpapers" Style="{StaticResource SettingHintStyle}" />
                                             </StackPanel>
-                                            <ComboBox x:ConnectionId='43' x:Name="SettingsScalingComboBox" Grid.Column="1" Style="{StaticResource LumenSettingsComboBoxStyle}"                                            >
+                                            <ComboBox x:ConnectionId='60' x:Name="SettingsScalingComboBox" Grid.Column="1" Style="{StaticResource LumenSettingsComboBoxStyle}"                                            >
                                                 <ComboBoxItem Content="Fill" />
                                                 <ComboBoxItem Content="Fit" />
                                                 <ComboBoxItem Content="Stretch" />
@@ -794,122 +713,172 @@
                                                 <ComboBoxItem Content="Span" />
                                             </ComboBox>
                                         </Grid>
-                                    </StackPanel>
-                                </Border>
+                                    </Border>
+                                </StackPanel>
 
                                 <!-- Playback -->
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="14">
-                                        <StackPanel Orientation="Horizontal" Spacing="9">
-                                            <TextBlock Text="▶" FontSize="16" Foreground="#E3A35E" />
-                                            <StackPanel>
-                                                <TextBlock Text="Playback" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                                <TextBlock Text="Smoothness versus resource usage" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+                                <StackPanel x:ConnectionId='42' x:Name="SettingsPlaybackSection" Spacing="10" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Target FPS" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="15–240 frames per second" Style="{StaticResource SettingHintStyle}" />
                                             </StackPanel>
-                                        </StackPanel>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="190" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Global target FPS" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="15–240 FPS" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
-                                            </StackPanel>
-                                            <NumberBox x:ConnectionId='42' x:Name="SettingsFpsNumberBox"
-                                                       Grid.Column="1"
-                                                       Minimum="15"
-                                                       Maximum="240"
-                                                       SmallChange="5"
-                                                       SpinButtonPlacementMode="Compact"
-                                                                                           />
+                                            <NumberBox x:ConnectionId='59' x:Name="SettingsFpsNumberBox" Grid.Column="1" Minimum="15" Maximum="240" SmallChange="5" SpinButtonPlacementMode="Compact" CornerRadius="12"                                     />
                                         </Grid>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Playback defaults -->
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="14">
-                                        <StackPanel Orientation="Horizontal" Spacing="9">
-                                            <TextBlock Text="◒" FontSize="18" Foreground="#35C9B5" />
-                                            <StackPanel>
-                                                <TextBlock Text="Playback defaults" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                                <TextBlock Text="Fine-tune how new wallpapers behave" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="200" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Default volume" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Applied to new video wallpapers" Style="{StaticResource SettingHintStyle}" />
                                             </StackPanel>
-                                        </StackPanel>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="190" /></Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2"><TextBlock Text="Default volume" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><TextBlock Text="Applied to new video wallpapers" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" /></StackPanel>
-                                            <Slider x:ConnectionId='41' x:Name="SettingsDefaultVolumeSlider" Grid.Column="1" Minimum="0" Maximum="100" StepFrequency="5"                                               />
+                                            <Slider x:ConnectionId='58' x:Name="SettingsDefaultVolumeSlider" Grid.Column="1" Minimum="0" Maximum="100" StepFrequency="5"                                               />
                                         </Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Start muted" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='40' x:Name="SettingsDefaultMutedToggle" Grid.Column="1"                                         /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="170" /></Grid.ColumnDefinitions><StackPanel Spacing="2"><TextBlock Text="Playback speed" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><TextBlock Text="0.25× to 2×" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" /></StackPanel><NumberBox x:ConnectionId='39' x:Name="SettingsPlaybackSpeedNumberBox" Grid.Column="1" Minimum="0.25" Maximum="2" SmallChange="0.25" SpinButtonPlacementMode="Compact"                                               /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2"><TextBlock Text="Loop wallpaper" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><TextBlock Text="Restart media when it reaches the end" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" /></StackPanel><ToggleSwitch x:ConnectionId='38' x:Name="SettingsLoopToggle" Grid.Column="1"                                 /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions><TextBlock Text="Brightness" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><Slider x:ConnectionId='37' x:Name="SettingsBrightnessSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                            /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions><TextBlock Text="Contrast" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><Slider x:ConnectionId='36' x:Name="SettingsContrastSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                          /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions><TextBlock Text="Saturation" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><Slider x:ConnectionId='35' x:Name="SettingsSaturationSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                            /></Grid>
-                                    </StackPanel>
-                                </Border>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Start muted" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="New wallpapers begin without sound" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='57' x:Name="SettingsDefaultMutedToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                         />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Playback speed" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="0.25× to 2×" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <NumberBox x:ConnectionId='56' x:Name="SettingsPlaybackSpeedNumberBox" Grid.Column="1" Minimum="0.25" Maximum="2" SmallChange="0.25" SpinButtonPlacementMode="Compact" CornerRadius="12"                                               />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Loop wallpaper" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Restart media when it ends" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='55' x:Name="SettingsLoopToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                 />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Text="Color tuning" Style="{StaticResource SettingTitleStyle}" />
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="90" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <TextBlock Text="Brightness" Style="{StaticResource SettingHintStyle}" VerticalAlignment="Center" />
+                                                <Slider x:ConnectionId='54' x:Name="SettingsBrightnessSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                            />
+                                            </Grid>
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="90" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <TextBlock Text="Contrast" Style="{StaticResource SettingHintStyle}" VerticalAlignment="Center" />
+                                                <Slider x:ConnectionId='53' x:Name="SettingsContrastSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                          />
+                                            </Grid>
+                                            <Grid ColumnSpacing="12">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="90" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <TextBlock Text="Saturation" Style="{StaticResource SettingHintStyle}" VerticalAlignment="Center" />
+                                                <Slider x:ConnectionId='52' x:Name="SettingsSaturationSlider" Grid.Column="1" Minimum="0" Maximum="200" StepFrequency="5"                                            />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
 
                                 <!-- Performance -->
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1" CornerRadius="20" Padding="18">
-                                    <StackPanel Spacing="14">
-                                        <StackPanel Orientation="Horizontal" Spacing="9">
-                                            <TextBlock Text="◌" FontSize="19" Foreground="#56C89B" />
-                                            <StackPanel>
-                                                <TextBlock Text="Performance" Style="{StaticResource LumenHeadingStyle}" FontSize="17" />
-                                                <TextBlock Text="Pause decoding when the desktop is covered" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Pause on fullscreen apps" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='34' x:Name="SettingsPauseFullscreenToggle" Grid.Column="1"                                            /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Pause on maximized windows" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='33' x:Name="SettingsPauseMaximizedToggle" Grid.Column="1"                                           /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Pause on battery" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='32' x:Name="SettingsPauseBatteryToggle" Grid.Column="1"                                         /></Grid>
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Pause when covered" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='31' x:Name="SettingsPauseCoveredToggle" Grid.Column="1"                                         /></Grid>
-
-                                        <Grid>
+                                <StackPanel x:ConnectionId='43' x:Name="SettingsPerformanceSection" Spacing="10" Visibility="Collapsed">
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
                                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2">
-                                                <TextBlock Text="Covered threshold" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" />
-                                                <TextBlock Text="Pause once this share of a monitor is hidden" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Pause on fullscreen apps" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Games and video players" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='51' x:Name="SettingsPauseFullscreenToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                            />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Pause on maximized windows" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Nothing to see behind them" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='50' x:Name="SettingsPauseMaximizedToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                           />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Pause on battery" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Save power on laptops" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='49' x:Name="SettingsPauseBatteryToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                         />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Pause when covered" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Stop decoding when the desktop is hidden" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='48' x:Name="SettingsPauseCoveredToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                         />
+                                        </Grid>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Covered threshold" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Pause once this share of a monitor is hidden" Style="{StaticResource SettingHintStyle}" />
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                                                <Slider x:ConnectionId='29' x:Name="SettingsCoverageSlider" Minimum="50" Maximum="100" StepFrequency="5" Width="170"                                          />
-                                                <TextBlock x:ConnectionId='30' x:Name="SettingsCoverageValueTextBlock" Text="85%" Width="40" VerticalAlignment="Center" />
+                                                <Slider x:ConnectionId='46' x:Name="SettingsCoverageSlider" Minimum="50" Maximum="100" StepFrequency="5" Width="150"                                          />
+                                                <TextBlock x:ConnectionId='47' x:Name="SettingsCoverageValueTextBlock" Text="85%" Width="40" VerticalAlignment="Center" Style="{StaticResource LumenBodyStyle}" />
                                             </StackPanel>
                                         </Grid>
-
-                                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><TextBlock Text="Mute audio when covered" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><ToggleSwitch x:ConnectionId='28' x:Name="SettingsMuteCoveredToggle" Grid.Column="1"                                        /></Grid>
-
-                                        <Grid>
-                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="170" /></Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="2"><TextBlock Text="Performance check interval" Style="{StaticResource LumenBodyStyle}" FontWeight="SemiBold" /><TextBlock Text="250–5000 ms" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" /></StackPanel>
-                                            <NumberBox x:ConnectionId='27' x:Name="SettingsHeartbeatNumberBox" Grid.Column="1" Minimum="250" Maximum="5000" SmallChange="250" SpinButtonPlacementMode="Compact"                                           />
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Mute audio when covered" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="Silence hidden wallpapers" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <ToggleSwitch x:ConnectionId='45' x:Name="SettingsMuteCoveredToggle" Grid.Column="1" OnContent="" OffContent="" MinWidth="0"                                        />
                                         </Grid>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
+                                    </Border>
+                                    <Border Style="{StaticResource SettingRowStyle}">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="150" /></Grid.ColumnDefinitions>
+                                            <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                <TextBlock Text="Check interval" Style="{StaticResource SettingTitleStyle}" />
+                                                <TextBlock Text="250–5000 ms" Style="{StaticResource SettingHintStyle}" />
+                                            </StackPanel>
+                                            <NumberBox x:ConnectionId='44' x:Name="SettingsHeartbeatNumberBox" Grid.Column="1" Minimum="250" Maximum="5000" SmallChange="250" SpinButtonPlacementMode="Compact" CornerRadius="12"                                           />
+                                        </Grid>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
                         </ScrollViewer>
 
-                        <Border Grid.Row="2"
-                                BorderBrush="{ThemeResource LumenSubtleBorderBrush}"
-                                BorderThickness="0,1,0,0"
-                                Background="{ThemeResource LumenSolidSurfaceBrush}"
-                                Padding="20,14">
-                            <Grid>
+                        <Border Grid.Row="3" BorderBrush="{ThemeResource LumenSubtleBorderBrush}" BorderThickness="0,1,0,0" Padding="22,14">
+                            <Grid ColumnSpacing="8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock x:ConnectionId='24' x:Name="SettingsStatusTextBlock"
-                                           Text=""
-                                           VerticalAlignment="Center"
-                                           Style="{StaticResource LumenMutedStyle}"
-                                           FontSize="10.5" />
-                                <Button x:ConnectionId='25' Grid.Column="1" Content="Cancel"                                Margin="8,0,0,0" Style="{StaticResource LumenGlassButtonStyle}" />
-                                <Button x:ConnectionId='26' Grid.Column="2" Content="Save changes"                               Margin="8,0,0,0" Style="{StaticResource LumenAccentButtonStyle}" />
+                                <TextBlock x:ConnectionId='37' x:Name="SettingsStatusTextBlock" VerticalAlignment="Center" Style="{StaticResource LumenMutedStyle}" FontSize="11" />
+                                <Button x:ConnectionId='38' Grid.Column="1" Content="Cancel" Style="{StaticResource LumenGlassButtonStyle}" CornerRadius="20" Padding="18,9"                                />
+                                <Button x:ConnectionId='39' Grid.Column="2" Content="Save changes" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="20" Padding="20,9"                               />
                             </Grid>
                         </Border>
                     </Grid>
@@ -917,85 +886,119 @@
             </Grid>
 
             <!-- ========================= DETAILS ========================= -->
-            <Grid x:ConnectionId='10' x:Name="DetailsModalOverlay"
-                  Visibility="Collapsed"
-                  Canvas.ZIndex="70">
-                <Border x:ConnectionId='11' Background="#3A0B1415"                                  />
-                <Border x:ConnectionId='12' x:Name="DetailsPanel"
-                        Width="520"
-                        HorizontalAlignment="Right"
-                        VerticalAlignment="Stretch"
-                        Margin="0,14,14,14"
-                        CornerRadius="24"
-                        Background="{ThemeResource LumenElevatedBrush}"
-                        BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                        BorderThickness="1"
-                        Padding="16">
+            <Grid x:ConnectionId='18' x:Name="DetailsModalOverlay" Visibility="Collapsed" Canvas.ZIndex="70">
+                <Border x:ConnectionId='19' Background="{ThemeResource LumenScrimBrush}"                                  />
+                <Border x:ConnectionId='20' x:Name="DetailsPanel"
+                        Width="940"
+                        MaxWidth="1100"
+                        Height="520"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Margin="24"
+                        Style="{StaticResource LumenGlassPanelStyle}"
+                        CornerRadius="30"
+                                                     >
                     <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="220" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0" Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2">
-                                <TextBlock x:ConnectionId='21' x:Name="DetailsTitleTextBlock" Style="{StaticResource LumenHeadingStyle}" FontSize="21" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:ConnectionId='22' x:Name="DetailsAuthorTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="11" />
-                            </StackPanel>
-                            <Button x:ConnectionId='20' Grid.Column="1" Style="{StaticResource LumenIconButtonStyle}"                              >
-                                <FontIcon Glyph="&#xE711;" FontSize="14" />
-                                <ToolTipService.ToolTip>Close</ToolTipService.ToolTip>
-                            </Button>
-                        </Grid>
-                        <Border x:ConnectionId='13' Grid.Row="1" CornerRadius="19" Background="#091011" BorderBrush="{ThemeResource LumenGlassBorderBrush}" BorderThickness="1"                                >
-                            <Image x:ConnectionId='19' x:Name="DetailsPreviewImage" Stretch="UniformToFill" />
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.55*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border x:ConnectionId='21' x:Name="DetailsPreviewBorder" Grid.Column="0" Margin="14" CornerRadius="22">
+                            <Border.Background>
+                                <ImageBrush x:ConnectionId='34' x:Name="DetailsPreviewBrush" Stretch="UniformToFill" />
+                            </Border.Background>
                         </Border>
-                        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                            <StackPanel Spacing="10" Margin="0,12,0,12">
-                            <TextBlock x:ConnectionId='16' x:Name="DetailsDescriptionTextBlock" Style="{StaticResource LumenBodyStyle}" TextWrapping="Wrap" MaxLines="4" />
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                                <Border Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenSubtleBorderBrush}" BorderThickness="1" CornerRadius="14" Padding="10,8" Margin="0,0,5,0">
-                                    <TextBlock x:ConnectionId='18' x:Name="DetailsSpecsTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" TextWrapping="Wrap" />
-                                </Border>
-                                <Border Grid.Column="1" Background="{ThemeResource LumenSurfaceBrush}" BorderBrush="{ThemeResource LumenSubtleBorderBrush}" BorderThickness="1" CornerRadius="14" Padding="10,8" Margin="5,0,0,0">
-                                    <TextBlock x:ConnectionId='17' x:Name="DetailsTagsTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" TextWrapping="Wrap" />
-                                </Border>
+
+                        <Grid Grid.Column="1" Padding="8,22,24,22">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <Grid Grid.Row="0" ColumnSpacing="8">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                <StackPanel Spacing="3">
+                                    <TextBlock x:ConnectionId='32' x:Name="DetailsTitleTextBlock" Style="{StaticResource LumenHeadingStyle}" FontSize="23" TextWrapping="Wrap" MaxLines="2" />
+                                    <TextBlock x:ConnectionId='33' x:Name="DetailsAuthorTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="12" />
+                                </StackPanel>
+                                <Button x:ConnectionId='31' Grid.Column="1" VerticalAlignment="Top" Style="{StaticResource LumenIconButtonStyle}" Width="34" Height="34" CornerRadius="17"                              >
+                                    <FontIcon Glyph="&#xE711;" FontSize="12" />
+                                    <ToolTipService.ToolTip>Close</ToolTipService.ToolTip>
+                                </Button>
                             </Grid>
+
+                            <StackPanel Grid.Row="1" Spacing="8" Margin="0,14,0,0">
+                                <Border Background="{ThemeResource LumenChipBrush}" CornerRadius="14" Padding="12,8" HorizontalAlignment="Left">
+                                    <TextBlock x:ConnectionId='30' x:Name="DetailsSpecsTextBlock" Style="{StaticResource LumenBodyStyle}" FontSize="12" FontWeight="SemiBold" />
+                                </Border>
+                                <TextBlock x:ConnectionId='29' x:Name="DetailsStatsTextBlock" Style="{StaticResource LumenMutedStyle}" FontSize="12" />
                             </StackPanel>
-                        </ScrollViewer>
-                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="7">
-                            <Button x:ConnectionId='14' x:Name="DetailsSubscribeButton" Content="Download"                                   Style="{StaticResource LumenAccentButtonStyle}" />
-                            <Button x:ConnectionId='15' x:Name="DetailsApplyButton" Content="Set wallpaper"                               Style="{StaticResource LumenGlassButtonStyle}" />
-                        </StackPanel>
+
+                            <ScrollViewer Grid.Row="2" Margin="0,12,0,12" VerticalScrollBarVisibility="Auto">
+                                <StackPanel Spacing="14">
+                                    <TextBlock x:ConnectionId='24' x:Name="DetailsDescriptionTextBlock" Style="{StaticResource LumenBodyStyle}" FontSize="13" TextWrapping="Wrap" />
+                                    <ScrollViewer HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+                                    <ItemsRepeater x:ConnectionId='25' x:Name="DetailsTagsRepeater">
+                                        <ItemsRepeater.Layout>
+                                            <StackLayout Orientation="Horizontal" Spacing="6" />
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate                      >
+                                                <Border x:ConnectionId='27' Background="{ThemeResource LumenAccentSoftBrush}" CornerRadius="13" Padding="10,4">
+                                                    <TextBlock x:ConnectionId='28'                 FontSize="11" Style="{StaticResource LumenBodyStyle}" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </ScrollViewer>
+
+                            <StackPanel Grid.Row="3" Spacing="8">
+                                <Button x:ConnectionId='22' x:Name="DetailsSubscribeButton" HorizontalAlignment="Stretch" Content="Download" Style="{StaticResource LumenAccentButtonStyle}" CornerRadius="22" Padding="16,12"                                   />
+                                <Button x:ConnectionId='23' x:Name="DetailsApplyButton" HorizontalAlignment="Stretch" Content="Set as wallpaper" Style="{StaticResource LumenGlassButtonStyle}" CornerRadius="22" Padding="16,12"                               />
+                            </StackPanel>
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>
-
         </Grid>
 
-        <!-- ========================= STATUS BAR ========================= -->
-        <Border Grid.Row="3"
-                Margin="18,0"
-                CornerRadius="15"
-                Background="{ThemeResource LumenSurfaceBrush}"
-                BorderBrush="{ThemeResource LumenGlassBorderBrush}"
-                BorderThickness="1"
-                Padding="13,0">
-            <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center">
-                    <Ellipse Width="7" Height="7" Fill="#39D99B" />
-                    <TextBlock x:ConnectionId='5' x:Name="StatusTextBlock" Text="Ready" Style="{StaticResource LumenMutedStyle}" FontSize="10.5" />
+        <!-- ========================= NOW PLAYING / STATUS ========================= -->
+        <Border Grid.Row="3" Margin="20,0,20,12" Style="{StaticResource LumenGlassCardStyle}" CornerRadius="24" Padding="16,0">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Ellipse Width="8" Height="8" Fill="#2EE6B8" />
+                    <TextBlock x:ConnectionId='13' x:Name="StatusTextBlock" Text="Ready" Style="{StaticResource LumenMutedStyle}" FontSize="12" MaxWidth="320" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <TextBlock x:ConnectionId='4' x:Name="StorageSummaryTextBlock"
-                           Grid.Column="1"
-                           Text="Storage: 0 MB"
-                           Style="{StaticResource LumenMutedStyle}"
-                           FontSize="10.5"
-                           VerticalAlignment="Center" />
+
+                <StackPanel x:ConnectionId='5' x:Name="NowPlayingPanel" Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                    <FontIcon Glyph="&#xE8D6;" FontSize="13" Foreground="{ThemeResource LumenMutedTextBrush}" />
+                    <TextBlock x:ConnectionId='7' x:Name="NowPlayingTitleTextBlock" Style="{StaticResource LumenBodyStyle}" FontSize="12" FontWeight="SemiBold" MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                    <Button x:ConnectionId='8' Style="{StaticResource LumenIconButtonStyle}" Width="32" Height="32" CornerRadius="16"                           >
+                        <FontIcon x:ConnectionId='12' x:Name="NowPlayingPauseIcon" Glyph="&#xE769;" FontSize="13" />
+                        <ToolTipService.ToolTip>Play / Pause</ToolTipService.ToolTip>
+                    </Button>
+                    <Button x:ConnectionId='9' Style="{StaticResource LumenIconButtonStyle}" Width="32" Height="32" CornerRadius="16"                          >
+                        <FontIcon x:ConnectionId='11' x:Name="NowPlayingMuteIcon" Glyph="&#xE767;" FontSize="13" />
+                        <ToolTipService.ToolTip>Mute / Unmute</ToolTipService.ToolTip>
+                    </Button>
+                    <Button x:ConnectionId='10' Style="{StaticResource LumenIconButtonStyle}" Width="32" Height="32" CornerRadius="16"                      >
+                        <FontIcon Glyph="&#xE71A;" FontSize="12" />
+                        <ToolTipService.ToolTip>Stop wallpaper</ToolTipService.ToolTip>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock x:ConnectionId='6' x:Name="StorageSummaryTextBlock" Grid.Column="2" Text="Storage: 0 MB" Style="{StaticResource LumenMutedStyle}" FontSize="12" VerticalAlignment="Center" />
             </Grid>
         </Border>
     </Grid>

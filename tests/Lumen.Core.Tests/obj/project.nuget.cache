@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "4s3oEflEhbo=",
+  "dgSpecHash": "9Q7fte/pUkY=",
   "success": true,
-  "projectFilePath": "C:\\Users\\win\\Downloads\\Lumen-Phase9-UI-Debug-Redesign-Fix1\\tests\\Lumen.Core.Tests\\Lumen.Core.Tests.csproj",
+  "projectFilePath": "C:\\Users\\win\\OneDrive\\Documents\\GitHub\\Lumen Wallpaper\\tests\\Lumen.Core.Tests\\Lumen.Core.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\win\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\win\\.nuget\\packages\\microsoft.codecoverage\\17.9.0\\microsoft.codecoverage.17.9.0.nupkg.sha512",

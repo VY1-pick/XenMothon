@@ -298,8 +298,6 @@
                                 SelectedPointerOverBackground="{ThemeResource LumenChipActiveBrush}"
                                 SelectedPressedBackground="{ThemeResource LumenChipActiveBrush}"
                                 SelectedForeground="{ThemeResource LumenChipActiveTextBrush}"
-                                SelectedPointerOverForeground="{ThemeResource LumenChipActiveTextBrush}"
-                                SelectedPressedForeground="{ThemeResource LumenChipActiveTextBrush}"
                                 PointerOverForeground="{ThemeResource LumenTextBrush}"
                                 FocusBorderBrush="Transparent"
                                 FocusSecondaryBorderBrush="Transparent" />

@@ -1,0 +1,37 @@
+diff --git a/src/Lumen.UI/App.xaml b/src/Lumen.UI/App.xaml
+index d685744..7e85538 100644
+--- a/src/Lumen.UI/App.xaml
++++ b/src/Lumen.UI/App.xaml
+@@ -298,8 +298,6 @@
+                                 SelectedPointerOverBackground="{ThemeResource LumenChipActiveBrush}"
+                                 SelectedPressedBackground="{ThemeResource LumenChipActiveBrush}"
+                                 SelectedForeground="{ThemeResource LumenChipActiveTextBrush}"
+-                                SelectedPointerOverForeground="{ThemeResource LumenChipActiveTextBrush}"
+-                                SelectedPressedForeground="{ThemeResource LumenChipActiveTextBrush}"
+                                 PointerOverForeground="{ThemeResource LumenTextBrush}"
+                                 FocusBorderBrush="Transparent"
+                                 FocusSecondaryBorderBrush="Transparent" />
+diff --git a/src/Lumen.UI/MainWindow.xaml b/src/Lumen.UI/MainWindow.xaml
+index 6a89f52..5f46644 100644
+--- a/src/Lumen.UI/MainWindow.xaml
++++ b/src/Lumen.UI/MainWindow.xaml
+@@ -940,9 +940,10 @@
+                             <ScrollViewer Grid.Row="2" Margin="0,12,0,12" VerticalScrollBarVisibility="Auto">
+                                 <StackPanel Spacing="14">
+                                     <TextBlock x:Name="DetailsDescriptionTextBlock" Style="{StaticResource LumenBodyStyle}" FontSize="13" TextWrapping="Wrap" />
++                                    <ScrollViewer HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+                                     <ItemsRepeater x:Name="DetailsTagsRepeater">
+                                         <ItemsRepeater.Layout>
+-                                            <FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
++                                            <StackLayout Orientation="Horizontal" Spacing="6" />
+                                         </ItemsRepeater.Layout>
+                                         <ItemsRepeater.ItemTemplate>
+                                             <DataTemplate x:DataType="x:String">
+@@ -952,6 +953,7 @@
+                                             </DataTemplate>
+                                         </ItemsRepeater.ItemTemplate>
+                                     </ItemsRepeater>
++                                    </ScrollViewer>
+                                 </StackPanel>
+                             </ScrollViewer>
+ 

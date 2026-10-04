@@ -940,9 +940,10 @@
                             <ScrollViewer Grid.Row="2" Margin="0,12,0,12" VerticalScrollBarVisibility="Auto">
                                 <StackPanel Spacing="14">
                                     <TextBlock x:Name="DetailsDescriptionTextBlock" Style="{StaticResource LumenBodyStyle}" FontSize="13" TextWrapping="Wrap" />
+                                    <ScrollViewer HorizontalScrollMode="Auto" HorizontalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
                                     <ItemsRepeater x:Name="DetailsTagsRepeater">
                                         <ItemsRepeater.Layout>
-                                            <FlowLayout Orientation="Horizontal" MinRowSpacing="6" MinColumnSpacing="6" />
+                                            <StackLayout Orientation="Horizontal" Spacing="6" />
                                         </ItemsRepeater.Layout>
                                         <ItemsRepeater.ItemTemplate>
                                             <DataTemplate x:DataType="x:String">
@@ -952,6 +953,7 @@
                                             </DataTemplate>
                                         </ItemsRepeater.ItemTemplate>
                                     </ItemsRepeater>
+                                    </ScrollViewer>
                                 </StackPanel>
                             </ScrollViewer>
 
