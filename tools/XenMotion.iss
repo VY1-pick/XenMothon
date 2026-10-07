@@ -55,6 +55,8 @@ var
   Task: Variant;
   Action: Variant;
   RunValue: String;
+  TaskName: String;
+  ActionPath: String;
 begin
   if CurUninstallStep = usUninstall then begin
     if RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'XenMotion', RunValue) then
@@ -69,10 +71,12 @@ begin
         Tasks := Folder.GetTasks(0);
         for I := Tasks.Count downto 1 do begin
           Task := Tasks.Item(I);
-          if Pos('XenMotion Startup-', Task.Name) = 1 then begin
+          TaskName := Task.Name;
+          if Pos('XenMotion Startup-', TaskName) = 1 then begin
             Action := Task.Definition.Actions.Item(1);
-            if CompareText(Action.Path, ExpandConstant('{app}\XenMotion.UI.exe')) = 0 then
-              Folder.DeleteTask(Task.Name, 0);
+            ActionPath := Action.Path;
+            if CompareText(ActionPath, ExpandConstant('{app}\XenMotion.UI.exe')) = 0 then
+              Folder.DeleteTask(TaskName, 0);
           end;
         end;
       except
