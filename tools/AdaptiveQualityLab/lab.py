@@ -66,7 +66,7 @@ def budgets(power="AC", ram=4096, commit=8192):
 
 
 def candidates(source, economy=False):
-    h, fps = source["height"], min(240, max(1, int(source["fps"])))
+    h, fps = source["height"], min(240, max(1, math.ceil(source["fps"])))
     if economy:
         return [Candidate(min(h, 720), .5, min(fps, 15), f, s, hw)
                 for hw in (True, False) for f, s in ((False, 0), (False, .1), (True, 0), (True, .1), (True, .15))]
@@ -212,7 +212,7 @@ def optimize(source,env,oracle,*,economy=False,motion="medium",max_trials=12,dea
     if ram_budget is not None: limits["ram"]=ram_budget
     space=candidates(source,economy);
     if reference_candidate is not None and reference_candidate not in space and not economy:space.append(reference_candidate)
-    monitor_candidate=Candidate(max(1,int(min(source["height"],env["height"],env["width"]*source["height"]/source["width"]))),1,min(240,max(1,int(source["fps"]))))
+    monitor_candidate=Candidate(max(1,int(min(source["height"],env["height"],env["width"]*source["height"]/source["width"]))),1,min(240,max(1,math.ceil(source["fps"]))))
     if not economy and monitor_candidate not in space:space.append(monitor_candidate)
     if caps:
         space=[c for c in space if c.height<=caps[0] and c.fps<=caps[1] and c.scale<=caps[2] and (not caps[3] or not c.hardware)]
@@ -397,11 +397,11 @@ def native_run(args):
     if args.settings_file:
         saved=json.loads(args.settings_file.read_text(encoding="utf-8-sig"))
     reference_candidate=Candidate(min(source["height"], (saved or {}).get("VideoHeightLimit") or source["height"]),
-        (saved or {}).get("RenderScale",1), min(int(source["fps"]),(saved or {}).get("GlobalTargetFps",int(source["fps"]))),
+        (saved or {}).get("RenderScale",1), min(math.ceil(source["fps"]),(saved or {}).get("GlobalTargetFps",math.ceil(source["fps"]))),
         (saved or {}).get("HighQualityFiltering",True), (saved or {}).get("DefaultSharpness") or 0,
         (saved or {}).get("UseHardwareDecoding",True))
     print("Native reference: full source / full render",flush=True)
-    reference=probe(exe,video,output/"reference.json",common|{"processingHeight":0,"scale":1,"fps":min(30,int(source["fps"])),"seconds":1},min(20,args.budget))
+    reference=probe(exe,video,output/"reference.json",common|{"processingHeight":0,"scale":1,"fps":min(30,math.ceil(source["fps"])),"seconds":1},min(20,args.budget))
     reference_colors=reference.get("qualityFrames")
     index=0
     def oracle(c,seconds,phase):

@@ -46,6 +46,8 @@ public sealed class ApplicationSettings
     public void Normalize()
     {
         static float Finite(float value, float min, float max, float fallback) => float.IsFinite(value) ? Math.Clamp(value,min,max) : fallback;
+        DisplayName ??= "Guest"; Theme ??= "Dark"; StoragePath ??= string.Empty;
+        CatalogBackendUrl ??= string.Empty; UpdateManifestUrl ??= string.Empty; CreatorBackendUrl ??= string.Empty;
         GlobalTargetFps = Math.Clamp(GlobalTargetFps,15,240);
         VideoHeightLimit = Math.Clamp(VideoHeightLimit,0,16384);
         RenderScale = Finite(RenderScale,.25f,1,1);

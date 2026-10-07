@@ -8,6 +8,7 @@ This release integrates the existing quality-lab-2.2 optimizer, rather than reim
 - First automatically tuned video runs in bounded child processes, off the UI thread. Existing wallpaper restoration uses saved evidence immediately; missing evidence is measured after startup. Startup measurements cancel when playback pauses or the wallpaper changes.
 - Results are stored by file identity, dimensions, GPU/driver snapshot, power context and requested ceilings. Cache expires after seven days. Invalid/noisy results are not applied. Changing settings/source/display changes the cache key.
 - Only an accepted longer-validation result with measured quality can be applied. Unknown physical presentation, audio, GPU-engine busy and multi-monitor allocation remain explicit limitations. Failed/deferred measurements retain the user's current settings and can be retried with automatic quality when idle.
+- Fractional source rates (e.g. 23.976) use a 24 FPS ceiling without generating extra frames; integer truncation must not lose a source frame per second.
 - FPS, height, scale and software-decoding preferences are ceilings. Economy stays at its requested limits. Near-quality, near-resource candidates prefer effective monitor dimensions, respecting source size and aspect ratio.
 - Default resident RAM ceiling is min(1 GiB, 25% available RAM). Private commit has a separate min(2 GiB, 25% available commit) ceiling. GPU memory is measured separately and is not added blindly to RAM.
 - Tuning changes rendering parameters for the current wallpaper, preserving brightness, volume, speed and other user controls. Global preset controls remain the requested ceilings; the measured profile is shown in the playback measurement report and persisted separately.
@@ -30,7 +31,7 @@ Reviewed the changed renderer/settings/startup paths and security boundaries for
 
 ## Validation and boundaries
 
-The reviewed Release build passed with zero warnings/errors and 255 .NET tests passed. Release builds and the full .NET suite are required before packaging; the optimizer has 35 runnable behavioral checks. Native rendering tests cover GPU buffers, scaling/filtering/sharpness, Media Foundation playback, pause/resume and FPS behavior. Added checks cover validated-profile application, contaminated/screen-only/over-limit cache rejection, invalid settings, relative traversal and HTTP update rejection. Installer and bundled-runtime smoke results are recorded in local release-validation artifacts.
+The reviewed Release build passed with zero warnings/errors and 255 .NET tests passed. Release builds and the full .NET suite are required before packaging; the optimizer has 37 runnable behavioral checks. Native rendering tests cover GPU buffers, scaling/filtering/sharpness, Media Foundation playback, pause/resume and FPS behavior. Added checks cover validated-profile application, contaminated/screen-only/over-limit cache rejection, invalid settings, relative traversal and HTTP update rejection. Installer and bundled-runtime smoke results are recorded in local release-validation artifacts.
 
 The previously supplied 3840×2160/30 video passed the standalone 24-second 4K and 1080p validations on a 1920×1080 panel. This is evidence for that pipeline/sample, not proof for every codec, GPU, panel or sound device. No claims of flawless physical playback are made.
 

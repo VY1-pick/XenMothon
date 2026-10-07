@@ -40,10 +40,10 @@ public class AdaptiveQualityTests
     {
         var settings = new ApplicationSettings { RenderScale=float.PositiveInfinity,
             GlobalTargetFps=int.MaxValue, VideoHeightLimit=int.MaxValue,
-            DefaultPlaybackSpeed=float.NaN, Performance=null!, MonitorWallpaperAssignments=null! };
+            DefaultPlaybackSpeed=float.NaN, DisplayName=null!, Performance=null!, MonitorWallpaperAssignments=null! };
         settings.Normalize();
         Assert.Equal(1,settings.RenderScale); Assert.Equal(240,settings.GlobalTargetFps);
         Assert.Equal(16384,settings.VideoHeightLimit); Assert.Equal(1,settings.DefaultPlaybackSpeed);
-        Assert.NotNull(settings.Performance); Assert.NotNull(settings.MonitorWallpaperAssignments);
+        Assert.Equal("Guest",settings.DisplayName); Assert.NotNull(settings.Performance); Assert.NotNull(settings.MonitorWallpaperAssignments);
     }
 }

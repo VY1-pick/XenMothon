@@ -83,6 +83,9 @@ def main():
     assert all(r["settings"]["videoHeightLimit"]<=720 and r["settings"]["targetFps"]<=15 and r["settings"]["renderScale"]<=.5 for r in capped["candidates"]);checks+=1
     software=optimize(source,env,simulated_oracle(source,env),max_trials=2,validate=False,caps=(1080,30,1,True))
     assert all(not r["settings"]["useHardwareDecoding"] for r in software["candidates"]);checks+=1
+    fractional=dict(source,fps=23.976)
+    assert max(c.fps for c in candidates(fractional))==24;checks+=1
+    assert geometry_quality(Candidate(1080,1,24),fractional,env)==geometry_quality(Candidate(1080,1,60),fractional,env);checks+=1
     test_root=ROOT/"artifacts/adaptive-quality-lab"
     test_root.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="quality-lab-check-",dir=test_root) as directory:
