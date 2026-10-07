@@ -25,7 +25,7 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
     private readonly MediaFoundationPlaybackEngine _mediaEngine;
     private readonly WallpaperAudioPlayer _audio;
     private readonly VideoPlaybackClock _clock;
-    private readonly ManualResetEventSlim _resumeEvent = new(true);
+    private readonly PlaybackSignal _resumeEvent = new(true);
 
     private IntPtr _targetHwnd = IntPtr.Zero;
     private MonitorBounds _bounds;
@@ -34,6 +34,13 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
     private WallpaperState _state = WallpaperState.Uninitialized;
     private float _volume = 1.0f;
     private int _fpsLimit = 60;
+    private int _calibratedFps = int.MaxValue;
+    private long _presentedFrames;
+    internal long PresentedFrameCount => Interlocked.Read(ref _presentedFrames);
+    private readonly Action<string>? _calibrationCompleted;
+    private readonly double _calibrationBudget;
+    private readonly Func<string, WallpaperSettings, MonitorBounds, CancellationToken, Task<WallpaperSettings>>? _adaptiveQuality;
+    internal string? CalibrationSummary { get; private set; }
 
     private CancellationTokenSource? _renderLoopCts;
     private Task? _renderLoopTask;
@@ -68,14 +75,17 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
         {
             lock (_syncLock)
             {
-                return _fpsLimit;
+                return Math.Min(_fpsLimit, _calibratedFps);
             }
         }
     }
 
-    public VideoWallpaperRenderer(ILogger<VideoWallpaperRenderer> logger)
+    public VideoWallpaperRenderer(ILogger<VideoWallpaperRenderer> logger, Action<string>? calibrationCompleted = null, double calibrationBudget = 250, Func<string, WallpaperSettings, MonitorBounds, CancellationToken, Task<WallpaperSettings>>? adaptiveQuality = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _calibrationCompleted = calibrationCompleted;
+        _adaptiveQuality = adaptiveQuality;
+        _calibrationBudget = Math.Clamp(calibrationBudget, 25, 250);
         _presenter = new Direct3D11VideoPresenter(logger);
         _mediaEngine = new MediaFoundationPlaybackEngine(logger);
         _audio = new WallpaperAudioPlayer(logger);
@@ -115,6 +125,9 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
         // 1. Validate supported format and existence
         MediaFormatValidator.Validate(mediaPath);
 
+        if (settings.AutoTunePlayback && _adaptiveQuality is not null)
+            settings = await _adaptiveQuality(mediaPath, settings.Clone(), _bounds, ct).ConfigureAwait(false);
+
         // 2. Stop and detach any active playback render loop
         await StopRenderLoopAsync().ConfigureAwait(false);
 
@@ -123,7 +136,9 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
             ct.ThrowIfCancellationRequested();
 
             _mediaPath = mediaPath;
-            _settings = settings;
+            _settings = settings.Clone();
+            _calibratedFps = int.MaxValue;
+            CalibrationSummary = null;
             _presenter.SetVisualAdjustments(settings);
             _volume = settings.IsMuted ? 0.0f : Math.Clamp(settings.Volume, 0.0f, 1.0f);
             _fpsLimit = settings.TargetFps > 0 ? settings.TargetFps : 60;
@@ -138,6 +153,8 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
             _state = WallpaperState.Ready;
         }
 
+        if (settings.AutoTunePlayback && _adaptiveQuality is null)
+            await Task.Run(() => CalibratePlayback(ct), ct).ConfigureAwait(false);
         await _audio.OpenAsync(mediaPath, _volume, settings.PlaybackSpeed).ConfigureAwait(false);
         _logger.LogInformation("Loaded video wallpaper '{Path}' (FPS Limit: {Fps}, Volume: {Vol}, Scaling: {Scaling}).",
             mediaPath, _fpsLimit, _volume, settings.ScalingMode);
@@ -179,6 +196,64 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
 
         _logger.LogDebug("Video playback started for '{Path}'.", _mediaPath);
         return Task.CompletedTask;
+    }
+    private void CalibratePlayback(CancellationToken ct)
+    {
+        var total = System.Diagnostics.Stopwatch.StartNew();
+        bool fits = false;
+        double decode = 0, render = 0;
+        int samples = 0;
+        var original = _settings.Clone();
+        try
+        {
+            // Measure the actual source, codec, output size and GPU completion, not just installed RAM.
+            // ponytail: bounded loading calibration; continuous telemetry only if changing scene costs warrant it.
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                var decodeTimes = new List<double>();
+                var renderTimes = new List<double>();
+                for (int i = 0; i < 10 && total.ElapsedMilliseconds < 1200; i++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var watch = System.Diagnostics.Stopwatch.StartNew();
+                    using var frame = _mediaEngine.ReadNextFrame(false);
+                    if (frame == null) break;
+                    double decoding = watch.Elapsed.TotalMilliseconds;
+                    watch.Restart();
+                    _presenter.PresentFrame(frame, _settings.ScalingMode);
+                    try { _presenter.CompleteCalibrationFrame(ct); }
+                    catch (TimeoutException) { decodeTimes.Add(decoding); renderTimes.Add(200); break; }
+                    if (i >= 2) { decodeTimes.Add(decoding); renderTimes.Add(watch.Elapsed.TotalMilliseconds); }
+                }
+                samples = decodeTimes.Count;
+                if (samples == 0) break;
+                decode = PlaybackCalibration.Percentile90(decodeTimes);
+                render = PlaybackCalibration.Percentile90(renderTimes);
+                fits = PlaybackCalibration.FitsBudget(decode, render, _mediaEngine.NativeFps * _settings.PlaybackSpeed, _settings.TargetFps, _calibrationBudget);
+                var lower = PlaybackCalibration.LowerBudget(_settings);
+                if (fits || total.ElapsedMilliseconds >= 1200 || attempt == 3 ||
+                    (lower.VideoHeightLimit == _settings.VideoHeightLimit && lower.RenderScale == _settings.RenderScale && lower.TargetFps == _settings.TargetFps)) break;
+                _settings = lower;
+                _presenter.SetVisualAdjustments(_settings);
+                _mediaEngine.Open(_mediaPath, _settings.UseHardwareDecoding ? _presenter.Device : IntPtr.Zero, _settings.VideoHeightLimit);
+            }
+            _calibratedFps = _settings.TargetFps;
+            CalibrationSummary = $"Measured playback: {_mediaEngine.VideoWidth}×{_mediaEngine.VideoHeight}, {CurrentFpsLimit} fps ceiling, {_settings.RenderScale * 100:0}% render; p90 decode {decode:0.0}ms, render/GPU completion {render:0.0}ms ({samples} samples). " +
+                (samples == 0 ? "Insufficient samples; starting recommendation retained." : fits ? "Within background headroom budget." : "Above background budget; a lighter source video may be needed.");
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Playback calibration unavailable; retain current playback settings.");
+            _settings = original;
+            _calibratedFps = int.MaxValue;
+            _presenter.SetVisualAdjustments(original);
+            _mediaEngine.Open(_mediaPath, original.UseHardwareDecoding ? _presenter.Device : IntPtr.Zero, original.VideoHeightLimit);
+            CalibrationSummary = "Playback measurement unavailable; using the current settings.";
+        }
+        finally { _mediaEngine.SeekToStart(); }
+        _logger.LogInformation("{Calibration}", CalibrationSummary);
+        _calibrationCompleted?.Invoke(CalibrationSummary!);
     }
 
     public Task PauseAsync(CancellationToken ct = default)
@@ -283,7 +358,6 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
         // Cancel and await render loop
         await StopRenderLoopAsync().ConfigureAwait(false);
 
-        _resumeEvent.Dispose();
         await _audio.DisposeAsync().ConfigureAwait(false);
         _mediaEngine.Dispose();
         _presenter.Dispose();
@@ -302,7 +376,7 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
             while (!ct.IsCancellationRequested)
             {
                 // 1. Wait if paused or occluded (0% CPU / GPU decode)
-                _resumeEvent.Wait(ct);
+                await _resumeEvent.WaitAsync(ct).ConfigureAwait(false);
 
                 // 3. Read decoded frame from Media Foundation
                 bool isLooping;
@@ -325,8 +399,8 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
                         // Resetting at its timestamp used to truncate the last ~one-frame of sound.
                         double cycleEndMs = Math.Max(_mediaEngine.Duration.TotalMilliseconds,
                             lastFrameMs * speed + 1000.0 / Math.Max(1, _mediaEngine.NativeFps)) / speed;
-                        await _clock.WaitUntilAsync(cycleEndMs, ct, token => _resumeEvent.Wait(token)).ConfigureAwait(false);
-                        _resumeEvent.Wait(ct);
+                        await _clock.WaitUntilAsync(cycleEndMs, ct, _resumeEvent.WaitAsync).ConfigureAwait(false);
+                        await _resumeEvent.WaitAsync(ct).ConfigureAwait(false);
                         if (!isLooping)
                         {
                             _audio.Pause();
@@ -342,12 +416,13 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
                     continue;
                 }
                 lastFrameMs = frame.Timestamp.TotalMilliseconds / speed;
-                double elapsedMs = await _clock.WaitUntilAsync(lastFrameMs, ct, token => _resumeEvent.Wait(token)).ConfigureAwait(false);
-                _resumeEvent.Wait(ct);
+                double elapsedMs = await _clock.WaitUntilAsync(lastFrameMs, ct, _resumeEvent.WaitAsync).ConfigureAwait(false);
+                await _resumeEvent.WaitAsync(ct).ConfigureAwait(false);
                 if (schedule.ShouldPresent(lastFrameMs, elapsedMs, _mediaEngine.NativeFps * speed, CurrentFpsLimit))
                 {
                     // 4. Present frame to Direct3D 11 viewport
                     _presenter.PresentFrame(frame, scalingMode);
+                    Interlocked.Increment(ref _presentedFrames);
                 }
             }
         }

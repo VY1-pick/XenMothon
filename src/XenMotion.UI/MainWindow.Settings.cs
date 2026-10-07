@@ -16,6 +16,7 @@ public sealed partial class MainWindow
     private void OnSettingsClicked(object sender, RoutedEventArgs e)
     {
         UpdateSettingsUiState();
+        ShowSettingsTab("Performance");
         ShowOverlay(SettingsOverlay, SettingsPanel, new Vector3(56, 0, 0));
     }
 
@@ -67,16 +68,20 @@ public sealed partial class MainWindow
             SettingsBrightnessSlider.Value = s.DefaultBrightness * 100.0;
             SettingsContrastSlider.Value = s.DefaultContrast * 100.0;
             SettingsSaturationSlider.Value = s.DefaultSaturation * 100.0;
-            SettingsCoverageSlider.Value = s.CoveredThresholdPercentage;
+            SettingsCoverageNumberBox.Value = s.CoveredThresholdPercentage;
+            SettingsCoverageModeCombo.SelectedIndex = s.PauseOnlyWhenFullyCovered ? 0 : 1;
+            RefreshCoverageControls();
             SettingsHeartbeatSlider.Value = s.HeartbeatIntervalMs;
             SettingsRenderScaleSlider.Value = s.RenderScale * 100;
             SettingsBatteryFpsSlider.Value = s.BatteryFps;
             SettingsFilteringToggle.IsChecked = s.HighQualityFiltering;
             SettingsHardwareToggle.IsChecked = s.UseHardwareDecoding;
             SettingsGlassToggle.IsChecked = s.EnableGlassEffects;
+            SettingsAutoTuneToggle.IsChecked = s.AutoTunePlayback;
+            SettingsSharpnessSlider.Value = s.DefaultSharpness * 100;
             SettingsVideoHeightCombo.SelectedItem = SettingsVideoHeightCombo.Items.OfType<ComboBoxItem>().FirstOrDefault(item => item.Tag?.ToString() == s.VideoHeightLimit.ToString());
-            SettingsHardwareText.Text = s.HardwareSummary;
-            SettingsQualityText.Text = $"Selected: {s.QualityPreset} · Recommended: {s.RecommendedPreset}";
+            SettingsHardwareText.Text = $"{s.HardwareSummary}\n\n{s.PlaybackMeasurement}";
+            RefreshQualitySummary();
 
             ScaleFillChip.IsChecked = s.DefaultScalingMode == PlaybackScalingMode.Fill;
             ScaleFitChip.IsChecked = s.DefaultScalingMode == PlaybackScalingMode.Fit;
@@ -101,10 +106,10 @@ public sealed partial class MainWindow
         SettingsBrightnessSliderText.Text = $"{SettingsBrightnessSlider.Value:0}%";
         SettingsContrastSliderText.Text = $"{SettingsContrastSlider.Value:0}%";
         SettingsSaturationSliderText.Text = $"{SettingsSaturationSlider.Value:0}%";
-        SettingsCoverageSliderText.Text = $"{SettingsCoverageSlider.Value:0}%";
         SettingsHeartbeatSliderText.Text = $"{SettingsHeartbeatSlider.Value:0} ms";
         SettingsRenderScaleText.Text = $"Render resolution: {SettingsRenderScaleSlider.Value:0}%";
         SettingsBatteryFpsText.Text = $"Battery limit: {SettingsBatteryFpsSlider.Value:0} fps";
+        SettingsSharpnessText.Text = $"Sharpness: {SettingsSharpnessSlider.Value:0}%";
     }
 
     // ------------------------------------------------------------------ controls -> view model
@@ -133,7 +138,9 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(toggle, SettingsFilteringToggle)) s.HighQualityFiltering = on;
         else if (ReferenceEquals(toggle, SettingsHardwareToggle)) s.UseHardwareDecoding = on;
         else if (ReferenceEquals(toggle, SettingsGlassToggle)) s.EnableGlassEffects = on;
-        SettingsQualityText.Text = $"Selected: {s.QualityPreset} · Recommended: {s.RecommendedPreset}";
+        else if (ReferenceEquals(toggle, SettingsAutoTuneToggle)) s.AutoTunePlayback = on;
+        RefreshCoverageControls();
+        RefreshQualitySummary();
     }
 
     private void OnSettingsSliderChanged(object sender, RangeBaseValueChangedEventArgs e)
@@ -147,10 +154,10 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(sender, SettingsBrightnessSlider)) SettingsBrightnessSliderText.Text = $"{e.NewValue:0}%";
         else if (ReferenceEquals(sender, SettingsContrastSlider)) SettingsContrastSliderText.Text = $"{e.NewValue:0}%";
         else if (ReferenceEquals(sender, SettingsSaturationSlider)) SettingsSaturationSliderText.Text = $"{e.NewValue:0}%";
-        else if (ReferenceEquals(sender, SettingsCoverageSlider)) SettingsCoverageSliderText.Text = $"{e.NewValue:0}%";
         else if (ReferenceEquals(sender, SettingsHeartbeatSlider)) SettingsHeartbeatSliderText.Text = $"{e.NewValue:0} ms";
         else if (ReferenceEquals(sender, SettingsRenderScaleSlider)) SettingsRenderScaleText.Text = $"Render resolution: {e.NewValue:0}%";
         else if (ReferenceEquals(sender, SettingsBatteryFpsSlider)) SettingsBatteryFpsText.Text = $"Battery limit: {e.NewValue:0} fps";
+        else if (ReferenceEquals(sender, SettingsSharpnessSlider)) SettingsSharpnessText.Text = $"Sharpness: {e.NewValue:0}%";
 
         if (_loadingSettings) return;
         var s = _settingsViewModel;
@@ -161,11 +168,11 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(sender, SettingsBrightnessSlider)) s.DefaultBrightness = (float)Math.Clamp(e.NewValue / 100.0, 0.0, 2.0);
         else if (ReferenceEquals(sender, SettingsContrastSlider)) s.DefaultContrast = (float)Math.Clamp(e.NewValue / 100.0, 0.0, 2.0);
         else if (ReferenceEquals(sender, SettingsSaturationSlider)) s.DefaultSaturation = (float)Math.Clamp(e.NewValue / 100.0, 0.0, 2.0);
-        else if (ReferenceEquals(sender, SettingsCoverageSlider)) s.CoveredThresholdPercentage = (int)Math.Round(e.NewValue);
         else if (ReferenceEquals(sender, SettingsHeartbeatSlider)) s.HeartbeatIntervalMs = (int)Math.Round(e.NewValue);
         else if (ReferenceEquals(sender, SettingsRenderScaleSlider)) s.RenderScale = (float)e.NewValue / 100;
         else if (ReferenceEquals(sender, SettingsBatteryFpsSlider)) s.BatteryFps = (int)Math.Round(e.NewValue);
-        SettingsQualityText.Text = $"Selected: {s.QualityPreset} · Recommended: {s.RecommendedPreset}";
+        else if (ReferenceEquals(sender, SettingsSharpnessSlider)) s.DefaultSharpness = (float)e.NewValue / 100;
+        RefreshQualitySummary();
     }
 
     private void OnScalingChipClicked(object sender, RoutedEventArgs e)
@@ -192,6 +199,7 @@ public sealed partial class MainWindow
             await _settingsViewModel.SaveAsync();
             await _viewModel.SyncAudioSettingsAsync();
             UpdateSettingsUiState();
+            TrySetBackdrop();
             CloseSettingsSheet();
             ShowToast("Settings saved");
         }
@@ -199,16 +207,17 @@ public sealed partial class MainWindow
         {
             // The view model reports validation problems through StatusMessage.
             UpdateSettingsUiState();
-            TrySetBackdrop();
             ShowToast($"Could not apply settings: {ex.Message}");
         }
     }
     private void OnQualityPresetClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string name })
+        if (_loadingSettings) return;
+        if (sender is FrameworkElement { Tag: string name })
         {
             var preset = name == "Recommended" ? _settingsViewModel.RecommendedPreset : Enum.Parse<QualityPreset>(name);
             _settingsViewModel.ApplyQualityPreset(preset);
+            _settingsViewModel.AutoTunePlayback = name == "Recommended";
             UpdateSettingsUiState();
         }
     }
@@ -217,6 +226,42 @@ public sealed partial class MainWindow
         if (_loadingSettings || _settingsViewModel is null) return;
         if (SettingsVideoHeightCombo.SelectedItem is ComboBoxItem { Tag: string value } && int.TryParse(value, out int height))
             _settingsViewModel.VideoHeightLimit = height;
-        SettingsQualityText.Text = $"Selected: {_settingsViewModel.QualityPreset} · Recommended: {_settingsViewModel.RecommendedPreset}";
+        RefreshQualitySummary();
+    }
+    private void RefreshQualitySummary()
+    {
+        var s = _settingsViewModel;
+        bool wasLoading = _loadingSettings;
+        _loadingSettings = true;
+        try
+        {
+            SettingsEconomyRadio.IsChecked = s.QualityPreset == QualityPreset.Economy;
+            SettingsBalancedRadio.IsChecked = s.QualityPreset == QualityPreset.Balanced;
+            SettingsHighRadio.IsChecked = s.QualityPreset == QualityPreset.High;
+            SettingsUltraRadio.IsChecked = s.QualityPreset == QualityPreset.Ultra;
+            string resolution = s.VideoHeightLimit == 0 ? "original resolution" : $"up to {s.VideoHeightLimit}p";
+            SettingsQualityText.Text = $"{s.QualityPreset} · {s.GlobalTargetFps} fps ceiling · {resolution} · {s.RenderScale * 100:0}% render";
+            SettingsRecommendedButton.Content = $"Use recommended: {s.RecommendedPreset}";
+        }
+        finally { _loadingSettings = wasLoading; }
+    }
+    private void RefreshCoverageControls()
+    {
+        SettingsCoverageModeCombo.IsEnabled = _settingsViewModel.PauseWhenCovered;
+        SettingsCoverageNumberBox.IsEnabled = _settingsViewModel.PauseWhenCovered;
+        SettingsCustomCoveragePanel.Visibility = _settingsViewModel.PauseOnlyWhenFullyCovered ? Visibility.Collapsed : Visibility.Visible;
+    }
+    private void OnCoverageModeChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null || SettingsCoverageModeCombo.SelectedIndex < 0) return;
+        _settingsViewModel.PauseOnlyWhenFullyCovered = SettingsCoverageModeCombo.SelectedIndex == 0;
+        RefreshCoverageControls();
+        RefreshQualitySummary();
+    }
+    private void OnCoveragePercentageChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null || !double.IsFinite(e.NewValue)) return;
+        _settingsViewModel.CoveredThresholdPercentage = (int)Math.Round(Math.Clamp(e.NewValue, 1, 100));
+        RefreshQualitySummary();
     }
 }

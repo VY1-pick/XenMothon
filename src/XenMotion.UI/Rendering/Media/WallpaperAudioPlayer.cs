@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
+using XenMotion.UI.Rendering.Video;
 using MF = XenMotion.UI.Rendering.Media.MediaFoundationNativeMethods;
 
 namespace XenMotion.UI.Rendering.Media;
@@ -10,7 +11,7 @@ namespace XenMotion.UI.Rendering.Media;
 public sealed class WallpaperAudioPlayer(ILogger logger) : IAsyncDisposable
 {
     private readonly object _gate = new();
-    private readonly ManualResetEventSlim _resume = new(false);
+    private readonly PlaybackSignal _resume = new(false);
     private readonly List<Buffer> _buffers = [];
     private MF.IMFSourceReader? _reader;
     private IntPtr _output;
@@ -123,7 +124,7 @@ public sealed class WallpaperAudioPlayer(ILogger logger) : IAsyncDisposable
         {
             while (!ct.IsCancellationRequested)
             {
-                _resume.Wait(ct);
+                await _resume.WaitAsync(ct).ConfigureAwait(false);
                 lock (_gate)
                 {
                     if (!_playing) continue;
@@ -150,8 +151,9 @@ public sealed class WallpaperAudioPlayer(ILogger logger) : IAsyncDisposable
             Marshal.ThrowExceptionForHR(sample.ConvertToContiguousBuffer(out buffer));
             Marshal.ThrowExceptionForHR(buffer.Lock(out var data, out _, out uint length)); locked = true;
             if (length == 0) return;
-            var pcm = new byte[length]; Marshal.Copy(data, pcm, 0, pcm.Length);
-            for (int i = 0; i + 1 < pcm.Length; i += 2)
+            var pcm = new byte[length];
+            if (_volume > 0) Marshal.Copy(data, pcm, 0, pcm.Length);
+            for (int i = 0; _volume is > 0 and < 1 && i + 1 < pcm.Length; i += 2)
             {
                 short value = (short)(pcm[i] | (pcm[i + 1] << 8));
                 short scaled = (short)Math.Round(value * _volume);
@@ -181,7 +183,7 @@ public sealed class WallpaperAudioPlayer(ILogger logger) : IAsyncDisposable
         lock (_gate) { Release_NoLock(); _resume.Reset(); _playing = false; }
         _cts?.Dispose(); _cts = null; _task = null;
     }
-    public async ValueTask DisposeAsync() { await CloseAsync(); _resume.Dispose(); }
+    public async ValueTask DisposeAsync() { await CloseAsync(); }
     private static void Check(uint result) { if (result != 0) throw new InvalidOperationException($"Windows audio output error {result}."); }
     [StructLayout(LayoutKind.Sequential, Pack = 2)] private struct WaveFormat { public ushort Tag, Channels; public uint Rate, BytesPerSecond; public ushort BlockAlign, Bits, Extra; }
     [StructLayout(LayoutKind.Sequential)] private struct WaveHeader { public IntPtr Data; public uint Length, Recorded; public IntPtr User; public uint Flags, Loops; public IntPtr Next, Reserved; }

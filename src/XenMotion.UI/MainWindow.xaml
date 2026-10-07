@@ -718,7 +718,7 @@
     <Grid x:Name="SettingsOverlay" Visibility="Collapsed" Opacity="0">
       <Grid.OpacityTransition><ScalarTransition Duration="0:0:0.2" /></Grid.OpacityTransition>
       <Rectangle Fill="{StaticResource XenMotionScrimBrush}" Tapped="OnSettingsBackdropTapped" />
-      <Border x:Name="SettingsPanel" Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="30" Width="520"
+      <Border x:Name="SettingsPanel" Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="30" Width="560"
               HorizontalAlignment="Right" VerticalAlignment="Stretch" Margin="0,18,18,18" Tapped="OnDialogPanelTapped">
         <Border.TranslationTransition><Vector3Transition Duration="0:0:0.32" /></Border.TranslationTransition>
         <Grid Padding="24,22,24,20" RowSpacing="16">
@@ -918,22 +918,51 @@
             <ScrollViewer x:Name="SettingsPerformanceSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
               <StackPanel Spacing="14">
                 <Border Style="{StaticResource XenMotionSectionStyle}">
-                  <StackPanel Spacing="12">
-                    <TextBlock Text="Quality and resource budget" Style="{StaticResource XenMotionLabelTextStyle}" />
-                    <TextBlock x:Name="SettingsHardwareText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                    <TextBlock x:Name="SettingsQualityText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                    <Grid ColumnSpacing="8" RowSpacing="8">
-                      <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition /></Grid.ColumnDefinitions>
-                      <Grid.RowDefinitions><RowDefinition /><RowDefinition /></Grid.RowDefinitions>
-                      <Button Content="Economy" Tag="Economy" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
-                      <Button Grid.Column="1" Content="Balanced" Tag="Balanced" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
-                      <Button Grid.Row="1" Content="High" Tag="High" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
-                      <Button Grid.Row="1" Grid.Column="1" Content="Ultra" Tag="Ultra" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
+                  <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="Choose your quality" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource XenMotionTextBrush}" />
+                      <TextBlock Text="Choose a resource budget. Automatic measurement can lower playback cost within your chosen limits." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <RadioButton x:Name="SettingsEconomyRadio" GroupName="WallpaperQuality" Tag="Economy" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Economy quality">
+                      <StackPanel Spacing="3" MaxWidth="420">
+                        <TextBlock Text="Economy" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="1080p · 24 fps ceiling — clear detail, modest motion" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="SettingsBalancedRadio" GroupName="WallpaperQuality" Tag="Balanced" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Balanced quality">
+                      <StackPanel Spacing="3" MaxWidth="420">
+                        <TextBlock Text="Balanced" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="1440p · 30 fps ceiling — everyday quality and lower load" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="SettingsHighRadio" GroupName="WallpaperQuality" Tag="High" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="High quality">
+                      <StackPanel Spacing="3" MaxWidth="420">
+                        <TextBlock Text="High" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="4K · 60 fps ceiling — finer detail and smoother motion" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="SettingsUltraRadio" GroupName="WallpaperQuality" Tag="Ultra" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Ultra quality">
+                      <StackPanel Spacing="3" MaxWidth="420">
+                        <TextBlock Text="Ultra" FontSize="15" FontWeight="SemiBold" />
+                        <TextBlock Text="Original resolution · 120 fps ceiling — highest source quality" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </RadioButton>
+                    <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
+                    <TextBlock x:Name="SettingsQualityText" Foreground="{StaticResource XenMotionMintTextBrush}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
+                    <Button x:Name="SettingsRecommendedButton" Content="Use recommended quality" Tag="Recommended" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
+                    <Grid ColumnSpacing="16">
+                      <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                      <TextBlock Text="Measure playback automatically" Style="{StaticResource XenMotionLabelTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <ToggleButton x:Name="SettingsAutoTuneToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Measure playback automatically" />
                     </Grid>
-                    <Button Content="Use recommended settings" Tag="Recommended" Click="OnQualityPresetClicked" Style="{StaticResource XenMotionPrimaryButtonStyle}" HorizontalAlignment="Stretch" />
-                    <TextBlock Text="Save to apply. Changing quality restarts current playback. Native resolution keeps source detail; FPS never adds frames beyond the source rate." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="A short measurement runs on video load. It accounts for the actual codec, decode time and GPU completion, and never exceeds your resolution or FPS limits." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <Expander Header="Hardware and playback measurements" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                      <TextBlock x:Name="SettingsHardwareText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" MaxWidth="420" />
+                    </Expander>
+                    <TextBlock Text="FPS is a ceiling, not extra frames. Apply changes to update your wallpaper; quality changes restart playback." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
+                <Expander Header="Fine-tune rendering" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Maximum video processing height" Style="{StaticResource XenMotionLabelTextStyle}" />
@@ -943,6 +972,9 @@
                     </ComboBox>
                     <TextBlock x:Name="SettingsRenderScaleText" Style="{StaticResource XenMotionLabelTextStyle}" />
                     <Slider x:Name="SettingsRenderScaleSlider" Minimum="25" Maximum="100" StepFrequency="5" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Render resolution percentage" />
+                    <TextBlock x:Name="SettingsSharpnessText" Style="{StaticResource XenMotionLabelTextStyle}" />
+                    <Slider x:Name="SettingsSharpnessSlider" Minimum="0" Maximum="30" StepFrequency="1" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Sharpness percentage" />
+                    <TextBlock Text="A mild edge boost can reduce the soft look of lower resolution playback. It adds no pixels; turn it down if noise or halos become visible." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     <TextBlock Text="Lower percentages reduce pixels drawn on every monitor. 100% keeps full display resolution." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     <Grid><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                       <TextBlock Text="High quality downscaling" Style="{StaticResource XenMotionLabelTextStyle}" VerticalAlignment="Center" />
@@ -962,6 +994,7 @@
                     <TextBlock Text="Used while on battery if playback is not paused. Never exceeds the global FPS limit." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
+                </Expander>
                 <Border Style="{StaticResource XenMotionSectionStyle}">
           <StackPanel Spacing="12">
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -998,23 +1031,21 @@
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
               <StackPanel VerticalAlignment="Center" Spacing="2">
                 <TextBlock Text="Pause when covered" Style="{StaticResource XenMotionLabelTextStyle}" />
-                <TextBlock Text="Stop when windows hide most of the desktop." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                <TextBlock Text="Pause video decoding when windows cover the desktop." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
               <ToggleButton x:Name="SettingsPauseCoveredToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
-            <StackPanel Spacing="6">
-              <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                <StackPanel Spacing="2">
-                  <TextBlock Text="Covered threshold" Style="{StaticResource XenMotionLabelTextStyle}" />
-                  <TextBlock Text="How much of the desktop must be hidden." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                </StackPanel>
-                <Border Grid.Column="1" Style="{StaticResource XenMotionBadgeStyle}" VerticalAlignment="Top" CornerRadius="10" MinWidth="64">
-                  <TextBlock x:Name="SettingsCoverageSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
-                </Border>
-              </Grid>
-              <Slider x:Name="SettingsCoverageSlider" Minimum="50" Maximum="100" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" />
+            <StackPanel x:Name="SettingsCoverageControls" Spacing="8">
+              <TextBlock Text="Desktop coverage rule" Style="{StaticResource XenMotionLabelTextStyle}" />
+              <ComboBox x:Name="SettingsCoverageModeCombo" HorizontalAlignment="Stretch" SelectionChanged="OnCoverageModeChanged" AutomationProperties.Name="Desktop coverage rule">
+                <ComboBoxItem Content="Only fully covered (100%)" />
+                <ComboBoxItem Content="Custom percentage" />
+              </ComboBox>
+              <StackPanel x:Name="SettingsCustomCoveragePanel" Spacing="6">
+                <NumberBox x:Name="SettingsCoverageNumberBox" Header="Pause when covered by at least (%)" Minimum="1" Maximum="100" SmallChange="1" LargeChange="10" SpinButtonPlacementMode="Inline" ValueChanged="OnCoveragePercentageChanged" AutomationProperties.Name="Desktop coverage percentage" />
+                <TextBlock Text="1–100%. A low value also pauses behind small windows. Overlapping windows are counted once, separately for each monitor." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+              </StackPanel>
             </StackPanel>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -1051,7 +1082,7 @@
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="SettingsStatusTextBlock" Style="{StaticResource XenMotionCaptionTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
-            <Button Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" Height="46" CornerRadius="16" Padding="26,0" Content="Save changes" Click="OnSaveSettingsClicked" />
+            <Button Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" Height="46" CornerRadius="16" Padding="26,0" Content="Apply changes" Click="OnSaveSettingsClicked" />
           </Grid>
         </Grid>
       </Border>

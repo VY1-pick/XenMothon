@@ -34,7 +34,8 @@ public class SettingsApplicationTests
                 GlobalTargetFps = 15, DefaultBrightness = 0.5f, DefaultContrast = 1.2f, DefaultSaturation = 0.2f,
                 DefaultScalingMode = PlaybackScalingMode.Fit, DefaultPlaybackSpeed = 2, DefaultLoop = false,
                 DefaultVolume = 0.3f, DefaultMuted = false, VideoHeightLimit = 720, RenderScale = .5f,
-                HighQualityFiltering = false, UseHardwareDecoding = false, EnableGlassEffects = false, BatteryFps = 20
+                HighQualityFiltering = false, UseHardwareDecoding = false, EnableGlassEffects = false, BatteryFps = 20,
+                CoveredThresholdPercentage = 1, PauseOnlyWhenFullyCovered = true, AutoTunePlayback = true, DefaultSharpness = .15f
             };
             await vm.SaveAsync();
             var current = loaded.Last();
@@ -44,6 +45,8 @@ public class SettingsApplicationTests
             Assert.Equal(.5f, current.RenderScale);
             Assert.False(current.HighQualityFiltering);
             Assert.False(current.UseHardwareDecoding);
+            Assert.True(current.AutoTunePlayback);
+            Assert.Equal(.15f, current.Sharpness);
             Assert.Equal(0.5f, current.Brightness);
             Assert.Equal(1.2f, current.Contrast);
             Assert.Equal(0.2f, current.Saturation);
@@ -60,6 +63,10 @@ public class SettingsApplicationTests
             Assert.Equal(15, restored.CurrentSettings.GlobalTargetFps);
             Assert.Equal(720, restored.CurrentSettings.VideoHeightLimit);
             Assert.Equal(20, restored.CurrentSettings.Performance.BatteryFps);
+            Assert.Equal(1, restored.CurrentSettings.Performance.CoveredThresholdPercentage);
+            Assert.True(restored.CurrentSettings.Performance.PauseOnlyWhenFullyCovered);
+            Assert.True(restored.CurrentSettings.AutoTunePlayback);
+            Assert.Equal(.15f, restored.CurrentSettings.DefaultSharpness);
             Assert.False(restored.IsFirstRun);
         }
         finally { File.Delete(path); }

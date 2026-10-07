@@ -6,11 +6,76 @@ using XenMotion.UI.Rendering;
 using XenMotion.Core.Models;
 using XenMotion.Core.Enums;
 using Xunit;
+using Xunit.Abstractions;
+using XenMotion.UI.Desktop;
+using System.Runtime.InteropServices;
+using XenMotion.Application.Services;
 
 namespace XenMotion.Core.Tests.Rendering;
 
-public sealed class NativeMediaFoundationTests
+public sealed class NativeMediaFoundationTests(ITestOutputHelper output)
 {
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDesktopWindow();
+    [Fact]
+    public async Task RepeatedResumeSubmitsGpuFrameWithoutSecondLongDelay()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-resume-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path, CreateAvi());
+            using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000, -16000, 64, 36));
+            Assert.NotNull(surface);
+            await using var renderer = new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance);
+            await renderer.InitializeAsync(surface.Handle, surface.LocalBounds);
+            await renderer.LoadAsync(path, new WallpaperSettings { IsMuted = true, Loop = true });
+            await renderer.PlayAsync();
+            await Task.Delay(150);
+            for (int i = 0; i < 5; i++)
+            {
+                await renderer.PauseAsync();
+                await Task.Delay(100);
+                long count = renderer.PresentedFrameCount;
+                var watch = System.Diagnostics.Stopwatch.StartNew();
+                await renderer.PlayAsync();
+                while (renderer.PresentedFrameCount == count && watch.ElapsedMilliseconds < 500)
+                    await Task.Delay(5);
+                Assert.True(renderer.PresentedFrameCount > count, "GPU presentation did not resume within 500ms.");
+                output.WriteLine($"Native resume cycle {i + 1}: {watch.Elapsed.TotalMilliseconds:F1}ms to submitted GPU frame.");
+            }
+        }
+        finally { File.Delete(path); }
+    }
+    [Fact]
+    public async Task SmallWindowCoverageStopsActualDecoderAndFullModeResumesIt()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-coverage-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path, CreateAvi());
+            var renderer = new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance);
+            await using var engine = new WallpaperEngineOrchestrator(NullLogger<WallpaperEngineOrchestrator>.Instance, _ => renderer);
+            await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "Coverage", FilePath = path, ContentHash = "coverage", Type = WallpaperType.Video });
+            await Task.Delay(150);
+            var performance = new PerformanceSettings { CoveredThresholdPercentage = 1 };
+            var windows = new[] { new VisibleDesktopWindow(new(0, 0, 10, 10), false) };
+            var bounds = new MonitorBounds(0, 0, 100, 100);
+            await engine.UpdatePerformanceStateAsync("M1", DesktopVisibilityEvaluator.Evaluate(bounds, windows, performance, false));
+            Assert.Equal(WallpaperState.Paused, engine.GetMonitorState("M1"));
+            await Task.Delay(100);
+            long paused = renderer.DecodedFrameCount;
+            await Task.Delay(250);
+            Assert.True(paused > 0);
+            Assert.Equal(paused, renderer.DecodedFrameCount);
+            performance.PauseOnlyWhenFullyCovered = true;
+            await engine.UpdatePerformanceStateAsync("M1", DesktopVisibilityEvaluator.Evaluate(bounds, windows, performance, false));
+            await Task.Delay(150);
+            Assert.True(renderer.DecodedFrameCount > paused);
+        }
+        finally { File.Delete(path); }
+    }
     [Fact]
     public void ProcessingHeightActuallyResizesDecodedFramesWithoutUpscaling()
     {

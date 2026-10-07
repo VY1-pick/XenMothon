@@ -214,6 +214,10 @@ public sealed class MediaFoundationPlaybackEngine : IDisposable
                     }
                 }
 
+                if (_videoWidth is < 1 or > 16384 || _videoHeight is < 1 or > 16384 ||
+                    (long)_videoWidth * _videoHeight > 40000000 || !double.IsFinite(_nativeFps) || _nativeFps <= 0 || _nativeFps > 1000)
+                    throw new InvalidDataException("Unsupported or invalid video dimensions/frame rate.");
+
                 var durationGuid = MediaFoundationNativeMethods.MF_PD_DURATION;
                 if (_reader.GetPresentationAttribute(
                         MediaFoundationNativeMethods.MF_SOURCE_READER_ALL_STREAMS,

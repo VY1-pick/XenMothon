@@ -67,9 +67,9 @@ public sealed class SingleInstanceService : ISingleInstanceService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize single-instance mutex. Proceeding cautiously.");
-            _hasOwnership = true; // Fallback to allow launch if IPC handles are restricted
-            return true;
+            _logger.LogError(ex, "Failed to initialize single-instance mutex. Refusing a competing engine.");
+            _hasOwnership = false;
+            return false;
         }
     }
 

@@ -9,6 +9,7 @@ public sealed class PerformanceSettings
     public bool PauseOnMaximized { get; set; } = true;
     public bool PauseOnBattery { get; set; } = false;
     public bool PauseWhenCovered { get; set; } = true;
+    public bool PauseOnlyWhenFullyCovered { get; set; }
     public int CoveredThresholdPercentage { get; set; } = 85;
     public bool MuteAudioWhenCovered { get; set; } = true;
     public int HeartbeatIntervalMs { get; set; } = 1500;

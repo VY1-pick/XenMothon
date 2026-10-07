@@ -41,7 +41,7 @@ public sealed class Direct3D11VideoPresenter : IDisposable
             _renderScale = Math.Clamp(settings.RenderScale, .25f, 1f);
             Resize(_displayBounds);
             _swapChain?.SetFiltering(settings.HighQualityFiltering);
-            _swapChain?.SetVisualAdjustments(settings.Brightness, settings.Contrast, settings.Saturation);
+            _swapChain?.SetVisualAdjustments(settings.Brightness, settings.Contrast, settings.Saturation, settings.Sharpness);
         }
     }
 
@@ -66,6 +66,10 @@ public sealed class Direct3D11VideoPresenter : IDisposable
                 _logger.LogInformation("First GPU-resident video frame: {Width}x{Height}; no CPU readback/upload.", frame.Width, frame.Height);
             }
         }
+    }
+    internal void CompleteCalibrationFrame(CancellationToken ct)
+    {
+        lock (_syncLock) _swapChain?.CompleteCalibrationFrame(ct);
     }
 
     public Direct3D11VideoPresenter(ILogger logger)

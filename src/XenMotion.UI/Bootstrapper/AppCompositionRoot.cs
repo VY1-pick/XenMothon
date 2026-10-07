@@ -167,7 +167,8 @@ public static class AppCompositionRoot
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
             return type =>
             {
-                var inner = WallpaperRendererFactory.CreateRenderer(type, loggerFactory);
+                var inner = WallpaperRendererFactory.CreateRenderer(type, loggerFactory, sp.GetRequiredService<HardwareTuningService>().RecordPlaybackReport,
+                    250.0 / Math.Max(1, sp.GetRequiredService<MonitorTopologyService>().CurrentMonitors.Count), sp.GetRequiredService<AdaptiveQualityService>().TuneAsync);
                 return new DesktopWallpaperRenderer(
                     inner,
                     sp.GetRequiredService<IDesktopWallpaperHost>(),
@@ -196,6 +197,8 @@ public static class AppCompositionRoot
         services.AddSingleton<MonitorTopologyService>();
         services.AddSingleton<WindowsStartupService>();
         services.AddSingleton<HardwareTuningService>();
+        services.AddSingleton<AdaptiveQualityService>(sp => new AdaptiveQualityService(appDataRoot,
+            sp.GetRequiredService<HardwareTuningService>(), sp.GetRequiredService<ILogger<AdaptiveQualityService>>()));
         services.AddSingleton<IPerformanceMonitorService, PerformanceMonitorService>();
 
         // 9. UI Management & ViewModels

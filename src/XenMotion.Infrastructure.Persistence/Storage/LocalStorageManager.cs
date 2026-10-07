@@ -57,7 +57,10 @@ public sealed class LocalStorageManager : IStorageManager
             return Path.GetFullPath(relativeOrAbsolutePath);
         }
 
-        return Path.GetFullPath(Path.Combine(RootStoragePath, relativeOrAbsolutePath));
+        var resolved = Path.GetFullPath(Path.Combine(RootStoragePath, relativeOrAbsolutePath));
+        if (!PathSanitizer.IsPathWithinRoot(resolved, RootStoragePath))
+            throw new UnauthorizedAccessException("Relative media path escapes the managed library.");
+        return resolved;
     }
 
     public string MakeStorageRelativePath(string fullPath)

@@ -12,6 +12,7 @@ internal sealed class DesktopSwapChain : IDisposable
     public IntPtr Device => _device;
     public bool IsHardwareDevice { get; private set; } = true;
     public void SetFiltering(bool enabled) => _frames!.HighQualityFiltering = enabled;
+    internal int TextureMipLevels => _frames!.TextureMipLevels;
     public DesktopSwapChain(IntPtr hwnd, int width, int height)
     {
         var desc = new D3D11NativeMethods.DXGI_SWAP_CHAIN_DESC {
@@ -69,13 +70,39 @@ internal sealed class DesktopSwapChain : IDisposable
         finally { Method<ContextLock>(_multithread, 4)(_multithread); }
     }
     public void PresentGpu() => Marshal.ThrowExceptionForHR(Method<PresentMethod>(_chain, 8)(_chain, 0, 0));
-    public void SetVisualAdjustments(float brightness, float contrast, float saturation)
+    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0)
     {
         Method<ContextLock>(_multithread, 3)(_multithread);
-        try { _frames!.SetVisualAdjustments(brightness, contrast, saturation); }
+        try { _frames!.SetVisualAdjustments(brightness, contrast, saturation, sharpness); }
         finally { Method<ContextLock>(_multithread, 4)(_multithread); }
     }
     // Read the GPU back buffer directly for native pixel verification. No GDI clipping/DWM state.
+    internal void CompleteCalibrationFrame(CancellationToken ct)
+    {
+        IntPtr query = IntPtr.Zero;
+        var description = new QueryDesc(); // D3D11_QUERY_EVENT: wait for actual GPU completion.
+        Method<ContextLock>(_multithread, 3)(_multithread);
+        try
+        {
+            Marshal.ThrowExceptionForHR(Method<CreateQuery>(_device, 24)(_device, ref description, out query));
+            Method<EndQuery>(_context, 28)(_context, query);
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            while (true)
+            {
+                ct.ThrowIfCancellationRequested();
+                int hr = Method<QueryData>(_context, 29)(_context, query, out _, 4, 0);
+                Marshal.ThrowExceptionForHR(hr);
+                if (hr == 0) break;
+                if (watch.ElapsedMilliseconds > 200) throw new TimeoutException("GPU calibration exceeded 200ms per frame.");
+                Thread.Sleep(1); // Only during opt-in loading calibration; never in playback.
+            }
+        }
+        finally
+        {
+            if (query != IntPtr.Zero) Marshal.Release(query);
+            Method<ContextLock>(_multithread, 4)(_multithread);
+        }
+    }
     internal uint ReadPixel(int x, int y, int width, int height)
     {
         var id = new Guid("6f15aaf2-d208-4e89-9ab4-489535d34f9c");
@@ -128,6 +155,10 @@ internal sealed class DesktopSwapChain : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate int ResizeMethod(IntPtr self, uint count, uint width, uint height, uint format, uint flags);
     [StructLayout(LayoutKind.Sequential)] private struct TextureDesc { public uint Width, Height, MipLevels, ArraySize, Format, SampleCount, SampleQuality, Usage, BindFlags, CpuAccess, Misc; }
     [StructLayout(LayoutKind.Sequential)] private struct Mapped { public IntPtr Data; public uint RowPitch, DepthPitch; }
+    [StructLayout(LayoutKind.Sequential)] private struct QueryDesc { public uint Query, MiscFlags; }
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate int CreateQuery(IntPtr self, ref QueryDesc desc, out IntPtr query);
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void EndQuery(IntPtr self, IntPtr query);
+    [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate int QueryData(IntPtr self, IntPtr query, out int completed, uint size, uint flags);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate int CreateTexture(IntPtr self, ref TextureDesc desc, IntPtr data, out IntPtr texture);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate void Copy(IntPtr self, IntPtr target, IntPtr source);
     [UnmanagedFunctionPointer(CallingConvention.StdCall)] private delegate int Map(IntPtr self, IntPtr resource, uint index, uint type, uint flags, out Mapped mapped);

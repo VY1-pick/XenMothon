@@ -65,6 +65,16 @@ public sealed class UpdateServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => service.CheckForUpdateAsync());
     }
 
+    [Fact]
+    public async Task PlainHttpManifestAndDownloadAreRejected()
+    {
+        using var client = CreateClient(new { version="2.0.0", downloadUrl="http://cdn.example.com/setup.exe" });
+        var http = new RemoteUpdateService(client,"http://example.com/manifest.json",NullLogger<RemoteUpdateService>.Instance,"0.9.0-beta.1");
+        await Assert.ThrowsAsync<InvalidOperationException>(()=>http.CheckForUpdateAsync());
+        var https = new RemoteUpdateService(client,"https://example.com/manifest.json",NullLogger<RemoteUpdateService>.Instance,"0.9.0-beta.1");
+        await Assert.ThrowsAsync<InvalidDataException>(()=>https.CheckForUpdateAsync());
+    }
+
     private static HttpClient CreateClient(object payload)
     {
         var json = System.Text.Json.JsonSerializer.Serialize(payload);

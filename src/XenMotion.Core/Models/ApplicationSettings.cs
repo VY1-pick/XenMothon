@@ -18,7 +18,7 @@ public sealed class ApplicationSettings
     public string CatalogBackendUrl { get; set; } = string.Empty;
     public int CatalogRequestTimeoutSeconds { get; set; } = 15;
     public bool UseLocalCatalogFallback { get; set; } = true;
-    /// <summary>Optional HTTPS/HTTP release manifest endpoint. Empty disables update checks.</summary>
+    /// <summary>Optional HTTPS release manifest endpoint. Empty disables update checks.</summary>
     public string UpdateManifestUrl { get; set; } = string.Empty;
     /// <summary>Update checks are opt-in until a production release manifest is configured.</summary>
     public bool CheckForUpdates { get; set; } = false;
@@ -31,6 +31,8 @@ public sealed class ApplicationSettings
     public bool HighQualityFiltering { get; set; } = true;
     public bool UseHardwareDecoding { get; set; } = true;
     public bool EnableGlassEffects { get; set; } = true;
+    public bool AutoTunePlayback { get; set; }
+    public float DefaultSharpness { get; set; }
     public PlaybackScalingMode DefaultScalingMode { get; set; } = PlaybackScalingMode.Fill;
     public float DefaultVolume { get; set; } = 1.0f;
     public bool DefaultMuted { get; set; } = true;
@@ -41,12 +43,34 @@ public sealed class ApplicationSettings
     public float DefaultSaturation { get; set; } = 1.0f;
     public PerformanceSettings Performance { get; set; } = new();
     public Dictionary<string, Guid> MonitorWallpaperAssignments { get; set; } = [];
+    public void Normalize()
+    {
+        static float Finite(float value, float min, float max, float fallback) => float.IsFinite(value) ? Math.Clamp(value,min,max) : fallback;
+        GlobalTargetFps = Math.Clamp(GlobalTargetFps,15,240);
+        VideoHeightLimit = Math.Clamp(VideoHeightLimit,0,16384);
+        RenderScale = Finite(RenderScale,.25f,1,1);
+        DefaultSharpness = Finite(DefaultSharpness,0,.3f,0);
+        DefaultVolume = Finite(DefaultVolume,0,1,1);
+        DefaultPlaybackSpeed = Finite(DefaultPlaybackSpeed,.25f,2,1);
+        DefaultBrightness = Finite(DefaultBrightness,0,2,1);
+        DefaultContrast = Finite(DefaultContrast,0,2,1);
+        DefaultSaturation = Finite(DefaultSaturation,0,2,1);
+        Performance ??= new(); MonitorWallpaperAssignments ??= [];
+        Performance.HeartbeatIntervalMs = Math.Clamp(Performance.HeartbeatIntervalMs,250,5000);
+        Performance.CoveredThresholdPercentage = Math.Clamp(Performance.CoveredThresholdPercentage,1,100);
+        Performance.BatteryFps = Math.Clamp(Performance.BatteryFps,15,240);
+        CatalogRequestTimeoutSeconds = Math.Clamp(CatalogRequestTimeoutSeconds,1,60);
+        if (!Enum.IsDefined(QualityPreset)) QualityPreset = QualityPreset.Custom;
+        if (!Enum.IsDefined(DefaultScalingMode)) DefaultScalingMode = PlaybackScalingMode.Fill;
+    }
+
     public WallpaperSettings CreatePlaybackSettings() => new()
     {
         TargetFps = Math.Clamp(GlobalTargetFps, 15, 240), ScalingMode = DefaultScalingMode,
         Volume = DefaultVolume, IsMuted = DefaultMuted, PlaybackSpeed = DefaultPlaybackSpeed,
         Loop = DefaultLoop, Brightness = DefaultBrightness, Contrast = DefaultContrast,
         Saturation = DefaultSaturation, VideoHeightLimit = VideoHeightLimit, RenderScale = RenderScale,
-        HighQualityFiltering = HighQualityFiltering, UseHardwareDecoding = UseHardwareDecoding
+        HighQualityFiltering = HighQualityFiltering, UseHardwareDecoding = UseHardwareDecoding,
+        AutoTunePlayback = AutoTunePlayback, Sharpness = DefaultSharpness
     };
 }

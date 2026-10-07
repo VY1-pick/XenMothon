@@ -140,12 +140,12 @@ public sealed class VideoPlaybackClock
     }
 
     /// <summary>Waits for the media timestamp without accumulating per-frame delay drift.</summary>
-    public async Task<double> WaitUntilAsync(double mediaTimeMs, CancellationToken ct, Action<CancellationToken>? waitForResume = null)
+    public async Task<double> WaitUntilAsync(double mediaTimeMs, CancellationToken ct, Func<CancellationToken, Task>? waitForResume = null)
     {
         while (true)
         {
             ct.ThrowIfCancellationRequested();
-            waitForResume?.Invoke(ct);
+            if (waitForResume != null) await waitForResume(ct).ConfigureAwait(false);
             double elapsed;
             lock (_syncLock)
             {

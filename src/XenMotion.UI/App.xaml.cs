@@ -34,6 +34,7 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
     private ReleaseReadinessService? _releaseReadinessService;
     private IUpdateService? _updateService;
     private bool _isShuttingDown;
+    private readonly CancellationTokenSource _startupQualityCts = new();
 
     public static new App Current => (App)global::Microsoft.UI.Xaml.Application.Current;
     public IServiceProvider ServiceProvider => _serviceProvider ?? throw new InvalidOperationException("App is not initialized.");
@@ -73,9 +74,20 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
         if (settingsService.IsFirstRun)
         {
             var tuning = _serviceProvider.GetRequiredService<HardwareTuningService>();
-            await settingsService.UpdateSettingsAsync(s => XenMotion.Core.Models.QualityPresets.Apply(s, tuning.RecommendedPreset)).ConfigureAwait(true);
+            await settingsService.UpdateSettingsAsync(s =>
+            {
+                XenMotion.Core.Models.QualityPresets.Apply(s, tuning.RecommendedPreset);
+                s.AutoTunePlayback = true;
+                if (tuning.RecommendedPreset != XenMotion.Core.Models.QualityPreset.Economy)
+                {
+                    // Hardware is a starting hint, not an unmeasured quality ceiling on a new installation.
+                    s.VideoHeightLimit = 0; s.RenderScale = 1; s.GlobalTargetFps = 60;
+                    s.QualityPreset = XenMotion.Core.Models.QualityPreset.Custom;
+                }
+            }).ConfigureAwait(true);
             _logger.LogInformation("First-run quality recommendation: {Preset}; {Hardware}.", tuning.RecommendedPreset, tuning.Summary);
         }
+        await _serviceProvider.GetRequiredService<AdaptiveQualityService>().InitializeAsync().ConfigureAwait(true);
         await _releaseReadinessService.ValidateAsync().ConfigureAwait(true);
 
         // 3. Resolve Services
@@ -120,18 +132,22 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
         };
         _trayManager.ExitRequested += (_, _) => Shutdown();
         _trayManager.Initialize();
+        var adaptiveQuality = _serviceProvider.GetRequiredService<AdaptiveQualityService>();
+        adaptiveQuality.AllowMeasurements = false;
         try
         {
             await _serviceProvider.GetRequiredService<SavedWallpaperService>().RestorePrimaryAsync();
         }
         catch (Exception ex) { _logger.LogError(ex, "Could not restore the saved wallpaper at startup."); }
+        finally { adaptiveQuality.AllowMeasurements = true; }
         _logger.LogInformation("Background startup ready in {Elapsed} ms; UI created: {Created}.", startupWatch.ElapsedMilliseconds, _mainWindow is not null);
         _startupService.Apply(settingsService.CurrentSettings.StartWithWindows);
         _ = CheckForUpdatesInBackgroundAsync();
 
         // 7. Handle Launch Mode (--minimized)
-        bool startMinimized = _args.Any(a => string.Equals(a, "--minimized", StringComparison.OrdinalIgnoreCase))
-                           || settingsService.CurrentSettings.StartMinimizedToTray;
+        bool forceShow = _args.Any(a => string.Equals(a, "--show", StringComparison.OrdinalIgnoreCase));
+        bool startMinimized = !forceShow && (_args.Any(a => string.Equals(a, "--minimized", StringComparison.OrdinalIgnoreCase))
+                           || settingsService.CurrentSettings.StartMinimizedToTray);
 
         if (startMinimized && _trayManager.IsInitialized)
         {
@@ -151,6 +167,40 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             }
             _windowManager.ShowAndActivate();
         }
+        _ = MeasureRestoredQualityAsync();
+    }
+
+    private async Task MeasureRestoredQualityAsync()
+    {
+        try
+        {
+            var saved = ServiceProvider.GetRequiredService<SavedWallpaperService>();
+            var wallpaper = saved.ActiveWallpaper;
+            var settings = ServiceProvider.GetRequiredService<ISettingsService>();
+            var requested = settings.CurrentSettings.CreatePlaybackSettings();
+            var monitor = _monitorTopology?.CurrentMonitors.FirstOrDefault(m => m.IsPrimary);
+            if (wallpaper?.Type != XenMotion.Core.Enums.WallpaperType.Video || !requested.AutoTunePlayback || monitor is null ||
+                _orchestrator?.GetMonitorState("PRIMARY_MONITOR") != XenMotion.Core.Enums.WallpaperState.Playing) return;
+            var identity = System.Text.Json.JsonSerializer.Serialize(requested);
+            using var measurement = CancellationTokenSource.CreateLinkedTokenSource(_startupQualityCts.Token);
+            var measuring = ServiceProvider.GetRequiredService<AdaptiveQualityService>().TuneAsync(
+                wallpaper.FilePath, requested, monitor.Bounds, measurement.Token);
+            while (!measuring.IsCompleted)
+            {
+                await Task.WhenAny(measuring, Task.Delay(1000, _startupQualityCts.Token));
+                if (_orchestrator?.GetMonitorState("PRIMARY_MONITOR") != XenMotion.Core.Enums.WallpaperState.Playing || saved.ActiveWallpaper?.Id != wallpaper.Id)
+                    measurement.Cancel();
+            }
+            var tuned = await measuring;
+            if (_isShuttingDown || saved.ActiveWallpaper?.Id != wallpaper.Id ||
+                System.Text.Json.JsonSerializer.Serialize(settings.CurrentSettings.CreatePlaybackSettings()) != identity ||
+                System.Text.Json.JsonSerializer.Serialize(tuned) == identity) return;
+            // Apply the measured profile once; do not start a second search using its reduced settings as new caps.
+            tuned.AutoTunePlayback = false;
+            await saved.ApplyAsync("PRIMARY_MONITOR", wallpaper, tuned, _startupQualityCts.Token);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) { _logger?.LogWarning(ex, "Startup quality measurement unavailable; saved wallpaper remains active."); }
     }
 
     private void CreateMainWindow()
@@ -249,6 +299,7 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             return;
         }
         _isShuttingDown = true;
+        _startupQualityCts.Cancel();
 
         _logger?.LogInformation("Application clean shutdown initiated.");
 

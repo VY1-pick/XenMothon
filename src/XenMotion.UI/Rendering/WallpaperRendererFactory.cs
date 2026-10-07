@@ -1,5 +1,6 @@
 using XenMotion.Core.Enums;
 using XenMotion.Core.Interfaces;
+using XenMotion.Core.Models;
 using Microsoft.Extensions.Logging;
 using System.Runtime.Versioning;
 
@@ -11,15 +12,15 @@ namespace XenMotion.UI.Rendering;
 public static class WallpaperRendererFactory
 {
     [SupportedOSPlatform("windows10.0.19041.0")]
-    public static IWallpaperRenderer CreateRenderer(WallpaperType type, ILoggerFactory loggerFactory)
+    public static IWallpaperRenderer CreateRenderer(WallpaperType type, ILoggerFactory loggerFactory, Action<string>? calibrationCompleted = null, double calibrationBudget = 250, Func<string, WallpaperSettings, MonitorBounds, CancellationToken, Task<WallpaperSettings>>? adaptiveQuality = null)
     {
         ArgumentNullException.ThrowIfNull(loggerFactory);
 
         return type switch
         {
             WallpaperType.Image => new ImageWallpaperRenderer(loggerFactory.CreateLogger<ImageWallpaperRenderer>()),
-            WallpaperType.Video => new VideoWallpaperRenderer(loggerFactory.CreateLogger<VideoWallpaperRenderer>()),
-            _ => new VideoWallpaperRenderer(loggerFactory.CreateLogger<VideoWallpaperRenderer>())
+            WallpaperType.Video => new VideoWallpaperRenderer(loggerFactory.CreateLogger<VideoWallpaperRenderer>(), calibrationCompleted, calibrationBudget, adaptiveQuality),
+            _ => new VideoWallpaperRenderer(loggerFactory.CreateLogger<VideoWallpaperRenderer>(), calibrationCompleted, calibrationBudget, adaptiveQuality)
         };
     }
 }

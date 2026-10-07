@@ -7,6 +7,8 @@ namespace XenMotion.Core.Models;
 /// </summary>
 public sealed class WallpaperSettings
 {
+    public bool AutoTunePlayback { get; set; }
+    public float Sharpness { get; set; }
     public float Volume { get; set; } = 1.0f;
     public bool IsMuted { get; set; } = true;
     public int TargetFps { get; set; } = 30;
@@ -23,6 +25,7 @@ public sealed class WallpaperSettings
 
     public WallpaperSettings Clone() => new()
     {
+        AutoTunePlayback = AutoTunePlayback, Sharpness = Sharpness,
         Volume = Volume,
         IsMuted = IsMuted,
         TargetFps = TargetFps,

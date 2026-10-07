@@ -9,7 +9,7 @@ namespace XenMotion.Infrastructure.Persistence.Updates;
 
 /// <summary>
 /// Reads a small JSON release manifest over HTTPS. It performs no installation and rejects
-/// non-HTTP(S) download/notes URLs. A missing endpoint simply means update checks are disabled.
+/// non-HTTPS download/notes URLs. A missing endpoint simply means update checks are disabled.
 /// </summary>
 public sealed class RemoteUpdateService : IUpdateService
 {
@@ -34,9 +34,9 @@ public sealed class RemoteUpdateService : IUpdateService
     public async Task<UpdateInfo?> CheckForUpdateAsync(CancellationToken ct = default)
     {
         if (!Uri.TryCreate(_manifestUrl, UriKind.Absolute, out var manifestUri) ||
-            (manifestUri.Scheme != Uri.UriSchemeHttp && manifestUri.Scheme != Uri.UriSchemeHttps))
+            manifestUri.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidOperationException("Update manifest URL must be an absolute HTTP(S) URI.");
+            throw new InvalidOperationException("Update manifest URL must be an absolute HTTPS URI.");
         }
 
         var manifest = await _httpClient.GetFromJsonAsync<UpdateManifest>(manifestUri, JsonOptions, ct).ConfigureAwait(false);
@@ -77,14 +77,14 @@ public sealed class RemoteUpdateService : IUpdateService
         => Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.0.0";
 
     private static string NormalizeVersion(string version)
-        => version.Trim().TrimStart('v', 'V');
+        => version.Trim().TrimStart('v', 'V').Split('-', 2)[0];
 
     private static void ValidateOptionalHttpUrl(string value, string field)
     {
         if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) ||
-            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            uri.Scheme != Uri.UriSchemeHttps)
         {
-            throw new InvalidDataException($"Update manifest field '{field}' must be an absolute HTTP(S) URL.");
+            throw new InvalidDataException($"Update manifest field '{field}' must be an absolute HTTPS URL.");
         }
     }
 

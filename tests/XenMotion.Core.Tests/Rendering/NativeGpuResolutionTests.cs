@@ -15,6 +15,105 @@ namespace XenMotion.Core.Tests.Rendering;
 public sealed class NativeGpuResolutionTests(ITestOutputHelper output)
 {
     [Fact]
+    public void MildSharpeningChangesEdgesWithoutIncreasingDimensionsAndGpuFenceCompletes()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000, -16000, 8, 8));
+        Assert.NotNull(surface);
+        using var chain = new DesktopSwapChain(surface.Handle, 8, 8);
+        var data = Enumerable.Repeat(0x606060, 64).ToArray(); data[4 * 8 + 4] = 0x808080;
+        var pixels = GCHandle.Alloc(data, GCHandleType.Pinned);
+        try
+        {
+            chain.SetVisualAdjustments(1, 1, 1, .15f);
+            chain.Render(pixels.AddrOfPinnedObject(), 8, 8, new ViewportRectangle(0, 0, 8, 8));
+            chain.CompleteCalibrationFrame(default);
+            Assert.InRange(chain.ReadPixel(4, 4, 8, 8) & 255, 132u, 134u);
+            Assert.Equal(1, chain.TextureMipLevels);
+            chain.SetVisualAdjustments(1, 1, 1, 0);
+            chain.Render(pixels.AddrOfPinnedObject(), 8, 8, new ViewportRectangle(0, 0, 8, 8));
+            Assert.Equal(0x808080u, chain.ReadPixel(4, 4, 8, 8));
+        }
+        finally { pixels.Free(); }
+    }
+
+    [Fact]
+    public async Task AdaptiveProfileIsAppliedBeforePlaybackWithoutChangingRequestedSettings()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10,0,19041)) return;
+        var path=Path.Combine(Path.GetTempPath(),$"adaptive-profile-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path,NativeMediaFoundationTests.CreateAvi());
+            using var surface=DesktopSurface.TryCreate(GetDesktopWindow(),new MonitorBounds(-16000,-16000,64,36));
+            Assert.NotNull(surface);
+            bool called=false;
+            Task<WallpaperSettings> Profile(string media,WallpaperSettings settings,MonitorBounds bounds,CancellationToken ct)
+            {
+                called=true;Assert.Equal(path,media);Assert.Equal(64,bounds.Width);
+                Assert.Equal(.7f,settings.Brightness);
+                var result=settings.Clone();result.TargetFps=15;result.VideoHeightLimit=720;result.RenderScale=.5f;
+                return Task.FromResult(result);
+            }
+            await using var renderer=new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance,adaptiveQuality:Profile);
+            await renderer.InitializeAsync(surface.Handle,surface.LocalBounds);
+            var requested=new WallpaperSettings {AutoTunePlayback=true,TargetFps=30,Brightness=.7f};
+            await renderer.LoadAsync(path,requested);
+            Assert.True(called);Assert.Equal(15,renderer.CurrentFpsLimit);Assert.Equal(30,requested.TargetFps);
+            Assert.Null(renderer.CalibrationSummary);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task AutomaticCalibrationMeasuresNativePlaybackWithinEconomyLimits()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-calibration-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path, NativeMediaFoundationTests.CreateAvi());
+            using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000, -16000, 64, 36));
+            Assert.NotNull(surface);
+            string? report = null;
+            await using var renderer = new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance, value => report = value);
+            await renderer.InitializeAsync(surface.Handle, surface.LocalBounds);
+            await renderer.LoadAsync(path, new WallpaperSettings { AutoTunePlayback = true, VideoHeightLimit = 720, RenderScale = .5f, TargetFps = 15, Sharpness = .15f });
+            Assert.NotNull(report);
+            Assert.Contains("p90 decode", report);
+            Assert.True(renderer.CurrentFpsLimit <= 15);
+            Assert.True(renderer.DecodedFrameCount >= 3);
+            await renderer.PlayAsync();
+            await Task.Delay(100);
+            Assert.Equal(WallpaperState.Playing, renderer.CurrentState);
+            output.WriteLine(report);
+        }
+        finally { File.Delete(path); }
+    }
+    [Fact]
+    public void MipStorageIsAllocatedOnlyForFilteredDownscalingAndPixelsStayCorrect()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000, -16000, 64, 64));
+        Assert.NotNull(surface);
+        using var chain = new DesktopSwapChain(surface.Handle, 64, 64);
+        var pixels = GCHandle.Alloc(Enumerable.Repeat(0x204080, 64 * 64).ToArray(), GCHandleType.Pinned);
+        try
+        {
+            chain.Render(pixels.AddrOfPinnedObject(), 64, 64, new ViewportRectangle(0, 0, 64, 64));
+            Assert.Equal(1, chain.TextureMipLevels);
+            Assert.Equal(0x804020u, chain.ReadPixel(16, 16, 64, 64));
+            chain.Render(pixels.AddrOfPinnedObject(), 64, 64, new ViewportRectangle(0, 0, 32, 32));
+            Assert.Equal(7, chain.TextureMipLevels);
+            Assert.Equal(0x804020u, chain.ReadPixel(16, 16, 64, 64));
+            chain.SetFiltering(false);
+            chain.Render(pixels.AddrOfPinnedObject(), 64, 64, new ViewportRectangle(0, 0, 32, 32));
+            Assert.Equal(1, chain.TextureMipLevels);
+            Assert.Equal(0x804020u, chain.ReadPixel(16, 16, 64, 64));
+        }
+        finally { pixels.Free(); }
+    }
+    [Fact]
     public void EconomyFilteringDrawsPixelsAndRenderScaleTracksDisplayChanges()
     {
         if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;

@@ -45,9 +45,11 @@ public sealed class SettingsService : ISettingsService
             else
             {
 
+            if (new FileInfo(_settingsFilePath).Length > 1024 * 1024) throw new InvalidDataException("Settings file exceeds the 1 MiB limit.");
             string json = await File.ReadAllTextAsync(_settingsFilePath, ct).ConfigureAwait(false);
             var loaded = JsonSerializer.Deserialize<ApplicationSettings>(json, JsonOptions);
             _currentSettings = loaded ?? new ApplicationSettings();
+            _currentSettings.Normalize();
             _logger.LogInformation("Successfully loaded application settings from '{Path}'.", _settingsFilePath);
             }
         }
@@ -76,6 +78,7 @@ public sealed class SettingsService : ISettingsService
             }
 
             string tempFile = _settingsFilePath + ".tmp";
+            _currentSettings.Normalize();
             string json = JsonSerializer.Serialize(_currentSettings, JsonOptions);
             await File.WriteAllTextAsync(tempFile, json, ct).ConfigureAwait(false);
             File.Move(tempFile, _settingsFilePath, overwrite: true);

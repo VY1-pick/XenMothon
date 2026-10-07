@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>الگوریتم انتخاب خودکار تنظیمات — XenMotion</title>
+<style>
+:root{--bg:#0b1120;--panel:#131d30;--border:#30405a;--text:#edf3fc;--muted:#a8bad2;--cyan:#68dccb;--blue:#8ab7ff;--amber:#f5c774;--rose:#f3a5b1}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.9 Tahoma,"Segoe UI",sans-serif}a{color:var(--cyan)}button{font:inherit;cursor:pointer;border:1px solid var(--border);background:#1b2940;color:var(--text);border-radius:10px;padding:7px 15px}button:hover{border-color:var(--cyan)}button:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:4px}header,main,footer{max-width:1480px;margin:auto;padding:28px}header{padding-bottom:12px}.eyebrow{color:var(--cyan);font-size:12px;letter-spacing:1px}h1{font-size:clamp(23px,3vw,37px);line-height:1.6;margin:9px 0}header p{max-width:1000px;color:var(--muted);margin:8px 0}.badge{display:inline-block;border:1px solid #496077;color:var(--amber);border-radius:20px;padding:2px 13px;font-size:12px}.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:22px}.legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:18px}.legend span:before{content:"";width:9px;height:9px;display:inline-block;border-radius:50%;margin-left:7px;background:var(--blue)}.legend .decision:before{background:var(--amber)}.legend .result:before{background:var(--cyan)}.legend .fallback:before{background:var(--rose)}main{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start;padding-top:12px}.diagram{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,#111c2d,#0d1524);overflow:auto;direction:ltr}.diagram svg{display:block;width:100%;min-width:730px;height:auto}.sidebar{position:sticky;top:18px}.card{border:1px solid var(--border);border-radius:16px;background:var(--panel);padding:22px;margin-bottom:16px}.card h2{font-size:19px;margin:4px 0 12px}.card h3{font-size:15px;margin:0 0 9px}.card p{margin:8px 0;color:var(--muted)}.card ul{padding-right:20px;margin:8px 0;color:var(--muted)}.stepid{color:var(--cyan);font:12px/1.8 Consolas,monospace}.limits{display:grid;grid-template-columns:1fr 1fr;gap:9px}.limit{padding:10px;background:#0d1729;border-radius:9px;text-align:center}.limit b{display:block;font-size:21px;color:var(--cyan)}.limit small{color:var(--muted);font-size:11px}.caption{font-size:12px;color:var(--muted)}footer{padding-top:0;color:var(--muted);font-size:12px}svg text{font-family:Tahoma,"Segoe UI",sans-serif;fill:var(--text);text-anchor:middle;direction:rtl;unicode-bidi:plaintext}svg .node{cursor:pointer;outline:none}svg .node rect{fill:#18263d;stroke:#4a6590;stroke-width:1.5;transition:stroke .15s,fill .15s}svg .node.decision rect{fill:#30291f;stroke:#967949}svg .node.result rect{fill:#143330;stroke:#43887c}svg .node.fallback rect{fill:#34232e;stroke:#a2697a}svg .node:hover rect,svg .node:focus-visible rect,svg .node.selected rect{stroke:#fff;stroke-width:3;fill:#243c51}svg .node .title{font-size:17px;font-weight:bold}svg .node .sub{font-size:12px;fill:#b9c9dd}svg .node .code{font:11px Consolas,monospace;fill:#93b6d8;direction:ltr}svg .edge{fill:none;stroke:#6983a3;stroke-width:2;marker-end:url(#arrow)}svg .edge.alt{stroke:#bf8d9a;stroke-dasharray:7 5;marker-end:url(#arrowAlt)}svg .edge.loop{stroke:#d4b16d;stroke-dasharray:7 5;marker-end:url(#arrowLoop)}svg .label{font-size:12px;fill:#f3cc82;paint-order:stroke;stroke:#101a2a;stroke-width:5;stroke-linejoin:round}svg .phase{font-size:12px;fill:#8ea5c4;text-anchor:start;direction:ltr}noscript{display:block;margin:20px;padding:20px;border:1px solid var(--amber)}@media(max-width:1000px){main{grid-template-columns:1fr}.sidebar{position:static;display:grid;grid-template-columns:1fr 1fr;gap:15px}.sidebar .card:first-child{grid-column:1/-1}.card{margin:0}}@media(max-width:600px){header,main,footer{padding:16px}.sidebar{display:block}.card{margin-bottom:12px}.toolbar button{padding:7px 10px;font-size:12px}}
+@media print{body{background:white;color:#111}header,main,footer{padding:10px}header p,footer,.card p,.card ul,.caption{color:#333}.toolbar,.legend,.sidebar{display:none}main{display:block}.diagram{border:0;background:white;overflow:visible}.diagram svg{width:100%!important;min-width:0}svg .node rect{fill:#edf2f8!important;stroke:#456!important}svg .node text{fill:#172438!important}svg .label{stroke:white;fill:#604713}svg .phase{fill:#345}.badge{color:#555}a{color:#246}h1{font-size:23px}header p{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+<div class="eyebrow">XENMOTION · ADAPTIVE QUALITY · DESIGN 1.0</div>
+<h1>بهترین تنظیم، بر پایهٔ اندازه‌گیری</h1>
+<span class="badge">طرح آینده — در برنامه پیاده‌سازی نشده</span>
+<p>ابتدا گزینه‌های ناپایدار یا پرمصرف حذف می‌شوند؛ سپس بالاترین کیفیتِ قابل تأیید انتخاب می‌شود. برای گزینه‌های تقریباً هم‌کیفیت، مصرف کمتر برنده است. روی هر مرحله کلیک کنید تا جزئیات تصمیم را ببینید.</p>
+<div class="toolbar" aria-label="ابزارهای فلوچارت">
+<button id="zoomIn" type="button" aria-label="بزرگ‌نمایی فلوچارت">بزرگ‌تر +</button>
+<button id="zoomOut" type="button" aria-label="کوچک‌نمایی فلوچارت">کوچک‌تر −</button>
+<button id="reset" type="button">اندازهٔ اصلی</button>
+<button id="print" type="button">چاپ فلوچارت</button>
+<a href="adaptive-quality-algorithm.fa.md">مطالعهٔ سند کامل الگوریتم ←</a>
+</div>
+<div class="legend"><span>فرایند / سنجش</span><span class="decision">دروازهٔ تصمیم</span><span class="result">خروجی / ثبت</span><span class="fallback">مسیر جایگزین / تعویق</span></div>
+</header>
+<main>
+<section class="diagram" aria-label="فلوچارت نصب، سنجش و ثبت تنظیمات">
+<svg id="flow" viewBox="0 0 1180 2520" role="img" aria-labelledby="flowTitle flowDesc">
+<title id="flowTitle">فلوچارت انتخاب خودکار بهترین کانفیگ</title>
+<desc id="flowDesc">نصب و ثبت بررسی اولیه، اولین اجرا، تشخیص محیط و اعتبار کش، تثبیت بار، انتخاب نمونه، ساخت گزینه‌ها، سنجش و جست‌وجوی تکراری، تخصیص چند مانیتور، تأیید نهایی، کنترل تغییرات و ثبت اتمیک. مسیرهای فرعی شامل کش معتبر، تعویق، شکست و خروجی موقت هستند.</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#6983a3"/></marker>
+<marker id="arrowAlt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#bf8d9a"/></marker>
+<marker id="arrowLoop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#d4b16d"/></marker>
+</defs>
+<g id="edges"></g><g id="nodes"></g>
+</svg>
+<noscript>نمای تعاملی به JavaScript نیاز دارد. مسیر اصلی: نصب ← بررسی محیط ← اولین اجرا ← اعتبارسنجی کش ← خط پایه ← انتخاب محتوا ← ساخت گزینه‌ها ← سنجش ← کنترل قیود ← جبههٔ پارتو و آزمایش بعدی ← تخصیص چند نمایشگر ← تأیید نهایی ← کنترل تغییر تنظیمات ← ثبت اتمیک. شرح کامل تمام شاخه‌ها در فایل Markdown همراه موجود است.</noscript>
+</section>
+<aside class="sidebar" aria-label="جزئیات مرحله و قواعد الگوریتم">
+<section class="card" id="details" aria-live="polite" aria-atomic="true">
+<div class="stepid" id="detailCode">S01</div><h2 id="detailTitle">شروع نصب</h2><p id="detailBody">اطلاعات اولیه و اعتبار بستهٔ نمونه‌ها بررسی می‌شود. نصب برای اجرای بنچمارک سنگین متوقف نمی‌ماند.</p><ul id="detailList"><li>خروجی نصب: InstallationProbe</li><li>سنجش واقعی در Session تعاملی کاربر</li></ul>
+</section>
+<section class="card"><h3>سقف Economy حفظ می‌شود</h3><div class="limits"><div class="limit"><b>720p</b><small>سقف پردازش ویدیو</small></div><div class="limit"><b>15 FPS</b><small>سقف نمایش</small></div><div class="limit"><b>50%</b><small>مقیاس رندر</small></div><div class="limit"><b>≤ 180s</b><small>بودجهٔ کار سنجش</small></div></div><p class="caption">بهبود فیلتر باید در همین سقف و با تأیید مصرف انجام شود. سقف جلسه با انتظار: ۲۴۰ ثانیه.</p></section>
+<section class="card"><h3>تعریف برنده</h3><p>محدودیت‌ها رعایت شده‌اند؛ کیفیت در فاصلهٔ حداکثر ۰٫۰۲ از بهترین کیفیتِ تأییدشده است؛ سپس کمترین هزینهٔ منابع انتخاب می‌شود.</p><p class="caption">تمام حدود عددی، سیاست پیشنهادی‌اند و قبل از انتشار محصول نیاز به اعتبارسنجی دارند.</p></section>
+<section class="card"><h3>نتیجه همراه شواهد</h3><ul><li>تنظیم هر نمایشگر و خانوادهٔ محتوا</li><li>زمینهٔ AC / DC و آداپتور واقعی</li><li>اندازه‌گیری‌ها و عدم قطعیت</li><li>دلیل انتخاب و علت رد گزینه‌ها</li><li>Confidence و محدودهٔ اعتبار</li><li>آخرین نتیجهٔ سالم و fallback</li></ul></section>
+</aside>
+</main>
+<footer>طراحی: 2026-10-07 · مستقل و بدون وابستگی آنلاین · این فایل فقط فلوچارت طراحی است و سخت‌افزار یا تنظیمات سیستم را تغییر نمی‌دهد. جزئیات منابع فنی و معیارهای پذیرش در سند همراه آمده است.</footer>
+<script>
+'use strict';
+const data = [
+ {id:'S01',x:320,y:40,w:540,h:80,type:'result',title:'شروع نصب',sub:'بررسی OS، معماری و بستهٔ نمونه‌های معتبر',body:'نصاب فقط بررسی سبک سازگاری و هش نمونه‌ها را انجام می‌دهد. نتیجهٔ نصب با نتیجهٔ کارایی کاربر یکی نیست.',items:['ثبت InstallationProbe','بدون وابستگی به اینترنت یا دانلود نمونه','نصب با نبود امکان سنجش هم کامل می‌شود']},
+ {id:'S02',x:320,y:155,w:540,h:80,type:'',title:'ثبت وضعیت راه‌اندازی',sub:'PendingInteractiveCalibration',body:'اگر دسکتاپ تعاملی همان کاربر وجود ندارد، آزمایش GPU به اولین اجرای برنامه موکول می‌شود.',items:['Session صفر و حساب نصاب معیار نهایی نیست','فایل‌های شخصی کاربر وارد نمونه‌های نصاب نمی‌شوند']},
+ {id:'S03',x:320,y:270,w:540,h:80,type:'',title:'اولین اجرای کاربر',sub:'بازشدن سریع UI + worker قابل لغو',body:'سنجش در فرایند کمکی اجرا می‌شود. کاربر پیشرفت و امکان ردکردن را می‌بیند. ناظر فقط worker متعلق به آزمون را در timeout متوقف می‌کند.',items:['۱۸۰ ثانیه کار و ۲۴۰ ثانیه سقف جلسه','رد کردن: حفظ نتیجهٔ سالم و ثبت Deferred','اجرا نکردن بنچمارک کامل در هر بوت']},
+ {id:'S04',x:320,y:385,w:540,h:90,type:'decision',title:'محیط و کش معتبرند؟',sub:'OS / GPU / driver / display / power / version',body:'کلید اعتبار از سخت‌افزار، درایور، توپولوژی، وضعیت برق و نسخهٔ الگوریتم و نمونه‌ها ساخته می‌شود. LUID به‌تنهایی کلید پایدار نیست.',items:['کش مطابق: همان نتیجه استفاده می‌شود','کش نامعتبر: ورود به سنجش','محیط غیرتعاملی: تعویق با علت مشخص']},
+ {id:'CACHE',x:910,y:390,w:240,h:80,type:'result',title:'کش معتبر',sub:'استفاده از نتیجهٔ ثبت‌شده',body:'نتیجهٔ معتبر قبلی بدون تکرار بنچمارک خوانده می‌شود. این شاخه پایان مسیر است.',items:['حفظ دامنهٔ اعتبار و سطح اطمینان قبلی','بدون بازنویسی ترجیح دستی']},
+ {id:'S05',x:320,y:520,w:540,h:80,type:'',title:'خط پایه و تثبیت شرایط',sub:'۶ ثانیه نمونه؛ حداکثر ۲۰ ثانیه انتظار',body:'بار دیگر برنامه‌ها، حافظه و وضعیت برق ثبت می‌شود. ترتیب تست‌ها برای کاهش سوگیری کش و دما جابه‌جا می‌شود.',items:['CPU و GPU کل فقط برای تشخیص محیط کم‌نویز','پایش تغییر بار بین آزمایش‌ها','عدم دسترسی به شمارنده: Unknown']},
+ {id:'S06',x:320,y:645,w:540,h:90,type:'decision',title:'سنجش قابل اتکاست؟',sub:'دسکتاپ تعاملی، بار پایدار، زمینهٔ ثابت',body:'بار سنگین، قفل سیستم، تغییر نمایشگر یا برق باعث تعویق یا نامعتبرشدن نمونه می‌شود. این وضعیت به ناتوانی دائمی دستگاه تعبیر نمی‌شود.',items:['بله: انتخاب نمونه‌ها','خیر: Deferred یا پیشنهاد موقت','نمونهٔ آلوده مبنای رد دائمی نیست']},
+ {id:'DEFER',x:25,y:650,w:240,h:90,type:'fallback',title:'تعویق / خروج امن',sub:'حفظ آخرین تنظیم سالم',body:'نبود محیط مناسب، Cancel یا تغییر زمینه از مسیر سنجش خارج می‌شود. رکورد علت و وضعیت Deferred ثبت می‌شود؛ موفقیت جعلی گزارش نمی‌شود.',items:['سنجش به نشست مناسب بعدی موکول می‌شود','اگر تنظیم سالم نداریم: پیشنهاد موقت یا ثابت','این شاخه به ثبت خروجی جایگزین می‌رسد']},
+ {id:'S07',x:320,y:780,w:540,h:80,type:'',title:'انتخاب خانواده‌های محتوا',sub:'والپیپر اولیه + نمونهٔ پایه + نمونهٔ سخت‌تر',body:'Codec، عمق بیت، HDR/SDR، نرخ و حرکت جدا طبقه‌بندی می‌شوند. ابتدا خانوادهٔ مورد نیاز کاربر آزموده می‌شود.',items:['H.264 معیار همهٔ Codecها نیست','بخش‌های متنوع فایل، نه فقط چند فریم اول','خانواده‌های تست‌نشده با Untested ثبت می‌شوند']},
+ {id:'S08',x:320,y:895,w:540,h:80,type:'',title:'ساخت گزینه‌های قانونی',sub:'مسیر دیکود، ابعاد، مقیاس، نرخ، فیلتر',body:'سقف دستی و Economy قفل می‌شوند. قابلیت‌های موجود، ابعاد منبع و نمایشگر و حافظه، گزینه‌های غیرممکن را حذف می‌کنند.',items:['720p / 15 FPS / 50% برای سقف Economy','افزودن گزینهٔ هم‌اندازهٔ پنل؛ حفظ سقف منبع و Economy','مسیر پشتیبانی‌نشده پیشنهاد اجرایی نمی‌شود']},
+ {id:'S09',x:320,y:1010,w:540,h:90,type:'',title:'آزمایش یک گزینه',sub:'گرم‌شدن ← غربال ← کیفیت خارج از زمان‌سنجی',body:'تا ۲ ثانیه گرم‌شدن و ۶ ثانیه غربال، زیر سقف جلسه. CPU busy، GPU timing، حافظه، deadline و کیفیت جدا اندازه‌گیری می‌شوند.',items:['راه‌اندازی، پخش پایدار و EOF جدا بررسی شوند','Readback کیفیت آمار کارایی را آلوده نمی‌کند','آمار واقعی نمایش با submit اشتباه نمی‌شود']},
+ {id:'S10',x:320,y:1145,w:540,h:90,type:'decision',title:'صحت و محدودیت‌ها پاس شدند؟',sub:'رنگ، منابع، روانی، RAM / Commit و صوت',body:'خطای قطعی یا تخطی شدید گزینه را رد می‌کند. مورد مرزی با عدم قطعیت بالا دوباره بررسی می‌شود؛ دادهٔ ناموجود به صفر تبدیل نمی‌شود.',items:['RAM مقیم تا 1 GiB؛ Commit مستقل و وابسته به ظرفیت آزاد','فریم‌حذفی عمدی در کاهش FPS خطا نیست','خطای درایور و Timeout علت مستقل دارند']},
+ {id:'REJECT',x:910,y:1150,w:240,h:90,type:'fallback',title:'رد یا نامطمئن',sub:'ثبت علت + تشخیص گلوگاه',body:'نتیجهٔ این گزینه نگهداری می‌شود تا آزمایش بعدی علت مشکل را هدف بگیرد؛ تکرار کور همهٔ ترکیب‌ها لازم نیست.',items:['دیکود سنگین: مسیر یا منبع سبک‌تر','رندر سنگین: فیلتر، مقیاس یا نرخ','کمبود داده: آزمایش دوباره در صورت بودجه']},
+ {id:'S11',x:320,y:1280,w:540,h:90,type:'decision',title:'بهبود معنادار و بودجه باقی است؟',sub:'مدل هزینه + عدم قطعیت + جبههٔ پارتو',body:'گزینه‌های مغلوب حذف می‌شوند. همسایهٔ امیدوارکننده بر اساس گلوگاه و ارزش آزمایش انتخاب می‌شود؛ بخشی از بودجه برای اکتشاف نگه داشته می‌شود.',items:['حداکثر ۱۲ آزمایش اصلی','حداکثر ۳ آزمایش اکتشافی غیرهمسایه','پایان با دو دور بدون بهبود یا پایان بودجه','مدل پیش‌بینی به‌تنهایی گزینه را تأیید نمی‌کند']},
+ {id:'S12',x:320,y:1420,w:540,h:90,type:'',title:'تخصیص مشترک چند مانیتور',sub:'مصرف نزدیک: اولویت ابعاد مؤثر همان نمایشگر',body:'از کمینه برای همه شروع می‌شود. ارتقا بر حسب سود کیفیت در برابر هزینه انجام شده و یک جابه‌جایی بین مانیتورها بررسی می‌شود.',items:['آداپتورها و CPU/RAM مشترک جدا محاسبه می‌شوند','هزینهٔ انتقال Hybrid لحاظ می‌شود','قبول جداگانهٔ دو نمایشگر کافی نیست']},
+ {id:'S13',x:320,y:1555,w:540,h:90,type:'',title:'تأیید فینالیست‌ها در ترکیب واقعی',sub:'تا دو گزینه × ۲۴ ثانیه؛ در سقف جلسه',body:'برنده روی بخش‌های مختلف و تمام نمایشگرهای هدف دوباره اجرا می‌شود. Pause/Resume، صوت، صف و افت عملکرد بررسی می‌شوند.',items:['نمونهٔ کم: ادعای p99 دقیق ممنوع','افت ۱۵٪: Drift، نه تشخیص قطعی گرما','نبود زمان کافی: کاهش Confidence']},
+ {id:'S14',x:320,y:1690,w:540,h:90,type:'decision',title:'گزینهٔ تأییدشده داریم؟',sub:'کیفیت نزدیک به بهترین، سپس مصرف کمتر',body:'از گزینه‌های پذیرفته‌شده، موارد حداکثر ۰٫۰۲ پایین‌تر از بهترین کران کیفیت انتخاب می‌شوند؛ کم‌هزینه‌ترین آنها برنده است.',items:['مقایسه با لحاظ عدم قطعیت','کران بالای مصرف زیر سقف','فقط بهترین گزینهٔ آزموده‌شده؛ نه تضمین بهینهٔ جهانی']},
+ {id:'FALLBACK',x:910,y:1695,w:240,h:95,type:'fallback',title:'خروجی جایگزین',sub:'موقت / منبع سبک‌تر / تصویر ثابت',body:'اگر هیچ گزینهٔ متحرکی پذیرفته نشود، سقف منابع مخفیانه افزایش نمی‌یابد. گزینهٔ آزموده‌شدهٔ کم‌خطر یا حالت ثابت با وضعیت روشن ثبت می‌شود.',items:['Fallback اندازه‌گیری‌نشده تأییدشده نیست','Economy بازتعریف نمی‌شود','علت و محدودیت در خروجی باقی می‌ماند']},
+ {id:'S15',x:320,y:1825,w:540,h:90,type:'decision',title:'زمینه و ترجیح کاربر هنوز یکسان است؟',sub:'بررسی دوبارهٔ fingerprint و revision',body:'اگر کاربر در حین سنجش تنظیمی تغییر داده یا محیط عوض شده، پیشنهاد قدیمی نباید آن را بازنویسی کند.',items:['بدون تغییر: آمادهٔ commit','تغییر: Stale و حفظ تنظیم فعلی','اعمال فقط پس از ثبت موفق آینده']},
+ {id:'STALE',x:25,y:1830,w:240,h:90,type:'fallback',title:'پیشنهاد قدیمی',sub:'Stale؛ حفظ تنظیم فعلی',body:'پیشنهاد و علت نامعتبرشدن قابل ثبت هستند اما تنظیمات جدید کاربر دست‌نخورده می‌مانند.',items:['تغییر دستی همیشه مقدم است','سنجش مجدد فقط در زمینهٔ مناسب','ثبت وضعیت بدون اعمال پیشنهاد قدیمی']},
+ {id:'S16',x:320,y:1960,w:540,h:100,type:'result',title:'ثبت اتمیک نتیجه و شواهد',sub:'تنظیمات + دامنهٔ اعتبار + Confidence + fallback',body:'خروجی با schema معتبر، نسخه‌ها، زمینه، آمار و دلیل انتخاب در فایل موقت همان Volume نوشته و اتمیک جایگزین می‌شود. آخرین نسخهٔ سالم نگه داشته می‌شود.',items:['نوشتن موفق شرط Applied است','خطای دیسک: حفظ تنظیم قبلی و گزارش Failed','دادهٔ محلی؛ بدون ذخیرهٔ فریم شخصی یا مسیر فایل']},
+ {id:'S17',x:320,y:2110,w:540,h:90,type:'result',title:'پایان راه‌اندازی',sub:'نتیجهٔ معتبر یا وضعیت محدودِ صریح',body:'در پیاده‌سازی آینده، نتیجهٔ معتبر قابل اعمال است. خروجی Deferred، Provisional یا Failed به‌عنوان موفقیت کامل نمایش داده نمی‌شود.',items:['پروفایل دستگاه + خانوادهٔ محتوا + هر مانیتور','AC و DC با شواهد جدا','شروع‌های بعدی از نتیجهٔ معتبر استفاده می‌کنند']},
+ {id:'FUTURE',x:320,y:2260,w:540,h:105,type:'',title:'اعتبار در اجراهای بعدی',sub:'تغییر درایور، نمایشگر، برق یا محتوای خارج از دامنه',body:'کلید کش کنترل می‌شود. تغییر مرتبط نتیجه را Stale می‌کند و نیاز به سنجش محدود بعدی را مشخص می‌کند؛ بنچمارک کامل در هر بوت اجرا نمی‌شود.',items:['این بخش قرارداد اعتبار خروجی است','سنجش پیوسته در پس‌زمینه جزو این طرح نیست','بدون ادعای بهترین تنظیم همهٔ ویدیوهای آینده']}
+];
+const ns='http://www.w3.org/2000/svg';
+function svgEl(tag,attrs,text){const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;}
+const edges=document.getElementById('edges'), nodes=document.getElementById('nodes');
+function edge(d,type='',label='',x=0,y=0){edges.append(svgEl('path',{d,class:'edge '+type}));if(label)edges.append(svgEl('text',{x,y,class:'label'},label));}
+const mainIds=['S01','S02','S03','S04','S05','S06','S07','S08','S09','S10','S11','S12','S13','S14','S15','S16','S17','FUTURE'];
+const byId=new Map(data.map(n=>[n.id,n]));
+for(let i=0;i<mainIds.length-1;i++){const a=byId.get(mainIds[i]),b=byId.get(mainIds[i+1]);let label='';if(a.id==='S04')label='کش نداریم / نامعتبر';if(a.id==='S06')label='بله';if(a.id==='S10')label='پذیرفته / مرزی';if(a.id==='S11')label='خیر؛ پایان جست‌وجو';if(a.id==='S14')label='بله';if(a.id==='S15')label='بدون تغییر';edge(`M590 ${a.y+a.h} V${b.y}`,'',label,705,(a.y+a.h+b.y)/2+4);}
+edge('M860 430 H910','','کش معتبر',887,410);
+edge('M320 690 H265','alt','خیر',288,672);
+edge('M145 740 V2460 H1040 V2010 H860','alt');
+edge('M860 1190 H910','alt','خیر / نامطمئن',1006,1130);
+edge('M1030 1240 V1325 H860','alt');
+edge('M320 1325 H285 V1055 H320','loop','بله؛ آزمایش بعدی',179,1260);
+edge('M860 1735 H910','alt','خیر',884,1714);
+edge('M1030 1790 V2010 H860','alt');
+edge('M320 1870 H265','alt','تغییر کرده',286,1805);
+edge('M145 1920 V2010 H320','alt');
+edges.append(svgEl('text',{x:40,y:27,class:'phase'},'01  INSTALL / FIRST LAUNCH'));
+edges.append(svgEl('text',{x:40,y:770,class:'phase'},'02  MEASURE / SEARCH'));
+edges.append(svgEl('text',{x:40,y:1540,class:'phase'},'03  VALIDATE / RECORD'));
+function select(id){const n=byId.get(id);document.getElementById('detailCode').textContent=n.id;document.getElementById('detailTitle').textContent=n.title;document.getElementById('detailBody').textContent=n.body;const list=document.getElementById('detailList');list.replaceChildren(...n.items.map(t=>{const li=document.createElement('li');li.textContent=t;return li;}));for(const node of nodes.children){const chosen=node.dataset.id===id;node.classList.toggle('selected',chosen);node.setAttribute('aria-pressed',String(chosen));}}
+for(const n of data){const g=svgEl('g',{class:'node '+n.type,tabindex:'0',role:'button','aria-label':n.id+' — '+n.title,'aria-pressed':'false'});g.dataset.id=n.id;g.append(svgEl('rect',{x:n.x,y:n.y,width:n.w,height:n.h,rx:n.type==='decision'?25:14}));g.append(svgEl('text',{x:n.x+n.w/2,y:n.y+17,class:'code'},n.id));g.append(svgEl('text',{x:n.x+n.w/2,y:n.y+43,class:'title'},n.title));g.append(svgEl('text',{x:n.x+n.w/2,y:n.y+67,class:'sub'},n.sub));g.addEventListener('click',()=>select(n.id));g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(n.id);}});nodes.append(g);}
+let zoom=1;const flow=document.getElementById('flow');function applyZoom(){flow.style.width=(zoom*100)+'%';}
+document.getElementById('zoomIn').addEventListener('click',()=>{zoom=Math.min(2.2,zoom+.2);applyZoom();});
+document.getElementById('zoomOut').addEventListener('click',()=>{zoom=Math.max(.8,zoom-.2);applyZoom();});
+document.getElementById('reset').addEventListener('click',()=>{zoom=1;applyZoom();});
+document.getElementById('print').addEventListener('click',()=>window.print());
+select('S01');
+</script>
+</body>
+</html>

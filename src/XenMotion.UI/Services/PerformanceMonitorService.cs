@@ -30,6 +30,7 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
     private readonly SemaphoreSlim _activityChanged = new(0, 1);
     private readonly WinEventProc _foregroundCallback;
     private IntPtr _foregroundHook;
+    private IntPtr _windowHook, _minimizeHook;
     private readonly Dictionary<string, DateTimeOffset> _lastRecoveryAttempts = new(StringComparer.OrdinalIgnoreCase);
 
     public bool IsRunning { get { lock (_syncLock) return _isRunning; } }
@@ -47,8 +48,9 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         _topology = topology ?? throw new ArgumentNullException(nameof(topology));
         _desktopHost = desktopHost ?? throw new ArgumentNullException(nameof(desktopHost));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _foregroundCallback = (_, _, _, _, _, _, _) =>
+        _foregroundCallback = (_, eventType, window, objectId, _, _, _) =>
         {
+            if (eventType >= 0x8000 && (window == IntPtr.Zero || objectId != 0 || eventType is not (0x8002 or 0x8003 or 0x800B))) return;
             if (_activityChanged.CurrentCount == 0)
                 try { _activityChanged.Release(); } catch (SemaphoreFullException) { }
         };
@@ -67,6 +69,8 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         }
         _logger.LogInformation("PerformanceMonitorService started.");
         _foregroundHook = SetWinEventHook(3, 3, IntPtr.Zero, _foregroundCallback, 0, 0, 0);
+        _windowHook = SetWinEventHook(0x8002, 0x800B, IntPtr.Zero, _foregroundCallback, 0, 0, 0);
+        _minimizeHook = SetWinEventHook(0x16, 0x17, IntPtr.Zero, _foregroundCallback, 0, 0, 0);
     }
 
     public void Stop()
@@ -82,6 +86,8 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         }
         cts?.Cancel();
         if (_foregroundHook != IntPtr.Zero) { UnhookWinEvent(_foregroundHook); _foregroundHook = IntPtr.Zero; }
+        if (_windowHook != IntPtr.Zero) { UnhookWinEvent(_windowHook); _windowHook = IntPtr.Zero; }
+        if (_minimizeHook != IntPtr.Zero) { UnhookWinEvent(_minimizeHook); _minimizeHook = IntPtr.Zero; }
         cts?.Dispose();
         _logger.LogInformation("PerformanceMonitorService stopped.");
     }
@@ -95,23 +101,17 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         var monitors = _topology.CurrentMonitors;
         await _desktopHost.EnsureAttachedAsync(ct).ConfigureAwait(false);
 
-        IntPtr foregroundHwnd = GetForegroundWindow();
-        string foregroundClass = GetClass(foregroundHwnd);
-        bool desktopVisible = foregroundHwnd == IntPtr.Zero || foregroundHwnd == GetShellWindow() || foregroundHwnd == GetDesktopWindow()
-            || foregroundClass is "Progman" or "WorkerW";
         var visibleWindows = new List<VisibleDesktopWindow>();
-        if (!desktopVisible)
+        // Desktop focus does not remove visible windows; custom low thresholds must still see them.
+        DesktopNativeMethods.EnumWindows((window, _) =>
         {
-            DesktopNativeMethods.EnumWindows((window, _) =>
-            {
-                if (!IsWindowVisible(window) || IsIconic(window) || GetClass(window) is "Progman" or "WorkerW" or "Shell_TrayWnd") return true;
-                if ((GetWindowLongPtr(window, -20).ToInt64() & 0x20) != 0) return true;
-                if (DwmGetWindowAttribute(window, 14, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
-                if (TryGetPhysicalBounds(window, out var bounds)) visibleWindows.Add(new(
-                    new MonitorBounds(bounds.Left, bounds.Top, bounds.Width, bounds.Height), IsZoomed(window)));
-                return true;
-            }, IntPtr.Zero);
-        }
+            if (!IsWindowVisible(window) || IsIconic(window) || GetClass(window) is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd") return true;
+            if ((GetWindowLongPtr(window, -20).ToInt64() & 0x20) != 0) return true;
+            if (DwmGetWindowAttribute(window, 14, out int cloaked, sizeof(int)) == 0 && cloaked != 0) return true;
+            if (TryGetPhysicalBounds(window, out var bounds)) visibleWindows.Add(new(
+                new MonitorBounds(bounds.Left, bounds.Top, bounds.Width, bounds.Height), IsZoomed(window)));
+            return true;
+        }, IntPtr.Zero);
 
         var performance = _settingsService.CurrentSettings.Performance;
         bool onBattery = IsOnBattery();
@@ -168,6 +168,8 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         }
         cts?.Cancel();
         if (_foregroundHook != IntPtr.Zero) { UnhookWinEvent(_foregroundHook); _foregroundHook = IntPtr.Zero; }
+        if (_windowHook != IntPtr.Zero) { UnhookWinEvent(_windowHook); _windowHook = IntPtr.Zero; }
+        if (_minimizeHook != IntPtr.Zero) { UnhookWinEvent(_minimizeHook); _minimizeHook = IntPtr.Zero; }
         cts?.Dispose();
         if (polling != null)
         {

@@ -16,6 +16,16 @@ internal sealed class GpuFramePipeline : IDisposable
     private readonly IntPtr[] _adjustmentBinding = new IntPtr[1];
     private int _width, _height;
     private uint _format;
+    private bool _hasMips;
+    internal int TextureMipLevels
+    {
+        get
+        {
+            if (_texture == IntPtr.Zero) return 0;
+            Method<GetTextureDesc>(_texture, 10)(_texture, out var desc);
+            return (int)desc.MipLevels;
+        }
+    }
     public bool HighQualityFiltering { get; set; } = true;
     private readonly CopyRegion _copy;
     private readonly Update _upload;
@@ -70,9 +80,9 @@ internal sealed class GpuFramePipeline : IDisposable
         _targetBinding[0] = _target;
     }
 
-    public void SetVisualAdjustments(float brightness, float contrast, float saturation)
+    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0)
     {
-        var values = GCHandle.Alloc(new[] { Math.Clamp(brightness, 0, 2), Math.Clamp(contrast, 0, 2), Math.Clamp(saturation, 0, 2), 0f }, GCHandleType.Pinned);
+        var values = GCHandle.Alloc(new[] { Math.Clamp(brightness, 0, 2), Math.Clamp(contrast, 0, 2), Math.Clamp(saturation, 0, 2), Math.Clamp(sharpness, 0, .3f) }, GCHandleType.Pinned);
         try { _upload(_context, _adjustments, 0, IntPtr.Zero, values.AddrOfPinnedObject(), 0, 0); }
         finally { values.Free(); }
     }
@@ -85,7 +95,7 @@ internal sealed class GpuFramePipeline : IDisposable
 
     public void Render(IntPtr pixels, int width, int height, ViewportRectangle viewport)
     {
-        EnsureTexture(width, height, 87);
+        EnsureTexture(width, height, 87, HighQualityFiltering && (viewport.Width < width || viewport.Height < height));
         _upload(_context, _texture, 0, IntPtr.Zero, pixels, checked((uint)width * 4), 0);
         DrawUploaded(width, height, viewport);
     }
@@ -95,24 +105,24 @@ internal sealed class GpuFramePipeline : IDisposable
         Method<GetTextureDesc>(texture, 10)(texture, out var source);
         if (source.Format is not (87 or 88 or 28))
             throw new NotSupportedException($"The RGB decoder returned unexpected DXGI format {source.Format}.");
-        EnsureTexture(width, height, source.Format);
+        EnsureTexture(width, height, source.Format, HighQualityFiltering && (viewport.Width < width || viewport.Height < height));
         // Copy only the visible pixels: decoder surfaces can include codec-alignment padding.
         var box = new Box { Right = (uint)width, Bottom = (uint)height, Back = 1 };
         _copy(_context, _texture, 0, 0, 0, 0, texture, subresource, ref box);
         DrawUploaded(width, height, viewport);
     }
 
-    private void EnsureTexture(int width, int height, uint format)
+    private void EnsureTexture(int width, int height, uint format, bool mips)
     {
-        if (_width != width || _height != height || _format != format)
+        if (_width != width || _height != height || _format != format || _hasMips != mips)
         {
             Release(ref _view); Release(ref _texture);
-            var desc = new TextureDesc { Width = (uint)width, Height = (uint)height, MipLevels = 0, ArraySize = 1,
-                Format = format, SampleCount = 1, BindFlags = 0x28, MiscFlags = 1 };
+            var desc = new TextureDesc { Width = (uint)width, Height = (uint)height, MipLevels = mips ? 0u : 1u, ArraySize = 1,
+                Format = format, SampleCount = 1, BindFlags = mips ? 0x28u : 8u, MiscFlags = mips ? 1u : 0u };
             Marshal.ThrowExceptionForHR(Method<CreateTexture>(_device, 5)(_device, ref desc, IntPtr.Zero, out _texture));
             Marshal.ThrowExceptionForHR(Method<CreateView>(_device, 7)(_device, _texture, IntPtr.Zero, out _view));
             _resourceBinding[0] = _view;
-            _width = width; _height = height; _format = format;
+            _width = width; _height = height; _format = format; _hasMips = mips;
         }
     }
 
@@ -149,11 +159,12 @@ internal sealed class GpuFramePipeline : IDisposable
     private static byte[] Compile(string profile, string entry)
     {
         const string source = "Texture2D image : register(t0); SamplerState filtering : register(s0); " +
-            "cbuffer Adjustments : register(b0) { float brightness; float contrast; float saturation; float padding; }; " +
+            "cbuffer Adjustments : register(b0) { float brightness; float contrast; float saturation; float sharpness; }; " +
             "struct Vertex { float4 position : SV_POSITION; float2 uv : TEXCOORD0; }; " +
             "Vertex VS(uint id : SV_VertexID) { Vertex v; v.uv = float2((id << 1) & 2, id & 2); " +
             "v.position = float4(v.uv * float2(2,-2) + float2(-1,1),0,1); return v; } " +
             "float4 PS(Vertex v) : SV_TARGET { float3 rgb = image.Sample(filtering,v.uv).rgb; " +
+            "if (sharpness > 0) { float3 neighbors = image.Sample(filtering,v.uv,int2(1,0)).rgb + image.Sample(filtering,v.uv,int2(-1,0)).rgb + image.Sample(filtering,v.uv,int2(0,1)).rgb + image.Sample(filtering,v.uv,int2(0,-1)).rgb; rgb += (rgb-neighbors*0.25)*sharpness; } " +
             "rgb = lerp(dot(rgb,float3(0.2126,0.7152,0.0722)).xxx,rgb,saturation); " +
             "return float4(saturate(((rgb-0.5)*contrast+0.5)*brightness),1); }";
         byte[] bytes = Encoding.ASCII.GetBytes(source);

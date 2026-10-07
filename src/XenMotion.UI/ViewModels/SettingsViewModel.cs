@@ -35,11 +35,17 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _pauseOnMaximized = true;
     private bool _pauseOnBattery;
     private bool _pauseWhenCovered = true;
+    private bool _pauseOnlyWhenFullyCovered;
     private int _coveredThresholdPercentage = 85;
     private bool _muteAudioWhenCovered = true;
     private int _heartbeatIntervalMs = 1500;
     private bool _isSaving;
     private string? _statusMessage;
+    private bool _autoTunePlayback;
+    private float _defaultSharpness;
+    public bool AutoTunePlayback { get => _autoTunePlayback; set => SetField(ref _autoTunePlayback, value); }
+    public float DefaultSharpness { get => _defaultSharpness; set => SetField(ref _defaultSharpness, Math.Clamp(value, 0, .3f)); }
+    public string PlaybackMeasurement => _tuning.PlaybackReport;
     private readonly HardwareTuningService _tuning;
     private QualityPreset _qualityPreset;
     private int _videoHeightLimit, _batteryFps;
@@ -63,11 +69,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         VideoHeightLimit = draft.VideoHeightLimit;
         RenderScale = draft.RenderScale;
         HighQualityFiltering = draft.HighQualityFiltering;
+        DefaultSharpness = draft.DefaultSharpness;
         UseHardwareDecoding = draft.UseHardwareDecoding;
         EnableGlassEffects = draft.EnableGlassEffects;
         BatteryFps = draft.Performance.BatteryFps;
         PauseOnBattery = draft.Performance.PauseOnBattery;
         PauseOnFullscreen = PauseOnMaximized = PauseWhenCovered = true;
+        PauseOnlyWhenFullyCovered = draft.Performance.PauseOnlyWhenFullyCovered;
+        CoveredThresholdPercentage = draft.Performance.CoveredThresholdPercentage;
         HeartbeatIntervalMs = draft.Performance.HeartbeatIntervalMs;
         QualityPreset = preset;
     }
@@ -92,7 +101,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool PauseOnMaximized { get => _pauseOnMaximized; set => SetField(ref _pauseOnMaximized, value); }
     public bool PauseOnBattery { get => _pauseOnBattery; set => SetField(ref _pauseOnBattery, value); }
     public bool PauseWhenCovered { get => _pauseWhenCovered; set => SetField(ref _pauseWhenCovered, value); }
-    public int CoveredThresholdPercentage { get => _coveredThresholdPercentage; set => SetField(ref _coveredThresholdPercentage, Math.Clamp(value, 50, 100)); }
+    public int CoveredThresholdPercentage { get => _coveredThresholdPercentage; set => SetField(ref _coveredThresholdPercentage, Math.Clamp(value, 1, 100)); }
+    public bool PauseOnlyWhenFullyCovered { get => _pauseOnlyWhenFullyCovered; set => SetField(ref _pauseOnlyWhenFullyCovered, value); }
     public bool MuteAudioWhenCovered { get => _muteAudioWhenCovered; set => SetField(ref _muteAudioWhenCovered, value); }
     public int HeartbeatIntervalMs { get => _heartbeatIntervalMs; set => SetField(ref _heartbeatIntervalMs, Math.Clamp(value, 250, 5000)); }
     public bool IsSaving { get => _isSaving; private set => SetField(ref _isSaving, value); }
@@ -108,6 +118,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _tuning = tuning ?? new HardwareTuningService();
+        _tuning.PlaybackReportChanged += (_, _) => OnPropertyChanged(nameof(PlaybackMeasurement));
 
         LoadFromSettings(_settingsService.CurrentSettings);
         _settingsService.SettingsChanged += OnSettingsChanged;
@@ -138,6 +149,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 settings.StartMinimizedToTray = StartMinimizedToTray;
                 settings.GlobalTargetFps = GlobalTargetFps;
                 settings.QualityPreset = QualityPreset;
+                settings.AutoTunePlayback = AutoTunePlayback;
+                settings.DefaultSharpness = DefaultSharpness;
                 settings.VideoHeightLimit = VideoHeightLimit;
                 settings.RenderScale = RenderScale;
                 settings.HighQualityFiltering = HighQualityFiltering;
@@ -156,6 +169,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 settings.Performance.PauseOnMaximized = PauseOnMaximized;
                 settings.Performance.PauseOnBattery = PauseOnBattery;
                 settings.Performance.PauseWhenCovered = PauseWhenCovered;
+                settings.Performance.PauseOnlyWhenFullyCovered = PauseOnlyWhenFullyCovered;
                 settings.Performance.CoveredThresholdPercentage = CoveredThresholdPercentage;
                 settings.Performance.MuteAudioWhenCovered = MuteAudioWhenCovered;
                 settings.Performance.HeartbeatIntervalMs = HeartbeatIntervalMs;
@@ -190,9 +204,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             throw new ArgumentOutOfRangeException(nameof(GlobalTargetFps), "FPS must be between 15 and 240.");
         }
 
-        if (CoveredThresholdPercentage is < 50 or > 100)
+        if (CoveredThresholdPercentage is < 1 or > 100)
         {
-            throw new ArgumentOutOfRangeException(nameof(CoveredThresholdPercentage), "Coverage threshold must be between 50% and 100%.");
+            throw new ArgumentOutOfRangeException(nameof(CoveredThresholdPercentage), "Coverage threshold must be between 1% and 100%.");
         }
 
         if (HeartbeatIntervalMs is < 250 or > 5000)
@@ -205,6 +219,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         _displayName = settings.DisplayName;
         _qualityPreset = settings.QualityPreset;
+        _autoTunePlayback = settings.AutoTunePlayback;
+        _defaultSharpness = Math.Clamp(settings.DefaultSharpness, 0, .3f);
         _videoHeightLimit = settings.VideoHeightLimit;
         _renderScale = Math.Clamp(settings.RenderScale, .25f, 1f);
         _highQualityFiltering = settings.HighQualityFiltering;
@@ -227,7 +243,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _pauseOnMaximized = settings.Performance.PauseOnMaximized;
         _pauseOnBattery = settings.Performance.PauseOnBattery;
         _pauseWhenCovered = settings.Performance.PauseWhenCovered;
-        _coveredThresholdPercentage = Math.Clamp(settings.Performance.CoveredThresholdPercentage, 50, 100);
+        _pauseOnlyWhenFullyCovered = settings.Performance.PauseOnlyWhenFullyCovered;
+        _coveredThresholdPercentage = Math.Clamp(settings.Performance.CoveredThresholdPercentage, 1, 100);
         _muteAudioWhenCovered = settings.Performance.MuteAudioWhenCovered;
         _heartbeatIntervalMs = Math.Clamp(settings.Performance.HeartbeatIntervalMs, 250, 5000);
 
@@ -243,7 +260,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
-        if (propertyName is nameof(GlobalTargetFps) or nameof(VideoHeightLimit) or nameof(RenderScale) or nameof(HighQualityFiltering) or nameof(UseHardwareDecoding) or nameof(EnableGlassEffects) or nameof(BatteryFps) or nameof(PauseOnBattery) or nameof(PauseOnFullscreen) or nameof(PauseOnMaximized) or nameof(PauseWhenCovered) or nameof(HeartbeatIntervalMs))
+        if (propertyName is nameof(GlobalTargetFps) or nameof(VideoHeightLimit) or nameof(RenderScale) or nameof(HighQualityFiltering) or nameof(UseHardwareDecoding) or nameof(EnableGlassEffects) or nameof(BatteryFps) or nameof(PauseOnBattery) or nameof(PauseOnFullscreen) or nameof(PauseOnMaximized) or nameof(PauseWhenCovered) or nameof(PauseOnlyWhenFullyCovered) or nameof(CoveredThresholdPercentage) or nameof(HeartbeatIntervalMs) or nameof(DefaultSharpness))
         {
             _qualityPreset = QualityPreset.Custom;
             OnPropertyChanged(nameof(QualityPreset));

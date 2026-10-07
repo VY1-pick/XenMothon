@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\src\XenMotion.UI\Services\AdaptiveQualityService.cs" Link="Settings\AdaptiveQualityService.cs" />
     <Compile Include="..\..\src\XenMotion.UI\Services\HardwareTuningService.cs" Link="Settings\HardwareTuningService.cs" />
     <Compile Include="..\..\src\XenMotion.UI\ViewModels\SettingsViewModel.cs" Link="Settings\SettingsViewModel.cs" />
     <Compile Include="..\..\src\XenMotion.UI\Services\SingleWindowController.cs" Link="Windowing\SingleWindowController.cs" />

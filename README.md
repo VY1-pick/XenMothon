@@ -52,6 +52,13 @@ Desktop pixels can only be sampled when unobscured; a foreground window clips th
 
 The local Explore catalog contains preview-only video entries; it no longer saves fake BMP data as MP4 files. Import real videos or configure a real remote catalog. Previously downloaded synthetic entries remain in the user's library until removed.
 
-Current limitations include CPU-copy video upload and primary-display targeting in the desktop adapter. Imported image metadata in the persistence layer still uses legacy defaults; video card dimensions/duration are now read from the real file. These should be addressed before a production release.
+GPU-resident video frames use the shared D3D11 presentation path; CPU upload remains the fallback. Current limitations include primary-display targeting in the desktop adapter. Imported image metadata in the persistence layer still uses legacy defaults; video card dimensions/duration are now read from the real file. These should be addressed before a production release.
 
 Native interop repairs were checked against the installed Windows SDK headers. HRESULT declarations use `PreserveSig` as described in [Microsoft's interop documentation](https://learn.microsoft.com/en-us/dotnet/standard/native-interop/preserve-sig). Desktop parenting follows [SetParent's window-style and DPI requirements](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setparent).
+
+
+## Private beta 0.9.0-beta.1
+
+Automatic quality uses the same isolated optimizer as the standalone lab. First launch records capabilities, the first video is measured, and validated per-source/display profiles are cached. Existing wallpaper restoration does not wait for a full benchmark. User quality ceilings and Economy remain in force. See [beta review and limitations](docs/engineering/private-beta-review.md).
+
+`tools/Build-Release.ps1` builds/tests the application, bundles the embedded Python runtime and native probe, verifies checksums and produces the per-user Inno Setup installer. Windows 10 build 19041+/Windows 11 x64 is required. The beta installer is unsigned.

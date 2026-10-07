@@ -17,6 +17,13 @@ public class LocalStorageManagerTests : IDisposable
     }
 
     [Fact]
+    public void RelativePathCannotEscapeManagedLibrary()
+    {
+        Assert.Throws<UnauthorizedAccessException>(()=>_storageManager.ResolveAbsolutePath("../escape.mp4"));
+        Assert.StartsWith(_testRoot,_storageManager.ResolveAbsolutePath("Media/video.mp4"));
+    }
+
+    [Fact]
     public async Task Storage_StreamingSha256_CalculatesAccurately()
     {
         string filePath = Path.Combine(_testRoot, "test_sha.dat");
