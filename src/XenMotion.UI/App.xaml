@@ -1,0 +1,977 @@
+<Application
+    x:Class="XenMotion.UI.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <!-- ===================================================================
+           XENMOTION LIQUID GLASS - dark only.
+           Midnight ink base, mint / aqua light, translucent white glass layers.
+           =================================================================== -->
+
+    <Color x:Key="XenMotionMintColor">#FF5EF2CF</Color>
+    <Color x:Key="XenMotionAquaColor">#FF4FD8FF</Color>
+    <Color x:Key="XenMotionVioletColor">#FF7B6CFF</Color>
+
+    <FontFamily x:Key="XenMotionIconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+    <!-- window canvas -->
+    <LinearGradientBrush x:Key="XenMotionPageBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#ED0B1C25" Offset="0" />
+      <GradientStop Color="#ED101726" Offset="0.55" />
+      <GradientStop Color="#ED1A1830" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- glass layers -->
+    <LinearGradientBrush x:Key="XenMotionGlassBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#26FFFFFF" Offset="0" />
+      <GradientStop Color="#0DFFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="XenMotionGlassStrongBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#EE141C30" Offset="0" />
+      <GradientStop Color="#EE0D1424" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="XenMotionFlyoutBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#F51A2338" Offset="0" />
+      <GradientStop Color="#F50E1526" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="XenMotionGlassDarkBrush" Color="#8C060B14" />
+    <SolidColorBrush x:Key="XenMotionSectionBrush" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="XenMotionFieldBrush" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="XenMotionSwitchOffBrush" Color="#33FFFFFF" />
+
+    <!-- specular rim: bright top-left edge, soft bottom-right edge -->
+    <LinearGradientBrush x:Key="XenMotionRimBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#80FFFFFF" Offset="0" />
+      <GradientStop Color="#1FFFFFFF" Offset="0.4" />
+      <GradientStop Color="#0DFFFFFF" Offset="0.62" />
+      <GradientStop Color="#40FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="XenMotionRimSoftBrush" Color="#1FFFFFFF" />
+    <SolidColorBrush x:Key="XenMotionDividerBrush" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="XenMotionHoverBrush" Color="#1AFFFFFF" />
+    <SolidColorBrush x:Key="XenMotionPressedBrush" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="XenMotionCloseHoverBrush" Color="#CCFF5C73" />
+    <SolidColorBrush x:Key="XenMotionClosePressedBrush" Color="#FFE0405A" />
+
+    <!-- accent -->
+    <LinearGradientBrush x:Key="XenMotionAccentBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#FF74F8D6" Offset="0" />
+      <GradientStop Color="#FF4FD8F5" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="XenMotionAccentEdgeBrush" StartPoint="0,0" EndPoint="1,1">
+      <GradientStop Color="#CCFFFFFF" Offset="0" />
+      <GradientStop Color="#4DFFFFFF" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="XenMotionAccentSoftBrush" Color="#2E5EF2CF" />
+    <SolidColorBrush x:Key="XenMotionAccentRimBrush" Color="#995EF2CF" />
+    <SolidColorBrush x:Key="XenMotionSegmentActiveBrush" Color="#2EFFFFFF" />
+    <SolidColorBrush x:Key="XenMotionSegmentActiveRimBrush" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="XenMotionOnAccentBrush" Color="#FF04251E" />
+
+    <!-- text -->
+    <SolidColorBrush x:Key="XenMotionTextBrush" Color="#FFF3FBF9" />
+    <SolidColorBrush x:Key="XenMotionMutedTextBrush" Color="#FFB6C9C5" />
+    <SolidColorBrush x:Key="XenMotionFaintTextBrush" Color="#FF7F9490" />
+    <SolidColorBrush x:Key="XenMotionMintTextBrush" Color="#FF86F8DE" />
+    <SolidColorBrush x:Key="XenMotionDangerBrush" Color="#FFFF8C9B" />
+    <SolidColorBrush x:Key="XenMotionDangerSoftBrush" Color="#2BFF6B80" />
+    <SolidColorBrush x:Key="XenMotionDangerRimBrush" Color="#66FF8C9B" />
+
+    <!-- overlays -->
+    <SolidColorBrush x:Key="XenMotionScrimBrush" Color="#B3030610" />
+    <LinearGradientBrush x:Key="XenMotionCardScrimBrush" StartPoint="0,0" EndPoint="0,1">
+      <GradientStop Color="#00050A12" Offset="0" />
+      <GradientStop Color="#E6050A12" Offset="1" />
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="XenMotionHairlineBrush" StartPoint="0,0" EndPoint="1,0">
+      <GradientStop Color="#00FFFFFF" Offset="0" />
+      <GradientStop Color="#33FFFFFF" Offset="0.5" />
+      <GradientStop Color="#00FFFFFF" Offset="1" />
+    </LinearGradientBrush>
+
+    <!-- shape language -->
+    <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
+    <CornerRadius x:Key="OverlayCornerRadius">20</CornerRadius>
+
+    <!-- ===== re-skinned built-in controls (lightweight styling) ===== -->
+    <SolidColorBrush x:Key="ToolTipBackground" Color="#F2131B2E" />
+    <SolidColorBrush x:Key="ToolTipForeground" Color="#FFF3FBF9" />
+    <SolidColorBrush x:Key="ToolTipBorderBrush" Color="#33FFFFFF" />
+    <StaticResource x:Key="FlyoutPresenterBackground" ResourceKey="XenMotionFlyoutBrush" />
+    <StaticResource x:Key="FlyoutBorderThemeBrush" ResourceKey="XenMotionRimSoftBrush" />
+    <StaticResource x:Key="MenuFlyoutPresenterBackground" ResourceKey="XenMotionFlyoutBrush" />
+    <StaticResource x:Key="MenuFlyoutPresenterBorderBrush" ResourceKey="XenMotionRimSoftBrush" />
+
+    <SolidColorBrush x:Key="SliderTrackFill" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="SliderTrackFillPointerOver" Color="#40FFFFFF" />
+    <SolidColorBrush x:Key="SliderTrackFillPressed" Color="#4DFFFFFF" />
+    <SolidColorBrush x:Key="SliderTrackValueFill" Color="#FF5EF2CF" />
+    <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="#FF86F8DE" />
+    <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="#FF4FD8FF" />
+    <SolidColorBrush x:Key="SliderThumbBackground" Color="#FF5EF2CF" />
+    <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="#FF86F8DE" />
+    <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#FF4FD8FF" />
+    <SolidColorBrush x:Key="SliderOuterThumbBackground" Color="#FFF3FBF9" />
+    <SolidColorBrush x:Key="SliderContainerBackground" Color="Transparent" />
+    <SolidColorBrush x:Key="SliderContainerBackgroundPointerOver" Color="Transparent" />
+    <SolidColorBrush x:Key="SliderContainerBackgroundPressed" Color="Transparent" />
+
+    <SolidColorBrush x:Key="ScrollBarThumbFill" Color="#59FFFFFF" />
+    <SolidColorBrush x:Key="ScrollBarThumbFillPointerOver" Color="#80FFFFFF" />
+    <SolidColorBrush x:Key="ScrollBarThumbFillPressed" Color="#B35EF2CF" />
+    <SolidColorBrush x:Key="ScrollBarTrackFill" Color="Transparent" />
+    <SolidColorBrush x:Key="ScrollBarTrackFillPointerOver" Color="#0DFFFFFF" />
+    <SolidColorBrush x:Key="ScrollBarTrackStroke" Color="Transparent" />
+    <SolidColorBrush x:Key="ScrollBarTrackStrokePointerOver" Color="Transparent" />
+
+    <SolidColorBrush x:Key="ProgressBarForeground" Color="#FF5EF2CF" />
+    <SolidColorBrush x:Key="ProgressBarBackground" Color="#26FFFFFF" />
+    <SolidColorBrush x:Key="ProgressBarBorderBrush" Color="Transparent" />
+    <SolidColorBrush x:Key="ProgressRingForeground" Color="#FF5EF2CF" />
+
+    <Style x:Key="XenMotionButtonStyle" TargetType="Button">
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="18,0" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="FocusVisualPrimaryThickness" Value="0" />
+    <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="Button">
+        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+          <Grid.RenderTransform><ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
+          <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border x:Name="Hover" Opacity="0" Background="{StaticResource XenMotionHoverBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="PressedGlow" Opacity="0" Background="{StaticResource XenMotionPressedBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="FocusRing" Opacity="0" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Pressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Disabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Background" Value="{StaticResource XenMotionAccentBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionAccentEdgeBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionOnAccentBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionGhostButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Background" Value="{StaticResource XenMotionDangerSoftBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionDangerRimBrush}" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionDangerBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionIconButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Width" Value="40" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="14" />
+    <Setter Property="FontSize" Value="15" />
+    </Style>
+
+    <Style x:Key="XenMotionSmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Width" Value="32" />
+    <Setter Property="Height" Value="32" />
+    <Setter Property="MinHeight" Value="32" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style x:Key="XenMotionRoundOverlayButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="MinHeight" Value="44" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="22" />
+    <Setter Property="FontSize" Value="16" />
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassDarkBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionOverlayPillButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassDarkBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionOverlayAccentPillStyle" TargetType="Button" BasedOn="{StaticResource XenMotionPrimaryButtonStyle}">
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="CornerRadius" Value="17" />
+    <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style x:Key="XenMotionCaptionButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionCaptionCloseStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="Width" Value="44" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="Button">
+        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+          <Grid.RenderTransform><ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
+          <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border x:Name="Hover" Opacity="0" Background="{StaticResource XenMotionCloseHoverBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="PressedGlow" Opacity="0" Background="{StaticResource XenMotionClosePressedBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="FocusRing" Opacity="0" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Pressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Disabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionChipStyle" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="MinHeight" Value="36" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="CornerRadius" Value="12" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Medium" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="FocusVisualPrimaryThickness" Value="0" />
+    <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="ToggleButton">
+        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+          <Grid.RenderTransform><ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
+          <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border x:Name="CheckedLayer" Opacity="0" Background="{StaticResource XenMotionAccentSoftBrush}" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="1" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="Hover" Opacity="0" Background="{StaticResource XenMotionHoverBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="PressedGlow" Opacity="0" Background="{StaticResource XenMotionPressedBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="FocusRing" Opacity="0" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Pressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Disabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Checked">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPointerOver">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPressed">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedDisabled">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionSegmentStyle" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="20,0" />
+    <Setter Property="MinHeight" Value="38" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="CornerRadius" Value="13" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="FocusVisualPrimaryThickness" Value="0" />
+    <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="ToggleButton">
+        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+          <Grid.RenderTransform><ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
+          <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border x:Name="CheckedLayer" Opacity="0" Background="{StaticResource XenMotionSegmentActiveBrush}" BorderBrush="{StaticResource XenMotionSegmentActiveRimBrush}" BorderThickness="1" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="Hover" Opacity="0" Background="{StaticResource XenMotionHoverBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="PressedGlow" Opacity="0" Background="{StaticResource XenMotionPressedBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="FocusRing" Opacity="0" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Pressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Disabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Checked">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPointerOver">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPressed">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedDisabled">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionTabStyle" TargetType="ToggleButton">
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="CornerRadius" Value="11" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="FocusVisualPrimaryThickness" Value="0" />
+    <Setter Property="FocusVisualSecondaryThickness" Value="0" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="ToggleButton">
+        <Grid x:Name="Root" RenderTransformOrigin="0.5,0.5">
+          <Grid.RenderTransform><ScaleTransform x:Name="ScaleT" ScaleX="1" ScaleY="1" /></Grid.RenderTransform>
+          <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{TemplateBinding CornerRadius}" />
+          <Border x:Name="CheckedLayer" Opacity="0" Background="{StaticResource XenMotionSegmentActiveBrush}" BorderBrush="{StaticResource XenMotionSegmentActiveRimBrush}" BorderThickness="1" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="Hover" Opacity="0" Background="{StaticResource XenMotionHoverBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="PressedGlow" Opacity="0" Background="{StaticResource XenMotionPressedBrush}" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <Border x:Name="FocusRing" Opacity="0" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" CornerRadius="{TemplateBinding CornerRadius}" IsHitTestVisible="False" />
+          <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}" FontWeight="{TemplateBinding FontWeight}" HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Pressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Disabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="Checked">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPointerOver">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPressed">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="0.965" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedDisabled">
+                <VisualState.Setters>
+                  <Setter Target="ContentPresenter.Foreground" Value="{StaticResource XenMotionMintTextBrush}" /></VisualState.Setters>
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="Hover" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="PressedGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.140" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleX" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="ScaleT" Storyboard.TargetProperty="ScaleY" To="1.0" Duration="0:0:0.110" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.100" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="CheckedLayer" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.160" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionSwitchStyle" TargetType="ToggleButton">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="HorizontalAlignment" Value="Right" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="ToggleButton">
+        <Grid x:Name="Root" Width="52" Height="30" Background="Transparent">
+          <Border x:Name="Track" CornerRadius="15" Background="{StaticResource XenMotionSwitchOffBrush}" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1" />
+          <Border x:Name="OnFill" CornerRadius="15" Background="{StaticResource XenMotionAccentBrush}" Opacity="0" />
+          <Border x:Name="FocusRing" CornerRadius="15" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="2" Opacity="0" IsHitTestVisible="False" />
+          <Ellipse x:Name="Knob" Width="24" Height="24" HorizontalAlignment="Left" Margin="3,0,0,0" Fill="White">
+            <Ellipse.RenderTransform><TranslateTransform x:Name="KnobT" X="0" /></Ellipse.RenderTransform>
+          </Ellipse>
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal" />
+              <VisualState x:Name="PointerOver" />
+              <VisualState x:Name="Pressed" />
+              <VisualState x:Name="Disabled">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Checked">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="KnobT" Storyboard.TargetProperty="X" To="22" Duration="0:0:0.22" EnableDependentAnimation="True"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut" /></DoubleAnimation.EasingFunction></DoubleAnimation>
+                  <DoubleAnimation Storyboard.TargetName="OnFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPointerOver">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="KnobT" Storyboard.TargetProperty="X" To="22" Duration="0:0:0.22" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="OnFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedPressed">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="KnobT" Storyboard.TargetProperty="X" To="22" Duration="0:0:0.22" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="OnFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+              <VisualState x:Name="CheckedDisabled">
+                <Storyboard>
+                  <DoubleAnimation Storyboard.TargetName="KnobT" Storyboard.TargetProperty="X" To="22" Duration="0:0:0.01" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="OnFill" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.01" EnableDependentAnimation="True" />
+                  <DoubleAnimation Storyboard.TargetName="Root" Storyboard.TargetProperty="Opacity" To="0.4" Duration="0:0:0.1" EnableDependentAnimation="True" />
+                </Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="FocusStates">
+              <VisualState x:Name="Unfocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="PointerFocused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+              <VisualState x:Name="Focused">
+                <Storyboard><DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.1" EnableDependentAnimation="True" /></Storyboard>
+              </VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionTextBoxStyle" TargetType="TextBox">
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="FontSize" Value="14" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="SelectionHighlightColor" Value="#665EF2CF" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="TextBox">
+        <Grid Background="Transparent">
+          <ScrollViewer x:Name="ContentElement" Padding="{TemplateBinding Padding}" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Hidden" VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Hidden" IsTabStop="False" ZoomMode="Disabled" VerticalAlignment="Center" />
+          <TextBlock x:Name="PlaceholderTextContentPresenter" Text="{TemplateBinding PlaceholderText}" Foreground="{StaticResource XenMotionFaintTextBrush}" Margin="{TemplateBinding Padding}" VerticalAlignment="Center" IsHitTestVisible="False" TextTrimming="CharacterEllipsis" />
+        </Grid>
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionCardItemStyle" TargetType="GridViewItem">
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Margin" Value="0,0,16,16" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="UseSystemFocusVisuals" Value="False" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    <Setter Property="Template">
+      <Setter.Value>
+      <ControlTemplate TargetType="GridViewItem">
+        <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" ContentTransitions="{TemplateBinding ContentTransitions}" Padding="{TemplateBinding Padding}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
+      </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    </Style>
+
+    <Style x:Key="XenMotionGlassPanelStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="22" />
+    </Style>
+
+    <Style x:Key="XenMotionGlassStrongPanelStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassStrongBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="24" />
+    </Style>
+
+    <Style x:Key="XenMotionSectionStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource XenMotionSectionBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimSoftBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="18" />
+    <Setter Property="Padding" Value="16" />
+    </Style>
+
+    <Style x:Key="XenMotionFieldStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource XenMotionFieldBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimSoftBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="16" />
+    <Setter Property="Padding" Value="14,0" />
+    </Style>
+
+    <Style x:Key="XenMotionBadgeStyle" TargetType="Border">
+    <Setter Property="Background" Value="{StaticResource XenMotionGlassDarkBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimSoftBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="8,3" />
+    </Style>
+
+    <Style x:Key="XenMotionTitleTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionHeadingTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionLabelTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionBodyTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="LineHeight" Value="20" />
+    </Style>
+
+    <Style x:Key="XenMotionCaptionTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionFaintTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionEyebrowTextStyle" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="CharacterSpacing" Value="90" />
+    <Setter Property="Foreground" Value="{StaticResource XenMotionMintTextBrush}" />
+    </Style>
+
+    <Style x:Key="XenMotionIconStyle" TargetType="FontIcon">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionIconFont}" />
+    <Setter Property="FontSize" Value="16" />
+    </Style>
+
+    <Style x:Key="XenMotionFlyoutPresenterStyle" TargetType="FlyoutPresenter">
+    <Setter Property="Background" Value="{StaticResource XenMotionFlyoutBrush}" />
+    <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="20" />
+    <Setter Property="Padding" Value="6" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MaxWidth" Value="420" />
+    </Style>
+
+    </ResourceDictionary>
+  </Application.Resources>
+</Application>

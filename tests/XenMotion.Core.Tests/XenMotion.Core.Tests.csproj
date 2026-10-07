@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <RootNamespace>XenMotion.Core.Tests</RootNamespace>
+    <AssemblyName>XenMotion.Core.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\src\XenMotion.UI\Services\HardwareTuningService.cs" Link="Settings\HardwareTuningService.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\ViewModels\SettingsViewModel.cs" Link="Settings\SettingsViewModel.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\Services\SingleWindowController.cs" Link="Windowing\SingleWindowController.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\Rendering\Media\*.cs" Link="NativeRendering\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\XenMotion.UI\Rendering\Video\*.cs" Link="NativeRendering\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\XenMotion.UI\Rendering\Direct3D\*.cs" Link="NativeRendering\%(Filename)%(Extension)" />
+    <Compile Include="..\..\src\XenMotion.UI\Rendering\VideoWallpaperRenderer.cs" Link="NativeRendering\VideoWallpaperRenderer.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\Desktop\DesktopSurface.cs" Link="NativeRendering\DesktopSurface.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\Desktop\DesktopWallpaperHost.cs" Link="NativeRendering\DesktopWallpaperHost.cs" />
+    <Compile Include="..\..\src\XenMotion.UI\Desktop\Win32\DesktopNativeMethods.cs" Link="NativeRendering\DesktopNativeMethods.cs" />
+    <Content Include="..\..\src\XenMotion.UI\Assets\Catalog\*.jpg" Link="Assets\Catalog\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <ProjectReference Include="..\..\src\XenMotion.Core\XenMotion.Core.csproj" />
+    <ProjectReference Include="..\..\src\XenMotion.Contracts\XenMotion.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\XenMotion.Application\XenMotion.Application.csproj" />
+    <ProjectReference Include="..\..\src\XenMotion.Infrastructure.Persistence\XenMotion.Infrastructure.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>

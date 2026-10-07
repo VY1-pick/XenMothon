@@ -9,18 +9,18 @@ $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot\..").Path
 Set-Location $root
 
-Write-Host "== Lumen release build ==" -ForegroundColor Cyan
-dotnet restore Lumen.sln
+Write-Host "== XenMotion release build ==" -ForegroundColor Cyan
+dotnet restore XenMotion.sln
 if (-not $SkipTests) {
-    dotnet test tests\Lumen.Core.Tests\Lumen.Core.Tests.csproj -c $Configuration --no-restore
+    dotnet test tests\XenMotion.Core.Tests\XenMotion.Core.Tests.csproj -c $Configuration --no-restore
 }
-dotnet build Lumen.sln -c $Configuration --no-restore
-dotnet publish src\Lumen.UI\Lumen.UI.csproj -c $Configuration -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=false -o $OutputDirectory
+dotnet build XenMotion.sln -c $Configuration --no-restore
+dotnet publish src\XenMotion.UI\XenMotion.UI.csproj -c $Configuration -r win-x64 --self-contained true --no-restore -p:PublishSingleFile=false -o $OutputDirectory
 
-$version = (Select-String -Path 'src\Lumen.UI\Lumen.UI.csproj' -Pattern '<Version>([^<]+)</Version>').Matches.Groups[1].Value
-$marker = Join-Path $OutputDirectory 'LUMEN-RELEASE.txt'
+$version = (Select-String -Path 'src\XenMotion.UI\XenMotion.UI.csproj' -Pattern '<Version>([^<]+)</Version>').Matches.Groups[1].Value
+$marker = Join-Path $OutputDirectory 'XENMOTION-RELEASE.txt'
 @(
-    "Lumen release",
+    "XenMotion release",
     "Version: $version",
     "Runtime: win-x64",
     "Configuration: $Configuration",
