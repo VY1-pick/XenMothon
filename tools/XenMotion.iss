@@ -15,8 +15,8 @@ AppPublisherURL=https://github.com/VY1-pick/Lumen-Wallpaper
 DefaultDirName={localappdata}\Programs\XenMotion
 DefaultGroupName=XenMotion
 PrivilegesRequired=lowest
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64os
+ArchitecturesInstallIn64BitMode=x64os
 MinVersion=10.0.19041
 OutputDir={#ReleaseDir}
 OutputBaseFilename=XenMotion-{#AppVersion}-Setup-x64
@@ -41,10 +41,6 @@ Name: "{autodesktop}\XenMotion"; Filename: "{app}\XenMotion.UI.exe"; Parameters:
 
 [Run]
 Filename: "{app}\XenMotion.UI.exe"; Parameters: "--show"; Description: "Launch XenMotion"; Flags: nowait postinstall skipifsilent
-
-[UninstallDelete]
-; User library/settings are deliberately preserved.
-Type: files; Name: "{userstartup}\XenMotion.lnk"
 
 [Code]
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
