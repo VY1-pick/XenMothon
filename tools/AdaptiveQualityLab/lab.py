@@ -81,11 +81,13 @@ def candidates(source, economy=False):
     return list(dict.fromkeys(out))
 
 
+def display_height(source, environment):
+    # Fill/Cover uses the larger scale factor; min() would undersample portrait/ultrawide crops.
+    return min(source["height"],max(environment["height"],environment["width"]*source["height"]/source["width"]))
+
+
 def geometry_quality(c, source, environment, motion="medium"):
-    effective = min(c.height ** 2 * source["width"] / source["height"],
-                    environment["width"] * environment["height"] * c.scale ** 2)
-    useful = min(source["width"] * source["height"], environment["width"] * environment["height"])
-    spatial = min(1, effective / useful) ** .18
+    spatial=min(1,c.height/display_height(source,environment),c.scale)**.36
     temporal = min(1, c.fps / source["fps"]) ** .5
     ws, wt = {"low":(.65,.2),"medium":(.525,.325),"high":(.4,.45)}[motion]
     return ws * spatial + wt * temporal + .15
@@ -165,7 +167,7 @@ def winner(rows, source=None, env=None):
         reference=cheapest.get("resourceRatios",{})
         close=[r for r in near if r["cost"]<=cheapest["cost"]+.05+1e-9
                and all(r.get("resourceRatios",{}).get(k,math.inf)<=v+.05+1e-9 for k,v in reference.items())]
-        target=min(source["height"],env["height"],env["width"]*source["height"]/source["width"])
+        target=display_height(source,env)
         def fit(row):
             settings=row["settings"]
             effective=min(settings["videoHeightLimit"],target*settings["renderScale"])
@@ -212,7 +214,7 @@ def optimize(source,env,oracle,*,economy=False,motion="medium",max_trials=12,dea
     if ram_budget is not None: limits["ram"]=ram_budget
     space=candidates(source,economy);
     if reference_candidate is not None and reference_candidate not in space and not economy:space.append(reference_candidate)
-    monitor_candidate=Candidate(max(1,int(min(source["height"],env["height"],env["width"]*source["height"]/source["width"]))),1,min(240,max(1,math.ceil(source["fps"]))))
+    monitor_candidate=Candidate(max(1,math.ceil(display_height(source,env))),1,min(240,max(1,math.ceil(source["fps"]))))
     if not economy and monitor_candidate not in space:space.append(monitor_candidate)
     if caps:
         space=[c for c in space if c.height<=caps[0] and c.fps<=caps[1] and c.scale<=caps[2] and (not caps[3] or not c.hardware)]

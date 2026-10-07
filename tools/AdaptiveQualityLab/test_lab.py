@@ -3,7 +3,7 @@ import dataclasses
 import json
 import tempfile
 from pathlib import Path
-from lab import ROOT, spatial_similarity, Candidate, atomic_json, budgets, candidates, demos, evaluate, geometry_quality, optimize, simulated_oracle, winner
+from lab import ROOT, display_height, spatial_similarity, Candidate, atomic_json, budgets, candidates, demos, evaluate, geometry_quality, optimize, simulated_oracle, winner
 
 
 def main():
@@ -86,6 +86,11 @@ def main():
     fractional=dict(source,fps=23.976)
     assert max(c.fps for c in candidates(fractional))==24;checks+=1
     assert geometry_quality(Candidate(1080,1,24),fractional,env)==geometry_quality(Candidate(1080,1,60),fractional,env);checks+=1
+    portrait={"width":1000,"height":3000,"fps":30}
+    assert display_height(portrait,env)==3000;checks+=1
+    ultra=dict(env,width=3440,height=1440)
+    assert display_height(source,ultra)==1935;checks+=1
+    assert geometry_quality(Candidate(1935,1,30),source,ultra)>geometry_quality(Candidate(1440,1,30),source,ultra);checks+=1
     test_root=ROOT/"artifacts/adaptive-quality-lab"
     test_root.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="quality-lab-check-",dir=test_root) as directory:
