@@ -268,7 +268,11 @@ public sealed partial class MainWindow
             if (_viewerId != id || _viewerFromLibrary != allowEditing) return;
             if (wallpaper is null)
             {
-                if (!allowEditing && services.GetRequiredService<ISettingsService>().CurrentSettings.AutoPlayMotionPreviews) LoadCatalogMotionPreview(id);
+                if (!allowEditing && _detailsItem?.IsVideo == true)
+                {
+                    if (services.GetRequiredService<ISettingsService>().CurrentSettings.AutoPlayMotionPreviews) LoadCatalogMotionPreview(id);
+                    else { DetailsMotionButton.Visibility = Visibility.Visible; DetailsMotionButton.Content = "Play motion preview"; DetailsMotionButton.IsEnabled = true; }
+                }
                 return;
             }
             _viewerWallpaper = wallpaper;
