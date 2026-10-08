@@ -46,7 +46,11 @@ public sealed partial class MainWindow
         if (_floatingViewer != null) return;
         BodyGrid.Children.Remove(DetailsDock);
         DetailsDock.Margin = new Thickness(0);
-        var viewer = new Window { Title = "XenMotion · Wallpaper", Content = DetailsDock };
+        // Fill the client area beneath rounded content; its default canvas is white.
+        DetailsDock.CornerRadius = new CornerRadius(0);
+        var canvas = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 16, 23, 38)) };
+        canvas.Children.Add(DetailsDock);
+        var viewer = new Window { Title = "XenMotion · Wallpaper", Content = canvas };
         if (_settingsViewModel.EnableGlassEffects) viewer.SystemBackdrop = new DesktopAcrylicBackdrop();
         _floatingViewer = viewer;
         _viewerDetached = false;
@@ -59,7 +63,7 @@ public sealed partial class MainWindow
             presenter.IsResizable = false;
             presenter.SetBorderAndTitleBar(false, false);
         }
-        viewer.Activated += (_, _) => ApplyViewerFrame(viewer);
+        viewer.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(viewer));
         DetailsDragRegion.SizeChanged += OnViewerTitleSizeChanged;
         viewer.AppWindow.Changed += (_, args) =>
         {
@@ -120,7 +124,7 @@ public sealed partial class MainWindow
         try
         {
             if (bounds.MainX != mainX) AppWindow.Move(new PointInt32(AppWindow.Position.X + bounds.MainX - mainX, AppWindow.Position.Y));
-            DetailsDock.CornerRadius = bounds.X >= bounds.MainX + mainWidth ? new CornerRadius(0, 20, 20, 0) : new CornerRadius(20, 0, 0, 20);
+            DetailsDock.CornerRadius = new CornerRadius(0);
             _attachedViewerPosition = new PointInt32(bounds.X, bounds.Y);
             viewer.AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, width, bounds.Height));
             viewer.AppWindow.Show(false);
@@ -161,7 +165,7 @@ public sealed partial class MainWindow
         UpdateViewerWindowToggle();
         if (_viewerDetached)
         {
-            DetailsDock.CornerRadius = new CornerRadius(20);
+            DetailsDock.CornerRadius = new CornerRadius(0);
             _windowManager.Hide();
             _floatingViewer?.Activate();
         }
@@ -184,6 +188,7 @@ public sealed partial class MainWindow
         _floatingViewer = null;
         _viewerDetached = false;
         DetailsDragRegion.SizeChanged -= OnViewerTitleSizeChanged;
+        if (viewer.Content is Grid canvas) canvas.Children.Remove(DetailsDock);
         viewer.Content = null;
         DetailsDock.Margin = new Thickness(0, 14, 20, 20);
         BodyGrid.Children.Add(DetailsDock);
@@ -198,9 +203,7 @@ public sealed partial class MainWindow
 
     private void ShowWallpaperDock()
     {
-        _filtersOpen = false;
-        FiltersToggleButton.IsChecked = false;
-        FilterDock.Visibility = Visibility.Collapsed;
+        SetFiltersOpen(false);
         OpenWallpaperViewerWindow();
         DetailsDock.Visibility = Visibility.Visible;
         if (_floatingViewer != null) _floatingViewer.Title = "XenMotion · " + DetailsTitleTextBlock.Text;
@@ -241,6 +244,7 @@ public sealed partial class MainWindow
         DetailsAuthorTextBlock.Text = $"by {item.Wallpaper.Creator}";
         DetailsSubscriptionText.Text = item.Wallpaper.IsSubscribed ? "✓ Subscribed" : "In your library";
         DetailsResolutionText.Text = item.ResolutionText;
+        UpdateDetailsPreviewAspect(item.Wallpaper.Width, item.Wallpaper.Height);
         DetailsSizeText.Text = item.FormattedSize;
         DetailsAspectText.Text = item.TypeBadge;
         DetailsStatsTextBlock.Text = "Lightweight still preview · Original file is preserved";
@@ -359,6 +363,7 @@ public sealed partial class MainWindow
             int height = Math.Max(1, (int)(decoder.PixelHeight * Math.Min(480d / decoder.PixelWidth, 1)));
             _previewPixels = pixels.DetachPixelData();
             _editPreview = new WriteableBitmap(width, height);
+            UpdateDetailsPreviewAspect(width, height);
             RenderEditedPreview();
         }
         catch (Exception ex) { if (_viewerId == id) ShowToast("Preview: " + ex.Message); }
@@ -411,6 +416,21 @@ public sealed partial class MainWindow
         Grid.SetRow(slider, 1); Grid.SetColumnSpan(slider, 2); Grid.SetColumn(amount, 1);
         row.Children.Add(label); row.Children.Add(slider); row.Children.Add(amount);
         WallpaperEditorPanel.Children.Add(row);
+    }
+
+    private double _detailsPreviewAspect = 16d / 9;
+    private void UpdateDetailsPreviewAspect(int width, int height)
+    {
+        _detailsPreviewAspect = width > 0 && height > 0 ? (double)width / height : 16d / 9;
+        ResizeDetailsPreview();
+    }
+    private void OnDetailsPreviewSizeChanged(object sender, SizeChangedEventArgs e) => ResizeDetailsPreview();
+    private void ResizeDetailsPreview()
+    {
+        double width = DetailsPreviewFrame.ActualWidth;
+        if (width <= 0) return;
+        double height = Math.Max(1, (width - 2) / _detailsPreviewAspect + 2);
+        if (Math.Abs(DetailsPreviewFrame.Height - height) > .5) DetailsPreviewFrame.Height = height;
     }
 
     private void RenderEditedPreview()

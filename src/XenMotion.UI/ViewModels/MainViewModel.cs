@@ -101,7 +101,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (SetField(ref _isLoading, value))
             {
                 OnPropertyChanged(nameof(IsEmpty));
-            _refreshGate.Release();
             }
         }
     }
@@ -188,11 +187,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public async Task RefreshLibraryAsync()
     {
         await _refreshGate.WaitAsync();
-        IsLoading = true;
-        ErrorMessage = null;
-
         try
         {
+            IsLoading = true;
+            ErrorMessage = null;
             var wallpapers = await _libraryService.GetWallpapersAsync();
             var usage = await _libraryService.GetStorageUsageAsync();
 
@@ -219,6 +217,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         finally
         {
+            _refreshGate.Release();
             IsLoading = false;
             OnPropertyChanged(nameof(HasWallpapers));
             OnPropertyChanged(nameof(IsEmpty));

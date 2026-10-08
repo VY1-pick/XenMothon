@@ -327,7 +327,7 @@
               </Grid>
           <ScrollViewer x:Name="DetailsScrollViewer" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Spacing="18" Padding="18,8,18,18">
-              <Border Height="210" CornerRadius="18" Background="{StaticResource XenMotionGlassDarkBrush}"
+              <Border x:Name="DetailsPreviewFrame" Height="177.75" SizeChanged="OnDetailsPreviewSizeChanged" CornerRadius="18" Background="{StaticResource XenMotionGlassDarkBrush}"
                       BorderBrush="{StaticResource XenMotionRimBrush}" BorderThickness="1">
                 <Grid>
                   <Border CornerRadius="18">
@@ -389,7 +389,7 @@
         <Grid x:Name="FilterDock" Grid.Column="1" Visibility="Collapsed" Width="392" Opacity="0">
           <Grid.OpacityTransition><ScalarTransition Duration="0:0:0.22" /></Grid.OpacityTransition>
           <Grid.TranslationTransition><Vector3Transition Duration="0:0:0.3" /></Grid.TranslationTransition>
-          <Border Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="28,0,0,0" BorderThickness="1,1,0,0" />
+          <Border Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="20" BorderThickness="0" />
           <!-- seam light where the dock meets the page -->
           <Rectangle Width="2" HorizontalAlignment="Left" Margin="0,28,0,0" Fill="{StaticResource XenMotionAccentRimBrush}" Opacity="0.55" IsHitTestVisible="False" />
           <Grid Padding="22,20,22,18" RowSpacing="14">
@@ -405,7 +405,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <StackPanel Spacing="2">
+              <StackPanel x:Name="FiltersDragRegion" Background="Transparent" Spacing="2">
                 <TextBlock Text="ADVANCED" Style="{StaticResource XenMotionEyebrowTextStyle}" />
                 <TextBlock Text="Filters" Style="{StaticResource XenMotionTitleTextStyle}" FontSize="24" />
               </StackPanel>
@@ -681,12 +681,14 @@
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
 
+          <Grid x:Name="SettingsMintGlowHost" Width="520" Height="420" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-240,-240,0,0" Grid.RowSpan="4" IsHitTestVisible="False" />
+          <Grid x:Name="SettingsVioletGlowHost" Width="620" Height="620" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-350,-390" Grid.RowSpan="4" IsHitTestVisible="False" />
           <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Spacing="2">
+            <StackPanel x:Name="SettingsDragRegion" Background="Transparent" Spacing="2">
               <TextBlock Text="PREFERENCES" Style="{StaticResource XenMotionEyebrowTextStyle}" />
               <TextBlock Text="Settings" Style="{StaticResource XenMotionTitleTextStyle}" />
             </StackPanel>
@@ -766,7 +768,7 @@
             </ScrollViewer>
 
             <ScrollViewer x:Name="SettingsPlaybackSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
-              <StackPanel Spacing="14">
+              <StackPanel Spacing="14"><Border Style="{StaticResource XenMotionSectionStyle}"><StackPanel Spacing="10"><TextBlock Text="Wallpaper previews" FontSize="18" FontWeight="SemiBold" /><Grid ColumnSpacing="16" MinHeight="48"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2" VerticalAlignment="Center"><TextBlock Text="Play motion previews automatically" Style="{StaticResource XenMotionLabelTextStyle}" /><TextBlock Text="Keep off to prepare video previews only when you press Play." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><ToggleButton x:Name="SettingsMotionPreviewsToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Play motion previews automatically" /></Grid></StackPanel></Border>
                 <Button Content="Global wallpaper edits" Click="OnGlobalEditsClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
                 <TextBlock Text="Share color, alignment and playback edits across wallpapers, with per-wallpaper custom overrides." TextWrapping="Wrap" Style="{StaticResource XenMotionCaptionTextStyle}" />
                 <Border Style="{StaticResource XenMotionSectionStyle}">
@@ -908,34 +910,33 @@
 
             <ScrollViewer x:Name="SettingsPerformanceSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
               <StackPanel Spacing="14">
-                <Button Content="Activity and preview options" Click="OnAdvancedBehaviorClicked" Style="{StaticResource XenMotionButtonStyle}" />
-<TextBlock Text="Automatic quality reuses saved measurements. A new measurement runs only when requested here, so it cannot compete with normal playback. It may take up to 3.5 minutes." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+
 
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="14">
                     <StackPanel Spacing="4">
                       <TextBlock Text="Choose your quality" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource XenMotionTextBrush}" />
-                      <TextBlock Text="Choose a resource budget. Automatic measurement can lower playback cost within your chosen limits." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      <TextBlock Text="Choose a resolution, or test this device for a recommendation." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <RadioButton x:Name="SettingsEconomyRadio" GroupName="WallpaperQuality" Tag="Economy" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Economy quality">
+                    <RadioButton x:Name="SettingsEconomyRadio" GroupName="WallpaperQuality" Tag="Economy" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" Style="{StaticResource XenMotionQualityRadioStyle}" HorizontalContentAlignment="Left" Foreground="{StaticResource XenMotionTextBrush}" Padding="10,12" AutomationProperties.Name="Economy quality">
                       <StackPanel Spacing="3" MaxWidth="420">
                         <TextBlock Text="Economy" FontSize="15" FontWeight="SemiBold" />
                         <TextBlock Text="720p · 15 fps ceiling — lowest background cost" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                       </StackPanel>
                     </RadioButton>
-                    <RadioButton x:Name="SettingsBalancedRadio" GroupName="WallpaperQuality" Tag="Balanced" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Balanced quality">
+                    <RadioButton x:Name="SettingsBalancedRadio" GroupName="WallpaperQuality" Tag="Balanced" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" Style="{StaticResource XenMotionQualityRadioStyle}" HorizontalContentAlignment="Left" Foreground="{StaticResource XenMotionTextBrush}" Padding="10,12" AutomationProperties.Name="Balanced quality">
                       <StackPanel Spacing="3" MaxWidth="420">
                         <TextBlock Text="Balanced" FontSize="15" FontWeight="SemiBold" />
                         <TextBlock Text="1080p · 24 fps ceiling — everyday quality and lower load" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                       </StackPanel>
                     </RadioButton>
-                    <RadioButton x:Name="SettingsHighRadio" GroupName="WallpaperQuality" Tag="High" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="High quality">
+                    <RadioButton x:Name="SettingsHighRadio" GroupName="WallpaperQuality" Tag="High" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" Style="{StaticResource XenMotionQualityRadioStyle}" HorizontalContentAlignment="Left" Foreground="{StaticResource XenMotionTextBrush}" Padding="10,12" AutomationProperties.Name="High quality">
                       <StackPanel Spacing="3" MaxWidth="420">
                         <TextBlock Text="High" FontSize="15" FontWeight="SemiBold" />
                         <TextBlock Text="1440p · 30 fps ceiling — finer detail and smoother motion" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                       </StackPanel>
                     </RadioButton>
-                    <RadioButton x:Name="SettingsUltraRadio" GroupName="WallpaperQuality" Tag="Ultra" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Foreground="{StaticResource XenMotionTextBrush}" Padding="4,8" AutomationProperties.Name="Ultra quality">
+                    <RadioButton x:Name="SettingsUltraRadio" GroupName="WallpaperQuality" Tag="Ultra" Checked="OnQualityPresetClicked" HorizontalAlignment="Stretch" Style="{StaticResource XenMotionQualityRadioStyle}" HorizontalContentAlignment="Left" Foreground="{StaticResource XenMotionTextBrush}" Padding="10,12" AutomationProperties.Name="Ultra quality">
                       <StackPanel Spacing="3" MaxWidth="420">
                         <TextBlock Text="Ultra" FontSize="15" FontWeight="SemiBold" />
                         <TextBlock Text="2160p / 4K · 60 fps ceiling — highest source quality" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
@@ -945,7 +946,7 @@
                     <TextBlock x:Name="SettingsQualityText" Foreground="{StaticResource XenMotionMintTextBrush}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
 <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                     <Button x:Name="SettingsRecommendedButton" Content="Automatic — measure my system" ToolTipService.ToolTip="Optional measurement, up to 3.5 minutes. Starts from your display resolution and lowers quality only when needed. Playback pauses during measurement." Click="OnMeasureQualityClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
-<Button Grid.Column="1" Content="ⓘ" AutomationProperties.Name="About automatic quality" ToolTipService.ToolTip="Optional test, up to 3.5 minutes. Prioritizes your display resolution; pauses playback while measuring." Style="{StaticResource XenMotionButtonStyle}" />
+<FontIcon Grid.Column="1" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE946;" FontSize="15" Width="24" VerticalAlignment="Center" ToolTipService.ToolTip="Optional test, up to 3.5 minutes. Uses your display resolution and pauses playback while measuring." AutomationProperties.Name="About automatic quality" />
 </Grid>
                     <Grid ColumnSpacing="16">
                       <Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
@@ -992,8 +993,10 @@
                   </StackPanel>
                 </Border>
                 </Expander>
+<Border Style="{StaticResource XenMotionSectionStyle}"><StackPanel Spacing="12"><TextBlock Text="Windows activity" FontSize="18" FontWeight="SemiBold" /><Grid ColumnSpacing="16" MinHeight="48"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2" VerticalAlignment="Center"><TextBlock Text="Pause during screen saver" Style="{StaticResource XenMotionLabelTextStyle}" /><TextBlock Text="Resume when the screen saver closes." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><ToggleButton x:Name="SettingsScreenSaverToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause during screen saver" /></Grid><Grid ColumnSpacing="16" MinHeight="48"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2" VerticalAlignment="Center"><TextBlock Text="Pause in energy saver" Style="{StaticResource XenMotionLabelTextStyle}" /><TextBlock Text="Save power while Windows energy saver is active." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><ToggleButton x:Name="SettingsPowerSaverToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause in energy saver" /></Grid><Grid ColumnSpacing="16" MinHeight="48"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2" VerticalAlignment="Center"><TextBlock Text="Pause in Remote Desktop" Style="{StaticResource XenMotionLabelTextStyle}" /><TextBlock Text="Avoid rendering wallpapers in a remote session." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><ToggleButton x:Name="SettingsRemoteSessionToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause in Remote Desktop" /></Grid></StackPanel></Border>
                 <Border Style="{StaticResource XenMotionSectionStyle}">
           <StackPanel Spacing="12">
+            <TextBlock Text="When to pause" FontSize="18" FontWeight="SemiBold" />
             <Grid ColumnSpacing="16" MinHeight="48">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
               <StackPanel VerticalAlignment="Center" Spacing="2">

@@ -46,6 +46,8 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Content = null;
+        _mainInteraction.FontFamily = (Microsoft.UI.Xaml.Media.FontFamily)Microsoft.UI.Xaml.Application.Current.Resources["XenMotionTextFont"];
+        _mainInteraction.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 16, 23, 38));
         _mainInteraction.Content = RootGrid;
         Content = _mainInteraction;
 
@@ -76,7 +78,7 @@ public sealed partial class MainWindow : Window
             await CloseMainWindowAsync();
         };
 
-        AppWindow.Changed += (_, _) => AlignWallpaperViewer();
+        AppWindow.Changed += (_, _) => { AlignWallpaperViewer(); AlignExploreFilters(); };
 
         ShowFilterTab("Basics");
         ShowSettingsTab("General");

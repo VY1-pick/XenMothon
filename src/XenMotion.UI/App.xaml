@@ -18,6 +18,10 @@
     <Color x:Key="XenMotionAquaColor">#FF4FD8FF</Color>
     <Color x:Key="XenMotionVioletColor">#FF7B6CFF</Color>
 
+    <FontFamily x:Key="XenMotionTextFont">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
+    <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
+    <FontFamily x:Key="TextControlThemeFontFamily">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
+    <FontFamily x:Key="DefaultTextFontFamily">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
     <FontFamily x:Key="XenMotionIconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
 
     <!-- window canvas -->
@@ -95,10 +99,52 @@
       <GradientStop Color="#00FFFFFF" Offset="1" />
     </LinearGradientBrush>
 
+    <StaticResource x:Key="ContentDialogBackground" ResourceKey="XenMotionGlassStrongBrush" />
+    <StaticResource x:Key="ContentDialogBorderBrush" ResourceKey="XenMotionRimSoftBrush" />
+    <StaticResource x:Key="ContentDialogForeground" ResourceKey="XenMotionTextBrush" />
+    <StaticResource x:Key="ContentDialogTopOverlayBackground" ResourceKey="XenMotionGlassStrongBrush" />
     <!-- shape language -->
     <CornerRadius x:Key="ControlCornerRadius">12</CornerRadius>
     <CornerRadius x:Key="OverlayCornerRadius">20</CornerRadius>
 
+    <Style TargetType="TextBlock"><Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" /></Style>
+    <Style TargetType="ToolTip">
+      <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToolTip">
+        <Border Background="{StaticResource XenMotionGlassStrongBrush}" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1" CornerRadius="12" Padding="12,9" MaxWidth="320">
+          <ContentPresenter Content="{TemplateBinding Content}" Foreground="{StaticResource XenMotionTextBrush}" FontSize="12"><ContentPresenter.ContentTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ContentPresenter.ContentTemplate></ContentPresenter>
+        </Border>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <Style x:Key="XenMotionQualityRadioStyle" TargetType="RadioButton">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="10,12" />
+      <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="RadioButton">
+        <Border x:Name="QualityRow" Background="Transparent" CornerRadius="14" Padding="{TemplateBinding Padding}">
+          <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="CommonStates">
+              <VisualState x:Name="Normal" />
+              <VisualState x:Name="PointerOver"><VisualState.Setters><Setter Target="QualityRow.Background" Value="{StaticResource XenMotionHoverBrush}" /></VisualState.Setters></VisualState>
+              <VisualState x:Name="Pressed"><VisualState.Setters><Setter Target="QualityRow.Background" Value="{StaticResource XenMotionPressedBrush}" /></VisualState.Setters></VisualState>
+              <VisualState x:Name="Disabled"><VisualState.Setters><Setter Target="QualityRow.Opacity" Value="0.4" /></VisualState.Setters></VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="CheckStates">
+              <VisualState x:Name="Unchecked" />
+              <VisualState x:Name="Checked"><VisualState.Setters><Setter Target="QualityDot.Opacity" Value="1" /><Setter Target="QualityRing.Stroke" Value="{StaticResource XenMotionMintTextBrush}" /><Setter Target="QualityRow.Background" Value="{StaticResource XenMotionAccentSoftBrush}" /></VisualState.Setters></VisualState>
+            </VisualStateGroup>
+          </VisualStateManager.VisualStateGroups>
+          <Grid ColumnSpacing="14"><Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Grid Width="20" Height="20" VerticalAlignment="Top" Margin="0,3,0,0">
+              <Ellipse x:Name="QualityRing" Stroke="{StaticResource XenMotionMutedTextBrush}" StrokeThickness="1.5" />
+              <Ellipse x:Name="QualityDot" Width="10" Height="10" Fill="{StaticResource XenMotionMintTextBrush}" Opacity="0" />
+            </Grid>
+            <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalAlignment="Left" />
+          </Grid>
+        </Border>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
     <!-- ===== re-skinned built-in controls (lightweight styling) ===== -->
     <SolidColorBrush x:Key="ToolTipBackground" Color="#F2131B2E" />
     <SolidColorBrush x:Key="ToolTipForeground" Color="#FFF3FBF9" />
@@ -162,6 +208,7 @@
     <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="XenMotionAccentRimBrush" />
     <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="XenMotionMintTextBrush" />
     <Style TargetType="ComboBox">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
       <Setter Property="CornerRadius" Value="14" />
       <Setter Property="Padding" Value="14,10" />
       <Setter Property="MinHeight" Value="44" />
@@ -174,12 +221,14 @@
       <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     </Style>
     <Style TargetType="RadioButton">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
       <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
       <Setter Property="Padding" Value="10,8" />
       <Setter Property="CornerRadius" Value="12" />
     </Style>
 
     <Style x:Key="XenMotionButtonStyle" TargetType="Button">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
@@ -263,24 +312,28 @@
     </Style>
 
     <Style x:Key="XenMotionPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Background" Value="{StaticResource XenMotionAccentBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionAccentEdgeBrush}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionOnAccentBrush}" />
     </Style>
 
     <Style x:Key="XenMotionGhostButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
     </Style>
 
     <Style x:Key="XenMotionDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Background" Value="{StaticResource XenMotionDangerSoftBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionDangerRimBrush}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionDangerBrush}" />
     </Style>
 
     <Style x:Key="XenMotionIconButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Width" Value="40" />
     <Setter Property="Height" Value="40" />
     <Setter Property="Padding" Value="0" />
@@ -289,6 +342,7 @@
     </Style>
 
     <Style x:Key="XenMotionSmallIconButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Width" Value="32" />
     <Setter Property="Height" Value="32" />
     <Setter Property="MinHeight" Value="32" />
@@ -298,6 +352,7 @@
     </Style>
 
     <Style x:Key="XenMotionRoundOverlayButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Width" Value="44" />
     <Setter Property="Height" Value="44" />
     <Setter Property="MinHeight" Value="44" />
@@ -308,6 +363,7 @@
     </Style>
 
     <Style x:Key="XenMotionOverlayPillButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="34" />
     <Setter Property="Padding" Value="14,0" />
@@ -317,6 +373,7 @@
     </Style>
 
     <Style x:Key="XenMotionOverlayAccentPillStyle" TargetType="Button" BasedOn="{StaticResource XenMotionPrimaryButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="34" />
     <Setter Property="Padding" Value="14,0" />
@@ -325,6 +382,7 @@
     </Style>
 
     <Style x:Key="XenMotionCaptionButtonStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Width" Value="44" />
     <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="34" />
@@ -336,6 +394,7 @@
     </Style>
 
     <Style x:Key="XenMotionCaptionCloseStyle" TargetType="Button" BasedOn="{StaticResource XenMotionButtonStyle}">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Width" Value="44" />
     <Setter Property="Height" Value="34" />
     <Setter Property="MinHeight" Value="34" />
@@ -412,6 +471,7 @@
     </Style>
 
     <Style x:Key="XenMotionChipStyle" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
     <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
@@ -548,6 +608,7 @@
     </Style>
 
     <Style x:Key="XenMotionSegmentStyle" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
@@ -684,6 +745,7 @@
     </Style>
 
     <Style x:Key="XenMotionTabStyle" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
@@ -820,6 +882,7 @@
     </Style>
 
     <Style x:Key="XenMotionSwitchStyle" TargetType="ToggleButton">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Padding" Value="0" />
     <Setter Property="MinWidth" Value="0" />
     <Setter Property="MinHeight" Value="0" />
@@ -889,6 +952,7 @@
     </Style>
 
     <Style x:Key="XenMotionTextBoxStyle" TargetType="TextBox">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     <Setter Property="Background" Value="Transparent" />
     <Setter Property="BorderThickness" Value="0" />
@@ -965,24 +1029,28 @@
     </Style>
 
     <Style x:Key="XenMotionTitleTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="26" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     </Style>
 
     <Style x:Key="XenMotionHeadingTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="17" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     </Style>
 
     <Style x:Key="XenMotionLabelTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     </Style>
 
     <Style x:Key="XenMotionBodyTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="13" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionMutedTextBrush}" />
     <Setter Property="TextWrapping" Value="Wrap" />
@@ -990,11 +1058,13 @@
     </Style>
 
     <Style x:Key="XenMotionCaptionTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="Foreground" Value="{StaticResource XenMotionFaintTextBrush}" />
     </Style>
 
     <Style x:Key="XenMotionEyebrowTextStyle" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
     <Setter Property="FontSize" Value="11" />
     <Setter Property="FontWeight" Value="SemiBold" />
     <Setter Property="CharacterSpacing" Value="90" />
@@ -1016,6 +1086,12 @@
     <Setter Property="MaxWidth" Value="420" />
     </Style>
 
-    </ResourceDictionary>
+      <Style TargetType="ContentDialog">
+      <Setter Property="FontFamily" Value="{StaticResource XenMotionTextFont}" />
+      <Setter Property="PrimaryButtonStyle" Value="{StaticResource XenMotionPrimaryButtonStyle}" />
+      <Setter Property="CloseButtonStyle" Value="{StaticResource XenMotionButtonStyle}" />
+      <Setter Property="SecondaryButtonStyle" Value="{StaticResource XenMotionButtonStyle}" />
+    </Style>
+  </ResourceDictionary>
   </Application.Resources>
 </Application>

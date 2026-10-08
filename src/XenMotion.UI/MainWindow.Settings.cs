@@ -30,14 +30,38 @@ public sealed partial class MainWindow
             SettingsPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
             SettingsPanel.Margin = new Thickness(0);
             SettingsPanel.CornerRadius = new CornerRadius(0);
-            _settingsWindow = new Window { Title = "XenMotion Settings", Content = SettingsPanel };
+            SettingsPanel.BorderThickness = new Thickness(0);
+            var canvas = new Grid { RequestedTheme = ElementTheme.Dark, Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 16, 23, 38)) };
+            canvas.Children.Add(SettingsPanel);
+            _settingsWindow = new Window { Title = "XenMotion Settings", Content = canvas };
+            AttachGlow(SettingsMintGlowHost, Windows.UI.Color.FromArgb(255, 94, 242, 207), 0x50, drift: false);
+            AttachGlow(SettingsVioletGlowHost, Windows.UI.Color.FromArgb(255, 123, 108, 255), 0x34, drift: false);
+            if (_settingsWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                presenter.IsResizable = presenter.IsMaximizable = presenter.IsMinimizable = false;
+                presenter.SetBorderAndTitleBar(false, false);
+            }
+            _settingsWindow.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(_settingsWindow));
+            SettingsDragRegion.SizeChanged += (_, _) => UpdateSettingsDragRegion();
             var work = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
-            _settingsWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Min(720, work.Width), Math.Min(850, work.Height)));
+            double scale = RootGrid.XamlRoot?.RasterizationScale ?? 1;
+            _settingsWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Min((int)(680 * scale), work.Width), Math.Min((int)(820 * scale), work.Height)));
             _settingsWindow.AppWindow.Closing += (_, e) => { e.Cancel = true; if (!_measuringQuality) CloseSettingsSheet(); };
         }
         _settingsWindow.AppWindow.Show();
         _settingsWindow.Activate();
+        ApplyViewerFrame(_settingsWindow);
+        DispatcherQueue.TryEnqueue(UpdateSettingsDragRegion);
     }
+    private void UpdateSettingsDragRegion()
+    {
+        if (_settingsWindow is null || SettingsPanel.XamlRoot is null) return;
+        var regions = new List<Windows.Graphics.RectInt32>();
+        AddRegion(regions, SettingsDragRegion, SettingsPanel.XamlRoot.RasterizationScale);
+        Microsoft.UI.Input.InputNonClientPointerSource.GetForWindowId(_settingsWindow.AppWindow.Id)
+            .SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.Caption, regions.ToArray());
+    }
+
     private void OnSettingsClicked(object sender, RoutedEventArgs e) => OpenSettingsWindow();
     private void OnCloseSettingsClicked(object sender, RoutedEventArgs e) => CloseSettingsSheet();
     private void OnSettingsBackdropTapped(object sender, TappedRoutedEventArgs e) => CloseSettingsSheet();
@@ -86,6 +110,10 @@ public sealed partial class MainWindow
             SettingsPauseFullscreenToggle.IsChecked = s.PauseOnFullscreen;
             SettingsPauseMaximizedToggle.IsChecked = s.PauseOnMaximized;
             SettingsPauseBatteryToggle.IsChecked = s.PauseOnBattery;
+            SettingsScreenSaverToggle.IsChecked = s.PauseOnScreenSaver;
+            SettingsPowerSaverToggle.IsChecked = s.PauseOnPowerSaver;
+            SettingsRemoteSessionToggle.IsChecked = s.PauseOnRemoteSession;
+            SettingsMotionPreviewsToggle.IsChecked = s.AutoPlayMotionPreviews;
             SettingsPauseCoveredToggle.IsChecked = s.PauseWhenCovered;
             SettingsMuteCoveredToggle.IsChecked = s.MuteAudioWhenCovered;
 
@@ -160,6 +188,10 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(toggle, SettingsPauseFullscreenToggle)) s.PauseOnFullscreen = on;
         else if (ReferenceEquals(toggle, SettingsPauseMaximizedToggle)) s.PauseOnMaximized = on;
         else if (ReferenceEquals(toggle, SettingsPauseBatteryToggle)) s.PauseOnBattery = on;
+        else if (ReferenceEquals(toggle, SettingsScreenSaverToggle)) s.PauseOnScreenSaver = on;
+        else if (ReferenceEquals(toggle, SettingsPowerSaverToggle)) s.PauseOnPowerSaver = on;
+        else if (ReferenceEquals(toggle, SettingsRemoteSessionToggle)) s.PauseOnRemoteSession = on;
+        else if (ReferenceEquals(toggle, SettingsMotionPreviewsToggle)) s.AutoPlayMotionPreviews = on;
         else if (ReferenceEquals(toggle, SettingsPauseCoveredToggle)) s.PauseWhenCovered = on;
         else if (ReferenceEquals(toggle, SettingsMuteCoveredToggle)) s.MuteAudioWhenCovered = on;
         else if (ReferenceEquals(toggle, SettingsFilteringToggle)) s.HighQualityFiltering = on;
@@ -229,6 +261,7 @@ public sealed partial class MainWindow
         {
             _settingsViewModel.Theme = "Dark";
             await _settingsViewModel.SaveAsync();
+            if (!_settingsViewModel.AutoPlayMotionPreviews) StopMotionPreview();
             await _viewModel.SyncAudioSettingsAsync();
             var personalization = App.Current.ServiceProvider.GetRequiredService<WindowsPersonalizationService>();
             await personalization.ApplyAsync();

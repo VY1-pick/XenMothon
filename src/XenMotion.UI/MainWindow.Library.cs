@@ -131,7 +131,8 @@ public sealed partial class MainWindow
     private async void OnReconcileClicked(object sender, RoutedEventArgs e)
     {
         StorageFlyout.Hide();
-        await _viewModel.ReconcileLibraryAsync();
+        try { await _viewModel.ReconcileLibraryAsync(); }
+        catch (Exception ex) { ShowToast("Could not rescan the library: " + ex.Message, true); }
     }
 
     private async void OnChangeStorageRootClicked(object sender, RoutedEventArgs e)

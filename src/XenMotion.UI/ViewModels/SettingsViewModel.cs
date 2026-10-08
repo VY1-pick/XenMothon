@@ -49,6 +49,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _pauseOnFullscreen = true;
     private bool _pauseOnMaximized = true;
     private bool _pauseOnBattery;
+    private bool _pauseOnScreenSaver;
+    public bool PauseOnScreenSaver { get => _pauseOnScreenSaver; set => SetField(ref _pauseOnScreenSaver, value); }
+    private bool _pauseOnPowerSaver;
+    public bool PauseOnPowerSaver { get => _pauseOnPowerSaver; set => SetField(ref _pauseOnPowerSaver, value); }
+    private bool _pauseOnRemoteSession;
+    public bool PauseOnRemoteSession { get => _pauseOnRemoteSession; set => SetField(ref _pauseOnRemoteSession, value); }
+    private bool _autoPlayMotionPreviews;
+    public bool AutoPlayMotionPreviews { get => _autoPlayMotionPreviews; set => SetField(ref _autoPlayMotionPreviews, value); }
     private bool _pauseWhenCovered = true;
     private bool _pauseOnlyWhenFullyCovered;
     private int _coveredThresholdPercentage = 85;
@@ -195,6 +203,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 settings.Performance.PauseOnFullscreen = PauseOnFullscreen;
                 settings.Performance.PauseOnMaximized = PauseOnMaximized;
                 settings.Performance.PauseOnBattery = PauseOnBattery;
+                settings.Performance.PauseOnScreenSaver = PauseOnScreenSaver;
+                settings.Performance.PauseOnPowerSaver = PauseOnPowerSaver;
+                settings.Performance.PauseOnRemoteSession = PauseOnRemoteSession;
+                settings.AutoPlayMotionPreviews = AutoPlayMotionPreviews;
                 settings.Performance.PauseWhenCovered = PauseWhenCovered;
                 settings.Performance.PauseOnlyWhenFullyCovered = PauseOnlyWhenFullyCovered;
                 settings.Performance.CoveredThresholdPercentage = CoveredThresholdPercentage;
@@ -288,6 +300,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _pauseOnFullscreen = settings.Performance.PauseOnFullscreen;
         _pauseOnMaximized = settings.Performance.PauseOnMaximized;
         _pauseOnBattery = settings.Performance.PauseOnBattery;
+        _pauseOnScreenSaver = settings.Performance.PauseOnScreenSaver;
+        _pauseOnPowerSaver = settings.Performance.PauseOnPowerSaver;
+        _pauseOnRemoteSession = settings.Performance.PauseOnRemoteSession;
+        _autoPlayMotionPreviews = settings.AutoPlayMotionPreviews;
         _pauseWhenCovered = settings.Performance.PauseWhenCovered;
         _pauseOnlyWhenFullyCovered = settings.Performance.PauseOnlyWhenFullyCovered;
         _coveredThresholdPercentage = Math.Clamp(settings.Performance.CoveredThresholdPercentage, 1, 100);

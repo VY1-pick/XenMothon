@@ -33,13 +33,14 @@ public sealed partial class MainWindow
 
     private void ConfigureWindowChrome()
     {
-        // Keep the native resize and caption path on every machine.
         _customCaption = false;
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
-            presenter.SetBorderAndTitleBar(true, true);
+            presenter.SetBorderAndTitleBar(true, false);
             presenter.IsResizable = true;
             presenter.IsMaximizable = true;
+            _customCaption = true;
+            CaptionPanel.Visibility = Visibility.Visible;
         }
 
         if (!_customCaption)
@@ -90,6 +91,9 @@ public sealed partial class MainWindow
                 });
             }
         };
+        RootGrid.Loaded += (_, _) => UpdateInputRegions();
+        BrandPanel.SizeChanged += (_, _) => UpdateInputRegions();
+        Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(this));
         HeaderBar.SizeChanged += (_, _) => UpdateInputRegions();
         NavPill.SizeChanged += (_, _) => UpdateInputRegions();
     }
@@ -177,6 +181,7 @@ public sealed partial class MainWindow
         {
             await FlushWallpaperEdits();
             CloseAttachedWallpaperViewer();
+            _filterWindow?.AppWindow.Hide();
             if (_trayManager.IsInitialized || _viewerDetached && _floatingViewer != null) _windowManager.Hide();
             else App.Current.Shutdown();
         }

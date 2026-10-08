@@ -134,44 +134,86 @@ public sealed partial class MainWindow
 
     private void OnFiltersToggleClicked(object sender, RoutedEventArgs e) => SetFiltersOpen(!_filtersOpen);
 
+    private Window? _filterWindow;
+    private bool _aligningFilters;
+    private Windows.Graphics.PointInt32 _attachedFilterPosition;
     private void SetFiltersOpen(bool open)
     {
         _filtersOpen = open;
         FiltersToggleButton.IsChecked = open;
-
-        if (open)
+        if (!open) { _filterWindow?.AppWindow.Hide(); return; }
+        CloseAttachedWallpaperViewer();
+        if (_filterWindow is null)
         {
-            CloseAttachedWallpaperViewer();
-            FilterDock.Translation = new Vector3(44, 0, 0);
-            FilterDock.Opacity = 0;
-            FilterDock.Visibility = Visibility.Visible;
-            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
-            {
-                FilterDock.Opacity = 1;
-                FilterDock.Translation = Vector3.Zero;
-            });
-        }
-        else
-        {
-            FilterDock.Opacity = 0;
-            FilterDock.Translation = new Vector3(44, 0, 0);
-            DelayCollapse(FilterDock, 300);
-        }
-    }
-
-    private void SyncFilterDockWithNavigation()
-    {
-        if (!_viewModel.IsExploreSelected)
-        {
-            FilterDock.Visibility = Visibility.Collapsed;
-        }
-        else if (_filtersOpen && FilterDock.Visibility != Visibility.Visible)
-        {
+            BodyGrid.Children.Remove(FilterDock);
+            FilterDock.Width = double.NaN;
             FilterDock.Visibility = Visibility.Visible;
             FilterDock.Opacity = 1;
             FilterDock.Translation = Vector3.Zero;
+            var canvas = new Grid { RequestedTheme = ElementTheme.Dark, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 16, 23, 38)) };
+            canvas.Children.Add(FilterDock);
+            _filterWindow = new Window { Title = "XenMotion · Explore filters", Content = canvas };
+            if (_filterWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                presenter.IsResizable = presenter.IsMinimizable = presenter.IsMaximizable = false;
+                presenter.SetBorderAndTitleBar(false, false);
+            }
+            _filterWindow.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(_filterWindow));
+            FiltersDragRegion.SizeChanged += (_, _) => UpdateFilterDragRegion();
+            _filterWindow.AppWindow.Changed += (_, args) =>
+            {
+                if (!args.DidPositionChange || _aligningFilters || !_filtersOpen) return;
+                var pos = _filterWindow.AppWindow.Position;
+                int dx = pos.X - _attachedFilterPosition.X, dy = pos.Y - _attachedFilterPosition.Y;
+                if (dx == 0 && dy == 0) return;
+                AppWindow.Move(new Windows.Graphics.PointInt32(AppWindow.Position.X + dx, AppWindow.Position.Y + dy));
+                AlignExploreFilters();
+            };
+            _filterWindow.AppWindow.Closing += (_, args) => { args.Cancel = true; SetFiltersOpen(false); };
         }
+        AlignExploreFilters();
+        _filterWindow.Activate();
+        ApplyViewerFrame(_filterWindow);
+        DispatcherQueue.TryEnqueue(UpdateFilterDragRegion);
     }
+
+    private void UpdateFilterDragRegion()
+    {
+        if (_filterWindow is null || FilterDock.XamlRoot is null) return;
+        var regions = new List<Windows.Graphics.RectInt32>();
+        AddRegion(regions, FiltersDragRegion, FilterDock.XamlRoot.RasterizationScale);
+        Microsoft.UI.Input.InputNonClientPointerSource.GetForWindowId(_filterWindow.AppWindow.Id)
+            .SetRegionRects(Microsoft.UI.Input.NonClientRegionKind.Caption, regions.ToArray());
+    }
+
+    private void AlignExploreFilters()
+    {
+        if (_filterWindow is null || !_filtersOpen || _aligningFilters) return;
+        if (!_viewModel.IsExploreSelected || !AppWindow.IsVisible || AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter { State: Microsoft.UI.Windowing.OverlappedPresenterState.Minimized })
+        { _filterWindow.AppWindow.Hide(); return; }
+        _aligningFilters = true;
+        try
+        {
+            var work = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+            int width = Math.Min((int)(392 * (RootGrid.XamlRoot?.RasterizationScale ?? 1)), work.Width);
+            int mainX = AppWindow.Position.X, mainY = AppWindow.Position.Y, mainWidth = AppWindow.Size.Width, mainHeight = AppWindow.Size.Height;
+            if (DwmGetWindowAttribute(WinRT.Interop.WindowNative.GetWindowHandle(this), 9, out var frame, System.Runtime.InteropServices.Marshal.SizeOf<ViewerFrame>()) == 0)
+            { mainX = frame.Left; mainY = frame.Top; mainWidth = frame.Right - frame.Left; mainHeight = frame.Bottom - frame.Top; }
+            if (mainX - width < work.X && width + mainWidth <= work.Width)
+            {
+                int dx = work.X + width - mainX;
+                mainX += dx;
+                AppWindow.Move(new Windows.Graphics.PointInt32(AppWindow.Position.X + dx, AppWindow.Position.Y));
+            }
+            _attachedFilterPosition = new Windows.Graphics.PointInt32(Math.Max(work.X, mainX - width), Math.Max(work.Y, mainY));
+            _filterWindow.AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(_attachedFilterPosition.X, _attachedFilterPosition.Y, width, Math.Min(mainHeight, work.Height)));
+            _filterWindow.AppWindow.Show(false);
+            ApplyViewerFrame(_filterWindow);
+        }
+        finally { _aligningFilters = false; }
+    }
+
+    private void SyncFilterDockWithNavigation() => AlignExploreFilters();
 
     private void OnFilterTabClicked(object sender, RoutedEventArgs e)
     {
@@ -264,6 +306,7 @@ public sealed partial class MainWindow
                 DetailsTitleTextBlock.Text = item.Title;
                 DetailsAuthorTextBlock.Text = $"by {item.Author}";
                 DetailsResolutionText.Text = item.ResolutionText;
+                UpdateDetailsPreviewAspect(item.Model.Width, item.Model.Height);
                 DetailsSizeText.Text = item.FormattedSize;
                 DetailsAspectText.Text = string.IsNullOrWhiteSpace(details.AspectRatioText) ? item.TypeBadgeText : details.AspectRatioText;
                 string duration = item.IsVideo && !string.IsNullOrWhiteSpace(item.DurationText) ? $"   •   {item.DurationText}" : string.Empty;

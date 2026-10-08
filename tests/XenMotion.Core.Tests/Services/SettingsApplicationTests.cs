@@ -12,6 +12,25 @@ namespace XenMotion.Core.Tests.Services;
 public class SettingsApplicationTests
 {
     [Fact]
+    public async Task ActivityAndPreviewDraftPersistsAndReloads()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-activity-{Guid.NewGuid():N}.json");
+        try
+        {
+            var settings = new SettingsService(path, NullLogger<SettingsService>.Instance);
+            var vm = new SettingsViewModel(settings, Mock.Of<IWallpaperEngineOrchestrator>(), NullLogger<SettingsViewModel>.Instance)
+            { PauseOnScreenSaver = false, PauseOnPowerSaver = false, PauseOnRemoteSession = false, AutoPlayMotionPreviews = true };
+            await vm.SaveAsync();
+            var reopened = new SettingsViewModel(settings, Mock.Of<IWallpaperEngineOrchestrator>(), NullLogger<SettingsViewModel>.Instance);
+            Assert.False(reopened.PauseOnScreenSaver);
+            Assert.False(reopened.PauseOnPowerSaver);
+            Assert.False(reopened.PauseOnRemoteSession);
+            Assert.True(reopened.AutoPlayMotionPreviews);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task BackgroundWallpaperSaveDoesNotOverwriteUnsavedPreferences()
     {
         string path = Path.Combine(Path.GetTempPath(), $"xenmotion-draft-{Guid.NewGuid():N}.json");

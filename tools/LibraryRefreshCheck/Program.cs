@@ -1,0 +1,35 @@
+using System.Collections.ObjectModel;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
+using XenMotion.Core.Interfaces;
+using XenMotion.Core.Models;
+using XenMotion.UI.ViewModels;
+
+// Exercise the real view model without creating a native window or touching user files.
+var vm = (MainViewModel)RuntimeHelpers.GetUninitializedObject(typeof(MainViewModel));
+var gate = new SemaphoreSlim(1, 1);
+var library = new Mock<ILibraryService>();
+library.Setup(x => x.GetWallpapersAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Wallpaper>());
+library.Setup(x => x.GetStorageUsageAsync(It.IsAny<CancellationToken>())).ReturnsAsync((StorageUsageInfo)null!);
+library.Setup(x => x.ReconcileLibraryAsync(It.IsAny<CancellationToken>())).ReturnsAsync(new ReconciliationResult(0, 0, [], 0, []));
+void Field(string name, object value) => typeof(MainViewModel).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(vm, value);
+Field("_refreshGate", gate);
+Field("_libraryService", library.Object);
+Field("_wallpapers", new ObservableCollection<WallpaperItemViewModel>());
+Field("_logger", NullLogger<MainViewModel>.Instance);
+vm.IsLoading = true;
+vm.IsLoading = false;
+if (gate.CurrentCount != 1) throw new Exception("Loading state changed refresh ownership.");
+await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => vm.RefreshLibraryAsync()));
+await vm.ReconcileLibraryAsync();
+await vm.RefreshLibraryAsync();
+if (gate.CurrentCount != 1 || vm.IsLoading || vm.ErrorMessage != null) throw new Exception("Refresh/rescan failed or leaked its gate.");
+library.Setup(x => x.GetWallpapersAsync(It.IsAny<CancellationToken>())).ThrowsAsync(new IOException("test read failure"));
+await vm.RefreshLibraryAsync();
+if (gate.CurrentCount != 1 || vm.ErrorMessage == null) throw new Exception("A failed read leaked its refresh gate.");
+library.Setup(x => x.GetWallpapersAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Wallpaper>());
+await vm.RefreshLibraryAsync();
+if (gate.CurrentCount != 1 || vm.ErrorMessage != null) throw new Exception("Refresh did not recover after a read failure.");
+Console.WriteLine("PASS: loading toggles, repeated refresh, rescan, refresh after rescan, and recovery from a read failure.");

@@ -46,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="Assets\Fonts\*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\xenmotion-logo.png" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\xenmotion-logo.ico" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\Catalog\*.jpg" CopyToOutputDirectory="PreserveNewest" />

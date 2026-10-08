@@ -81,31 +81,6 @@ public sealed partial class MainWindow
         };
     }
 
-    private async void OnAdvancedBehaviorClicked(object sender, RoutedEventArgs e)
-    {
-        var service = App.Current.ServiceProvider.GetRequiredService<ISettingsService>();
-        var settings = service.CurrentSettings;
-        var panel = new StackPanel { Spacing = 14 };
-        CheckBox Add(string title, bool value) { var box = new CheckBox { Content = title, IsChecked = value }; panel.Children.Add(box); return box; }
-        var saver = Add("Pause while Windows screen saver is running", settings.Performance.PauseOnScreenSaver);
-        var power = Add("Pause in Windows energy saver", settings.Performance.PauseOnPowerSaver);
-        var remote = Add("Pause in a Remote Desktop session", settings.Performance.PauseOnRemoteSession);
-        var previews = Add("Automatically prepare and play motion previews", settings.AutoPlayMotionPreviews);
-        panel.Children.Add(new TextBlock { Text = "Turn off automatic previews to avoid background video conversion when opening the editor on slower devices.", TextWrapping = TextWrapping.Wrap });
-        var dialog = new ContentDialog { XamlRoot = SettingsPanel.XamlRoot, RequestedTheme = ElementTheme.Dark,
-            Title = "Activity and previews", Content = panel, PrimaryButtonText = "Apply", CloseButtonText = "Cancel" };
-        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        try
-        {
-            await service.UpdateSettingsAsync(s => { s.Performance.PauseOnScreenSaver = saver.IsChecked == true;
-                s.Performance.PauseOnPowerSaver = power.IsChecked == true; s.Performance.PauseOnRemoteSession = remote.IsChecked == true;
-                s.AutoPlayMotionPreviews = previews.IsChecked == true; });
-            if (previews.IsChecked != true) StopMotionPreview();
-            SettingsStatusTextBlock.Text = "Activity and preview preferences saved.";
-        }
-        catch (Exception ex) { SettingsStatusTextBlock.Text = "Could not save: " + ex.Message; }
-    }
-
     private async void OnResetSettingsClicked(object sender, RoutedEventArgs e)
     {
         var dialog = new ContentDialog { XamlRoot = SettingsPanel.XamlRoot, RequestedTheme = ElementTheme.Dark,
