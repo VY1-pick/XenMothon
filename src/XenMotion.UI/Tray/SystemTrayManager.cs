@@ -19,6 +19,10 @@ public sealed class SystemTrayManager : ISystemTrayManager
     private const uint CmdNext = 2005;
     private const uint CmdMute = 2006;
     private const uint CmdExit = 2007;
+    private const uint CmdSettings = 2008, CmdScreenshot = 2009;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _singleClickTimer;
+    private long _ignoreSelectUntil;
+    [DllImport("user32.dll")] private static extern uint GetDoubleClickTime();
     private const uint NiifUser = 0x00000004;
     private const uint NiifLargeIcon = 0x00000020;
 
@@ -37,6 +41,8 @@ public sealed class SystemTrayManager : ISystemTrayManager
     private bool _isDisposed;
 
     public event EventHandler? OpenRequested;
+    public event EventHandler? SettingsRequested;
+    public event EventHandler? ScreenshotRequested;
     public event EventHandler? PauseResumeRequested;
     public event EventHandler? StopRequested;
     public event EventHandler? PlayRequested;
@@ -142,6 +148,7 @@ public sealed class SystemTrayManager : ISystemTrayManager
         var wndClass = new NativeMethods.WNDCLASSEX
         {
             cbSize = Marshal.SizeOf<NativeMethods.WNDCLASSEX>(),
+            style = 0x0008, // Receive double-click messages.
             lpfnWndProc = _wndProcDelegate,
             lpszClassName = _className,
             hInstance = IntPtr.Zero
@@ -263,19 +270,19 @@ public sealed class SystemTrayManager : ISystemTrayManager
 
             switch (mouseMessage)
             {
-                case NativeMethods.NIN_SELECT:
-                case NativeMethods.NIN_KEYSELECT:
-                    if (!_usesVersion4Callbacks) return IntPtr.Zero;
-                    _logger.LogDebug("Tray icon selected. Requesting main window display.");
+                case NativeMethods.WM_LBUTTONDBLCLK:
+                    _singleClickTimer?.Stop();
+                    _ignoreSelectUntil = Environment.TickCount64 + GetDoubleClickTime();
                     OpenRequested?.Invoke(this, EventArgs.Empty);
                     return IntPtr.Zero;
-
+                case NativeMethods.NIN_KEYSELECT:
+                    ShowContextMenu();
+                    return IntPtr.Zero;
+                case NativeMethods.NIN_SELECT:
+                    if (_usesVersion4Callbacks) ScheduleSingleClick();
+                    return IntPtr.Zero;
                 case NativeMethods.WM_LBUTTONUP:
-                    // Version 4 supplies NIN_SELECT. Handling its raw mouse message too
-                    // would turn one selection into two activation requests.
-                    if (_usesVersion4Callbacks) return IntPtr.Zero;
-                    _logger.LogDebug("Tray icon selected. Requesting main window display.");
-                    OpenRequested?.Invoke(this, EventArgs.Empty);
+                    if (!_usesVersion4Callbacks) ScheduleSingleClick();
                     return IntPtr.Zero;
 
                 case NativeMethods.WM_RBUTTONUP:
@@ -295,8 +302,23 @@ public sealed class SystemTrayManager : ISystemTrayManager
         }
     }
 
+    private void ScheduleSingleClick()
+    {
+        if (Environment.TickCount64 < _ignoreSelectUntil) return;
+        if (_singleClickTimer is null)
+        {
+            _singleClickTimer = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread().CreateTimer();
+            _singleClickTimer.IsRepeating = false;
+            _singleClickTimer.Tick += (_, _) => { try { ShowContextMenu(); } catch (Exception ex) { _logger.LogError(ex, "Could not open tray menu."); } };
+        }
+        _singleClickTimer.Stop();
+        _singleClickTimer.Interval = TimeSpan.FromMilliseconds(GetDoubleClickTime() + 50);
+        _singleClickTimer.Start();
+    }
+
     private void ShowContextMenu()
     {
+        _singleClickTimer?.Stop();
         if (!NativeMethods.GetCursorPos(out var pt))
         {
             _logger.LogWarning("GetCursorPos failed while opening the tray context menu. Win32Error={Error}.", Marshal.GetLastWin32Error());
@@ -313,6 +335,8 @@ public sealed class SystemTrayManager : ISystemTrayManager
         try
         {
             NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING, CmdOpen, "Open XenMotion");
+            NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING, CmdSettings, "Settings");
+            NativeMethods.AppendMenu(hMenu, NativeMethods.MF_STRING, CmdScreenshot, "Take screenshot…");
             NativeMethods.AppendMenu(hMenu, NativeMethods.MF_SEPARATOR, 0, null);
 
             string pauseResumeText = _orchestrator.IsGloballyPaused ? "Resume Wallpapers" : "Pause Wallpapers";
@@ -357,6 +381,12 @@ public sealed class SystemTrayManager : ISystemTrayManager
                     break;
                 case CmdMute:
                     MuteRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case CmdSettings:
+                    SettingsRequested?.Invoke(this, EventArgs.Empty);
+                    break;
+                case CmdScreenshot:
+                    ScreenshotRequested?.Invoke(this, EventArgs.Empty);
                     break;
                 case CmdExit:
                     ExitRequested?.Invoke(this, EventArgs.Empty);
@@ -406,6 +436,7 @@ public sealed class SystemTrayManager : ISystemTrayManager
             return;
         }
 
+        _singleClickTimer?.Stop();
         _isDisposed = true;
         CleanupNativeResources();
         _isInitialized = false;

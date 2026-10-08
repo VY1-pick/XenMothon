@@ -6,7 +6,7 @@ namespace XenMotion.UI.Services;
 public sealed class HardwareTuningService
 {
     private readonly Lazy<HardwareSnapshot> _hardware = new(Detect);
-    private string _playbackReport = "Playback measurement runs when an automatically tuned video is loaded.";
+    private string _playbackReport = "Automatic quality runs only when you choose to measure it.";
     public string PlaybackReport => Volatile.Read(ref _playbackReport);
     public event EventHandler? PlaybackReportChanged;
     public void RecordPlaybackReport(string report)
@@ -49,7 +49,7 @@ public sealed class HardwareTuningService
         catch { /* Capability detection must never prevent startup. */ }
         finally { if (factory != IntPtr.Zero) Marshal.Release(factory); }
         return new(memoryMb, Environment.ProcessorCount, gpuMb,
-            (long)Math.Max(1, GetSystemMetrics(78)) * Math.Max(1, GetSystemMetrics(79)), graphics, driver);
+            (long)Math.Max(1, GetSystemMetrics(0)) * Math.Max(1, GetSystemMetrics(1)), graphics, driver);
     }
     private static T Method<T>(IntPtr obj, int index) where T : Delegate => Marshal.GetDelegateForFunctionPointer<T>(Marshal.ReadIntPtr(Marshal.ReadIntPtr(obj), index * IntPtr.Size));
     [StructLayout(LayoutKind.Sequential)] private struct MemoryStatus { public uint Length, Load; public ulong TotalPhysical, AvailablePhysical, TotalPageFile, AvailablePageFile, TotalVirtual, AvailableVirtual, AvailableExtendedVirtual; }

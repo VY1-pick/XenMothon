@@ -12,6 +12,24 @@ namespace XenMotion.Core.Tests.Services;
 public class SettingsApplicationTests
 {
     [Fact]
+    public async Task BackgroundWallpaperSaveDoesNotOverwriteUnsavedPreferences()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-draft-{Guid.NewGuid():N}.json");
+        try
+        {
+            var settings = new SettingsService(path, NullLogger<SettingsService>.Instance);
+            var vm = new SettingsViewModel(settings, Mock.Of<IWallpaperEngineOrchestrator>(), NullLogger<SettingsViewModel>.Instance);
+            vm.DefaultBrightness = .6f;
+            await settings.UpdateSettingsAsync(s => s.MonitorWallpaperAssignments["primary"] = Guid.NewGuid());
+            Assert.Equal(.6f, vm.DefaultBrightness);
+            await vm.SaveAsync();
+            Assert.Equal(.6f, settings.CurrentSettings.DefaultBrightness);
+            Assert.Single(settings.CurrentSettings.MonitorWallpaperAssignments);
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
     public async Task SaveReappliesEveryPlaybackValuePreservesPauseAndDoesNotRestartStoppedWallpaper()
     {
         string path = Path.Combine(Path.GetTempPath(), $"xenmotion-settings-{Guid.NewGuid():N}.json");
@@ -37,6 +55,14 @@ public class SettingsApplicationTests
                 HighQualityFiltering = false, UseHardwareDecoding = false, EnableGlassEffects = false, BatteryFps = 20,
                 CoveredThresholdPercentage = 1, PauseOnlyWhenFullyCovered = true, AutoTunePlayback = true, DefaultSharpness = .15f
             };
+            vm.SyncWindowsAccent = true;
+            vm.SyncDesktopBackground = true;
+            vm.LockScreenMode = LockScreenWallpaperMode.DesktopWallpaper;
+            vm.CatalogBackendUrl = "https://catalog.example.com/";
+            vm.UseRemoteCatalog = true;
+            vm.CatalogRequestTimeoutSeconds = 25;
+            vm.PauseOnApplicationFocus = true;
+            vm.PauseApplications = "game.exe, obs64.exe";
             await vm.SaveAsync();
             var current = loaded.Last();
             Assert.Equal(3, loaded.Count);
@@ -68,6 +94,13 @@ public class SettingsApplicationTests
             Assert.True(restored.CurrentSettings.AutoTunePlayback);
             Assert.Equal(.15f, restored.CurrentSettings.DefaultSharpness);
             Assert.False(restored.IsFirstRun);
+            Assert.True(restored.CurrentSettings.SyncWindowsAccent);
+            Assert.True(restored.CurrentSettings.SyncDesktopBackground);
+            Assert.Equal(LockScreenWallpaperMode.DesktopWallpaper, restored.CurrentSettings.LockScreenMode);
+            Assert.True(restored.CurrentSettings.UseRemoteCatalog);
+            Assert.Equal(25, restored.CurrentSettings.CatalogRequestTimeoutSeconds);
+            Assert.True(restored.CurrentSettings.Performance.PauseOnApplicationFocus);
+            Assert.Equal("game.exe, obs64.exe", restored.CurrentSettings.Performance.PauseApplications);
         }
         finally { File.Delete(path); }
     }

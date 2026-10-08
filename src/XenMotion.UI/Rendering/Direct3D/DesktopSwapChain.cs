@@ -70,10 +70,16 @@ internal sealed class DesktopSwapChain : IDisposable
         finally { Method<ContextLock>(_multithread, 4)(_multithread); }
     }
     public void PresentGpu() => Marshal.ThrowExceptionForHR(Method<PresentMethod>(_chain, 8)(_chain, 0, 0));
-    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0)
+    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0, float red = 1, float green = 1, float blue = 1, bool flipHorizontal = false)
     {
         Method<ContextLock>(_multithread, 3)(_multithread);
-        try { _frames!.SetVisualAdjustments(brightness, contrast, saturation, sharpness); }
+        try { _frames!.SetVisualAdjustments(brightness, contrast, saturation, sharpness, red, green, blue, flipHorizontal); }
+        finally { Method<ContextLock>(_multithread, 4)(_multithread); }
+    }
+    public void Redraw()
+    {
+        Method<ContextLock>(_multithread, 3)(_multithread);
+        try { if (_frames!.Redraw()) PresentGpu(); }
         finally { Method<ContextLock>(_multithread, 4)(_multithread); }
     }
     // Read the GPU back buffer directly for native pixel verification. No GDI clipping/DWM state.

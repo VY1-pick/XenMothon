@@ -15,6 +15,56 @@ namespace XenMotion.Core.Tests.Rendering;
 
 public sealed class NativeMediaFoundationTests(ITestOutputHelper output)
 {
+    [Fact]
+    public async Task PausedVideoAcceptsImageEditsWithoutReloadingOrResuming()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        string path = Path.Combine(Path.GetTempPath(), $"paused-edits-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path, CreateAvi());
+            using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000, -16000, 64, 36));
+            Assert.NotNull(surface);
+            await using var renderer = new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance);
+            await renderer.InitializeAsync(surface.Handle, surface.LocalBounds);
+            var settings = new WallpaperSettings { IsMuted = true };
+            await renderer.LoadAsync(path, settings);
+            await renderer.PlayAsync();
+            await Task.Delay(100);
+            await renderer.PauseAsync();
+            long frames = renderer.PresentedFrameCount;
+            settings.Contrast = 1.3f;
+            settings.FlipHorizontal = true;
+            Assert.True(await renderer.TryApplySettingsAsync(settings));
+            Assert.Equal(WallpaperState.Paused, renderer.CurrentState);
+            Assert.Equal(frames, renderer.PresentedFrameCount);
+            settings.PlaybackSpeed = .5f;
+            Assert.False(await renderer.TryApplySettingsAsync(settings));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Fact]
+    public async Task EconomyHasAFrameEvenBeforePlayOrImmediateCoveragePause()
+    {
+        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 19041)) return;
+        string path = Path.Combine(Path.GetTempPath(), $"economy-first-{Guid.NewGuid():N}.avi");
+        try
+        {
+            File.WriteAllBytes(path, CreateAvi());
+            using var surface = DesktopSurface.TryCreate(GetDesktopWindow(), new MonitorBounds(-16000,-16000,64,36));
+            Assert.NotNull(surface);
+            await using var renderer = new VideoWallpaperRenderer(NullLogger<VideoWallpaperRenderer>.Instance);
+            await renderer.InitializeAsync(surface.Handle, surface.LocalBounds);
+            await renderer.LoadAsync(path, new WallpaperSettings { TargetFps=15, RenderScale=.5f, HighQualityFiltering=false, VideoHeightLimit=720 });
+            Assert.Equal(1, renderer.PresentedFrameCount);
+            await renderer.PlayAsync();
+            await renderer.PauseAsync();
+            Assert.True(renderer.PresentedFrameCount >= 1);
+            Assert.Equal(WallpaperState.Paused, renderer.CurrentState);
+        }
+        finally { File.Delete(path); }
+    }
     [DllImport("user32.dll")]
     private static extern IntPtr GetDesktopWindow();
     [Fact]

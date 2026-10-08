@@ -10,7 +10,7 @@ $marker = Join-Path $publish 'XENMOTION-RELEASE.txt'
 
 if (-not (Test-Path $exe)) { throw "Missing XenMotion.UI.exe in release directory: $publish" }
 if (-not (Test-Path $marker)) { throw "Missing XENMOTION-RELEASE.txt in release directory: $publish" }
-foreach ($required in @('Runtime/Python/python.exe','QualityProbe/NativeProbe.exe','tools/AdaptiveQualityLab/lab.py','tools/AdaptiveQualityLab/report-template.html','LICENSE','SHA256SUMS.txt')) {
+foreach ($required in @('Runtime/Python/python.exe','QualityProbe/NativeProbe.exe','tools/AdaptiveQualityLab/lab.py','tools/AdaptiveQualityLab/report-template.html','LICENSE','BETA-TERMS.txt','BETA-TERMS.fa.txt','SHA256SUMS.txt')) {
     if (-not (Test-Path -LiteralPath (Join-Path $publish $required))) { throw "Missing release dependency: $required" }
 }
 foreach ($entry in Get-Content -LiteralPath (Join-Path $publish 'SHA256SUMS.txt')) {

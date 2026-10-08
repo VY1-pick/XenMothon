@@ -12,8 +12,13 @@ namespace XenMotion.UI;
 /// <summary>Library page: import, drag and drop, storage tools and per-wallpaper playback.</summary>
 public sealed partial class MainWindow
 {
+    private bool _pickingImport;
     private async void OnImportButtonClicked(object sender, RoutedEventArgs e)
     {
+        if (_pickingImport) return;
+        _pickingImport = true;
+        try
+        {
         var picker = new FileOpenPicker();
         InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
 
@@ -30,14 +35,43 @@ public sealed partial class MainWindow
         {
             await _viewModel.ImportFilesAsync(files.Select(f => f.Path).ToList());
         }
+        }
+        catch (Exception ex) { ShowToast("Could not import: " + ex.Message, true); }
+        finally { _pickingImport = false; }
     }
 
-    private async void OnApplyButtonClicked(object sender, RoutedEventArgs e)
+    private void OnLibrarySelectionClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: WallpaperItemViewModel item })
+        bool selecting = LibrarySelectionToggle.IsChecked == true;
+        WallpaperGridView.SelectionMode = selecting ? ListViewSelectionMode.Multiple : ListViewSelectionMode.None;
+        WallpaperGridView.IsItemClickEnabled = !selecting;
+        LibrarySelectAllButton.Visibility = LibraryDeleteSelectedButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
+    }
+    private void OnLibrarySelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_viewModel is null) return;
+        foreach (var item in _viewModel.Wallpapers)
+            item.IsSelected = LibrarySelectionToggle.IsChecked == true ? WallpaperGridView.SelectedItems.Contains(item) : item.Id == _viewerId;
+        LibraryDeleteSelectedButton.Content = $"Remove selected ({WallpaperGridView.SelectedItems.Count})";
+    }
+    private void OnSelectAllWallpapersClicked(object sender, RoutedEventArgs e) => WallpaperGridView.SelectAll();
+    private async void OnDeleteSelectedWallpapersClicked(object sender, RoutedEventArgs e)
+    {
+        var selected = WallpaperGridView.SelectedItems.OfType<WallpaperItemViewModel>().ToArray();
+        if (selected.Length == 0) { ShowToast("Select wallpapers first."); return; }
+        var dialog = new ContentDialog { XamlRoot = RootGrid.XamlRoot, RequestedTheme = ElementTheme.Dark,
+            Title = $"Remove {selected.Length} wallpapers?", Content = "Only library copies are removed. Original imported files remain on your computer.",
+            PrimaryButtonText = "Remove selected", CloseButtonText = "Cancel", DefaultButton = ContentDialogButton.Close };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        LibraryDeleteSelectedButton.IsEnabled = false;
+        try
         {
-            await _viewModel.SetAsWallpaperAsync(item);
+            await FlushWallpaperEdits();
+            foreach (var item in selected) await _viewModel.DeleteWallpaperAsync(item);
+            if (_viewerId is { } id && !_viewModel.Wallpapers.Any(w => w.Id == id)) CloseWallpaperViewer();
         }
+        catch (Exception ex) { ShowToast("Could not remove wallpapers: " + ex.Message, true); }
+        finally { LibraryDeleteSelectedButton.IsEnabled = true; }
     }
 
     private async void OnPauseResumeClicked(object sender, RoutedEventArgs e) => await _viewModel.TogglePauseResumeAsync();
@@ -69,7 +103,7 @@ public sealed partial class MainWindow
             TextWrapping = TextWrapping.Wrap, FontSize = 13, Foreground = (Brush)resources["XenMotionMintTextBrush"] });
         var dialog = new ContentDialog
         {
-            XamlRoot = RootGrid.XamlRoot,
+            XamlRoot = (sender as FrameworkElement)?.XamlRoot ?? RootGrid.XamlRoot,
             RequestedTheme = ElementTheme.Dark,
             Title = "Remove wallpaper?",
             Content = content,
@@ -84,7 +118,10 @@ public sealed partial class MainWindow
         dialog.Resources["ContentDialogCornerRadius"] = new CornerRadius(24);
         dialog.Resources["ContentDialogMaxWidth"] = 520d;
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
             await _viewModel.DeleteWallpaperAsync(item);
+            if (_viewerId == item.Id && !_viewModel.Wallpapers.Any(w => w.Id == item.Id)) CloseWallpaperViewer();
+        }
     }
 
     private async void OnMuteClicked(object sender, RoutedEventArgs e) => await _viewModel.ToggleMuteAsync();

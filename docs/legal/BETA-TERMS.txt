@@ -1,0 +1,71 @@
+﻿XENMOTION PRIVATE BETA — TERMS OF USE
+Version 1.0 — 8 October 2026
+
+Please read these terms before installing. Selecting “I accept” authorizes
+installation and records your acceptance of these terms for this beta.
+If you disagree, cancel installation.
+
+1. Ownership
+XenMotion's original branding, artwork, documentation and contributions belong
+to their respective copyright owners. Copyright (c) 2026 Amir, for original
+XenMotion material owned by Amir. Installation does not transfer ownership or
+grant rights to the XenMotion name or logo. Rights not expressly granted are
+reserved, subject to the open-source exceptions below.
+
+2. Private beta access
+This build is supplied to invited testers for evaluation and feedback. Do not
+share private download credentials or access to the private repository. Do not
+represent an unofficial or modified build as an official XenMotion release.
+For proprietary beta material not covered by a separate license, permission
+is limited to personal evaluation; redistribution or resale requires the
+copyright owner's permission. This restriction does not apply to material
+whose open-source license already permits those activities.
+
+3. Open-source rights
+The included LICENSE and third-party notices remain applicable. These terms
+do not revoke, narrow or replace any rights already granted under MIT or
+another applicable open-source license. Preserve required copyright and
+license notices when redistributing covered material. Third-party components
+remain owned and licensed by their respective authors.
+
+4. Your media and lawful use
+You retain ownership of your imported media. Import only content that you
+have permission to use. You are responsible for your media and for complying
+with applicable law. Do not use the software to distribute malicious content,
+infringe others' rights, or gain unauthorized access to systems or accounts.
+No ownership of your media is transferred to XenMotion.
+
+5. Local data and optional connections
+Settings, library metadata, copied media, previews, quality measurements and
+diagnostic reports are stored locally. Imported originals are not deleted by
+library removal. Windows startup registration and personalization are controlled
+by settings. Optional catalog and update connections contact configured servers;
+those servers receive the network request and ordinary connection information.
+Local crash reports are not automatically uploaded by this build. Share reports
+only after reviewing them for file paths and other personal information.
+
+6. Experimental software
+This is unfinished beta software. It may crash, consume resources, fail to play
+media or behave differently across devices. Keep backups of important files.
+No promise of compatibility, uninterrupted operation, support, future features
+or continued beta availability is made. Automatic quality is an optional test;
+its recommendations are estimates for the measured media, display and workload.
+
+7. Warranty and liability
+To the maximum extent permitted by applicable law, the beta is provided “as is”
+and “as available”, without warranties of merchantability, fitness for a
+particular purpose or non-infringement. To that same extent, its authors and
+suppliers are not liable for losses arising from use or inability to use it.
+Nothing here excludes rights, remedies or liabilities that cannot lawfully be
+excluded, including mandatory consumer rights.
+
+8. Ending use and changes
+You may stop using and uninstall the software at any time. Uninstalling may
+leave your library and local settings for reuse; remove them separately if
+desired. Later releases may present revised terms, without retroactively
+changing rights granted under an existing open-source license.
+
+9. Questions
+Contact the maintainer through the private repository's issue tracker or the
+channel through which you received your invitation. The Persian companion
+document explains the same terms. Neither version limits mandatory legal rights.

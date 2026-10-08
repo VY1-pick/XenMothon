@@ -135,6 +135,50 @@
     <SolidColorBrush x:Key="ProgressBarBorderBrush" Color="Transparent" />
     <SolidColorBrush x:Key="ProgressRingForeground" Color="#FF5EF2CF" />
 
+    <!-- Native control behavior with the application's mint/glass palette. -->
+    <Color x:Key="SystemAccentColor">#FF5EF2CF</Color>
+    <SolidColorBrush x:Key="SystemControlHighlightAccentBrush" Color="#FF5EF2CF" />
+    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#FF5EF2CF" />
+    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#DD5EF2CF" />
+    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#AA5EF2CF" />
+    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FF04251E" />
+    <StaticResource x:Key="ComboBoxBackground" ResourceKey="XenMotionFieldBrush" />
+    <StaticResource x:Key="ComboBoxBackgroundPointerOver" ResourceKey="XenMotionHoverBrush" />
+    <StaticResource x:Key="ComboBoxBackgroundPressed" ResourceKey="XenMotionPressedBrush" />
+    <StaticResource x:Key="ComboBoxForeground" ResourceKey="XenMotionTextBrush" />
+    <StaticResource x:Key="ComboBoxForegroundPointerOver" ResourceKey="XenMotionTextBrush" />
+    <StaticResource x:Key="ComboBoxForegroundPressed" ResourceKey="XenMotionTextBrush" />
+    <StaticResource x:Key="ComboBoxBorderBrush" ResourceKey="XenMotionRimBrush" />
+    <StaticResource x:Key="ComboBoxBorderBrushPointerOver" ResourceKey="XenMotionAccentRimBrush" />
+    <StaticResource x:Key="ComboBoxBorderBrushPressed" ResourceKey="XenMotionAccentRimBrush" />
+    <StaticResource x:Key="ComboBoxDropDownBackground" ResourceKey="XenMotionFlyoutBrush" />
+    <StaticResource x:Key="ComboBoxDropDownBorderBrush" ResourceKey="XenMotionRimBrush" />
+    <StaticResource x:Key="ComboBoxItemBackgroundSelected" ResourceKey="XenMotionAccentSoftBrush" />
+    <StaticResource x:Key="ComboBoxItemBackgroundSelectedPointerOver" ResourceKey="XenMotionAccentSoftBrush" />
+    <StaticResource x:Key="ComboBoxItemForegroundSelected" ResourceKey="XenMotionMintTextBrush" />
+    <StaticResource x:Key="TextControlBackground" ResourceKey="XenMotionFieldBrush" />
+    <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="XenMotionGlassDarkBrush" />
+    <StaticResource x:Key="TextControlBorderBrush" ResourceKey="XenMotionRimBrush" />
+    <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="XenMotionAccentRimBrush" />
+    <StaticResource x:Key="RadioButtonOuterEllipseCheckedFill" ResourceKey="XenMotionMintTextBrush" />
+    <Style TargetType="ComboBox">
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Padding" Value="14,10" />
+      <Setter Property="MinHeight" Value="44" />
+      <Setter Property="Background" Value="{StaticResource XenMotionFieldBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource XenMotionRimBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+    <Style TargetType="NumberBox">
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+    </Style>
+    <Style TargetType="RadioButton">
+      <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+
     <Style x:Key="XenMotionButtonStyle" TargetType="Button">
     <Setter Property="Foreground" Value="{StaticResource XenMotionTextBrush}" />
     <Setter Property="Background" Value="{StaticResource XenMotionGlassBrush}" />

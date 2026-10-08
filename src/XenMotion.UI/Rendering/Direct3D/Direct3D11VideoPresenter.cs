@@ -41,7 +41,8 @@ public sealed class Direct3D11VideoPresenter : IDisposable
             _renderScale = Math.Clamp(settings.RenderScale, .25f, 1f);
             Resize(_displayBounds);
             _swapChain?.SetFiltering(settings.HighQualityFiltering);
-            _swapChain?.SetVisualAdjustments(settings.Brightness, settings.Contrast, settings.Saturation, settings.Sharpness);
+            _swapChain?.SetVisualAdjustments(settings.Brightness, settings.Contrast, settings.Saturation, settings.Sharpness, settings.Red, settings.Green, settings.Blue, settings.FlipHorizontal);
+            _swapChain?.Redraw();
         }
     }
 

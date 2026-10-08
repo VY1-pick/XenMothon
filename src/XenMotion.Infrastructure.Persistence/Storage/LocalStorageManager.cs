@@ -245,6 +245,11 @@ public sealed class LocalStorageManager : IStorageManager
             }
         }
 
+        if (PathSanitizer.IsPathWithinRoot(targetRoot, oldRoot) || PathSanitizer.IsPathWithinRoot(oldRoot, targetRoot))
+            return false;
+        foreach (string folder in new[] { "Media", "Thumbnails" })
+            if (Directory.Exists(Path.Combine(targetRoot, folder)) && Directory.EnumerateFileSystemEntries(Path.Combine(targetRoot, folder)).Any()) return false;
+
         _logger.LogInformation("Starting storage migration from '{OldRoot}' to '{NewRoot}'.", oldRoot, targetRoot);
 
         try
@@ -265,13 +270,13 @@ public sealed class LocalStorageManager : IStorageManager
             // Copy Media directory contents
             if (Directory.Exists(MediaDirectory))
             {
-                CopyDirectoryRecursive(MediaDirectory, targetMedia, ct);
+                await Task.Run(() => CopyDirectoryRecursive(MediaDirectory, targetMedia, ct), ct).ConfigureAwait(false);
             }
 
             // Copy Thumbnails directory contents
             if (Directory.Exists(ThumbnailsDirectory))
             {
-                CopyDirectoryRecursive(ThumbnailsDirectory, targetThumbs, ct);
+                await Task.Run(() => CopyDirectoryRecursive(ThumbnailsDirectory, targetThumbs, ct), ct).ConfigureAwait(false);
             }
 
             // Verify file counts in destination match source
@@ -289,23 +294,7 @@ public sealed class LocalStorageManager : IStorageManager
                 _rootStoragePath = targetRoot;
             }
 
-            // Safe cleanup of old media and thumbnails
-            try
-            {
-                if (Directory.Exists(Path.Combine(oldRoot, "Media")))
-                {
-                    Directory.Delete(Path.Combine(oldRoot, "Media"), recursive: true);
-                }
-                if (Directory.Exists(Path.Combine(oldRoot, "Thumbnails")))
-                {
-                    Directory.Delete(Path.Combine(oldRoot, "Thumbnails"), recursive: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Migration succeeded, but old directory cleanup had non-critical errors.");
-            }
-
+            // Keep the source as a recovery copy until the selected root has been persisted.
             _logger.LogInformation("Storage root migration completed successfully to '{NewRoot}'.", targetRoot);
             return await Task.FromResult(true).ConfigureAwait(false);
         }
@@ -393,13 +382,20 @@ public sealed class LocalStorageManager : IStorageManager
 
     private static void CopyDirectoryRecursive(string sourceDir, string targetDir, CancellationToken ct)
     {
+        if ((File.GetAttributes(sourceDir) & FileAttributes.ReparsePoint) != 0)
+            throw new IOException("Library migration cannot follow directory links.");
         Directory.CreateDirectory(targetDir);
 
         foreach (string file in Directory.GetFiles(sourceDir))
         {
             ct.ThrowIfCancellationRequested();
             string destFile = Path.Combine(targetDir, Path.GetFileName(file));
-            File.Copy(file, destFile, overwrite: true);
+            if ((File.GetAttributes(file) & FileAttributes.ReparsePoint) != 0) throw new IOException("Library migration cannot follow file links.");
+            File.Copy(file, destFile, overwrite: false);
+            using var source = File.OpenRead(file);
+            using var target = File.OpenRead(destFile);
+            if (!SHA256.HashData(source).AsSpan().SequenceEqual(SHA256.HashData(target)))
+                throw new IOException("Library copy verification failed.");
         }
 
         foreach (string subDir in Directory.GetDirectories(sourceDir))

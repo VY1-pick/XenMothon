@@ -17,6 +17,15 @@ public class LocalStorageManagerTests : IDisposable
     }
 
     [Fact]
+    public async Task MigrationRejectsNestedDestinationWithoutDeletingSource()
+    {
+        var source = Path.Combine(_storageManager.MediaDirectory, "keep.txt");
+        await File.WriteAllTextAsync(source, "keep");
+        Assert.False(await _storageManager.MigrateStorageRootAsync(Path.Combine(_storageManager.MediaDirectory, "nested")));
+        Assert.Equal("keep", await File.ReadAllTextAsync(source));
+    }
+
+    [Fact]
     public void RelativePathCannotEscapeManagedLibrary()
     {
         Assert.Throws<UnauthorizedAccessException>(()=>_storageManager.ResolveAbsolutePath("../escape.mp4"));

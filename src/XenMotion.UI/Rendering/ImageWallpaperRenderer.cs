@@ -17,7 +17,7 @@ public sealed class ImageWallpaperRenderer : IWallpaperRenderer
     private readonly object _syncLock = new();
     private readonly Direct3D11VideoPresenter _presenter;
     private GCHandle _pixels;
-    private int _width, _height;
+    private int _width, _height, _heightLimit;
     private MonitorBounds _bounds;
     private PlaybackScalingMode _scaling;
     private WallpaperState _state;
@@ -42,8 +42,12 @@ public sealed class ImageWallpaperRenderer : IWallpaperRenderer
         var decoder = await BitmapDecoder.CreateAsync(stream).AsTask(ct).ConfigureAwait(false);
         uint width = decoder.OrientedPixelWidth;
         uint height = decoder.OrientedPixelHeight;
+        if (width == 0 || height == 0) throw new InvalidDataException("The image has no pixels.");
+        double factor = Math.Min(1d, Math.Min(8192d / Math.Max(width, height),
+            (double)(settings.VideoHeightLimit > 0 ? settings.VideoHeightLimit : Math.Max(2160, _bounds.Height)) / height));
+        width = Math.Max(1, (uint)(width * factor)); height = Math.Max(1, (uint)(height * factor));
         var data = await decoder.GetPixelDataAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Ignore,
-            new BitmapTransform(),
+            new BitmapTransform { ScaledWidth = width, ScaledHeight = height },
             ExifOrientationMode.RespectExifOrientation, ColorManagementMode.ColorManageToSRgb).AsTask(ct).ConfigureAwait(false);
         ct.ThrowIfCancellationRequested();
         lock (_syncLock)
@@ -51,7 +55,7 @@ public sealed class ImageWallpaperRenderer : IWallpaperRenderer
             ObjectDisposedException.ThrowIf(_disposed, this);
             if (_pixels.IsAllocated) _pixels.Free();
             _pixels = GCHandle.Alloc(data.DetachPixelData(), GCHandleType.Pinned);
-            _width = (int)width; _height = (int)height; _scaling = settings.ScalingMode; _state = WallpaperState.Ready;
+            _width = (int)width; _height = (int)height; _heightLimit = settings.VideoHeightLimit; _scaling = settings.ScalingMode; _state = WallpaperState.Ready;
             _presenter.SetVisualAdjustments(settings);
         }
     }
@@ -78,6 +82,17 @@ public sealed class ImageWallpaperRenderer : IWallpaperRenderer
     {
         lock (_syncLock) { _state = WallpaperState.Stopped; if (_pixels.IsAllocated) _pixels.Free(); }
         return Task.CompletedTask;
+    }
+    public Task<bool> TryApplySettingsAsync(WallpaperSettings settings, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        lock (_syncLock)
+        {
+            if (_disposed || !_pixels.IsAllocated || _heightLimit != settings.VideoHeightLimit) return Task.FromResult(false);
+            _scaling = settings.ScalingMode;
+            _presenter.SetVisualAdjustments(settings);
+        }
+        Redraw(); return Task.FromResult(true);
     }
     public Task SetVolumeAsync(float volume, CancellationToken ct = default) => Task.CompletedTask;
     public Task SetFpsLimitAsync(int fps, CancellationToken ct = default) => Task.CompletedTask;

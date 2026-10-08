@@ -102,7 +102,9 @@ public static class AppCompositionRoot
 
         // 5. Storage Management & Media Services
         services.AddSingleton<IStorageManager>(sp =>
-            new LocalStorageManager(mediaStoragePath, sp.GetRequiredService<ILogger<LocalStorageManager>>()));
+            new LocalStorageManager(string.IsNullOrWhiteSpace(sp.GetRequiredService<ISettingsService>().CurrentSettings.StoragePath)
+                ? mediaStoragePath : sp.GetRequiredService<ISettingsService>().CurrentSettings.StoragePath,
+                sp.GetRequiredService<ILogger<LocalStorageManager>>()));
 
         services.AddSingleton<IThumbnailService, ThumbnailService>();
         services.AddSingleton<IWallpaperImportService, WallpaperImportService>();
@@ -117,7 +119,9 @@ public static class AppCompositionRoot
             var settings = sp.GetRequiredService<ISettingsService>().CurrentSettings;
             var localProvider = sp.GetRequiredService<LocalCatalogProvider>();
 
-            if (!settings.UseRemoteCatalog || string.IsNullOrWhiteSpace(settings.CatalogBackendUrl))
+            if (!settings.UseRemoteCatalog || !Uri.TryCreate(settings.CatalogBackendUrl, UriKind.Absolute, out var catalogUri)
+                || (catalogUri.Scheme != Uri.UriSchemeHttps && !(catalogUri.Scheme == Uri.UriSchemeHttp && catalogUri.IsLoopback))
+                || !string.IsNullOrEmpty(catalogUri.UserInfo) || !string.IsNullOrEmpty(catalogUri.Query) || !string.IsNullOrEmpty(catalogUri.Fragment))
             {
                 return localProvider;
             }
@@ -180,8 +184,10 @@ public static class AppCompositionRoot
         services.AddSingleton<IWallpaperEngineOrchestrator>(sp =>
             new WallpaperEngineOrchestrator(
                 sp.GetRequiredService<ILogger<WallpaperEngineOrchestrator>>(),
-                sp.GetRequiredService<Func<WallpaperType, IWallpaperRenderer>>()));
+                sp.GetRequiredService<Func<WallpaperType, IWallpaperRenderer>>(),
+                sp.GetRequiredService<ISettingsService>()));
         services.AddSingleton<SavedWallpaperService>();
+        services.AddSingleton<WindowsPersonalizationService>();
 
         if (singleInstanceService != null)
         {

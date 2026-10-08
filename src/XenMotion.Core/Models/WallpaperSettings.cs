@@ -18,6 +18,11 @@ public sealed class WallpaperSettings
     public float Brightness { get; set; } = 1.0f;
     public float Contrast { get; set; } = 1.0f;
     public float Saturation { get; set; } = 1.0f;
+    public bool FlipHorizontal { get; set; }
+    public float Opacity { get; set; } = 1;
+    public float Red { get; set; } = 1;
+    public float Green { get; set; } = 1;
+    public float Blue { get; set; } = 1;
     public int VideoHeightLimit { get; set; }
     public float RenderScale { get; set; } = 1;
     public bool HighQualityFiltering { get; set; } = true;
@@ -34,7 +39,8 @@ public sealed class WallpaperSettings
         Loop = Loop,
         Brightness = Brightness,
         Contrast = Contrast,
-        Saturation = Saturation, VideoHeightLimit = VideoHeightLimit, RenderScale = RenderScale,
+        Saturation = Saturation, FlipHorizontal = FlipHorizontal, Opacity = Opacity, Red = Red, Green = Green, Blue = Blue,
+        VideoHeightLimit = VideoHeightLimit, RenderScale = RenderScale,
         HighQualityFiltering = HighQualityFiltering, UseHardwareDecoding = UseHardwareDecoding
     };
 }

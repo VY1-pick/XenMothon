@@ -9,6 +9,7 @@ public sealed class SavedWallpaperService(IWallpaperEngineOrchestrator engine, I
     ILibraryService library, IStorageManager storage, ILogger<SavedWallpaperService> logger)
 {
     public Wallpaper? ActiveWallpaper { get; private set; }
+    public event EventHandler? ActiveWallpaperChanged;
     public async Task ApplyAsync(string monitor, Wallpaper wallpaper, WallpaperSettings? playback = null,
         CancellationToken ct = default)
     {
@@ -17,6 +18,7 @@ public sealed class SavedWallpaperService(IWallpaperEngineOrchestrator engine, I
             throw new OperationCanceledException("The wallpaper selection was superseded or cancelled.", ct);
         ActiveWallpaper = wallpaper;
         await settings.UpdateSettingsAsync(s => s.MonitorWallpaperAssignments[monitor] = wallpaper.Id, ct).ConfigureAwait(false);
+        ActiveWallpaperChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task<Wallpaper?> RestorePrimaryAsync(CancellationToken ct = default)
@@ -32,6 +34,7 @@ public sealed class SavedWallpaperService(IWallpaperEngineOrchestrator engine, I
         }
         await engine.ApplyWallpaperAsync("PRIMARY_MONITOR", wallpaper, PlaybackSettings(), ct).ConfigureAwait(false);
         ActiveWallpaper = wallpaper;
+        ActiveWallpaperChanged?.Invoke(this, EventArgs.Empty);
         logger.LogInformation("Restored saved wallpaper {Id} on startup.", id);
         return wallpaper;
     }
@@ -39,6 +42,7 @@ public sealed class SavedWallpaperService(IWallpaperEngineOrchestrator engine, I
     public Task ClearAsync(CancellationToken ct = default)
     {
         ActiveWallpaper = null;
+        ActiveWallpaperChanged?.Invoke(this, EventArgs.Empty);
         return settings.UpdateSettingsAsync(s => s.MonitorWallpaperAssignments.Clear(), ct);
     }
 

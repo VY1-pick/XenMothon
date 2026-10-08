@@ -33,18 +33,13 @@ public sealed partial class MainWindow
 
     private void ConfigureWindowChrome()
     {
-        try
+        // Keep the native resize and caption path on every machine.
+        _customCaption = false;
+        if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
-            if (AppWindow.Presenter is OverlappedPresenter presenter)
-            {
-                // Removes the system title bar *and* its caption buttons, keeps the resize border.
-                presenter.SetBorderAndTitleBar(true, false);
-                _customCaption = true;
-            }
-        }
-        catch
-        {
-            _customCaption = false;
+            presenter.SetBorderAndTitleBar(true, true);
+            presenter.IsResizable = true;
+            presenter.IsMaximizable = true;
         }
 
         if (!_customCaption)
@@ -170,12 +165,22 @@ public sealed partial class MainWindow
         }
     }
 
-    private void OnCloseClicked(object sender, RoutedEventArgs e)
+    private async void OnCloseClicked(object sender, RoutedEventArgs e) => await CloseMainWindowAsync();
+
+    private bool _closingMainWindow;
+
+    private async Task CloseMainWindowAsync()
     {
-        if (_trayManager.IsInitialized)
-            _windowManager.Hide();
-        else
-            App.Current.Shutdown();
+        if (_closingMainWindow) return;
+        _closingMainWindow = true;
+        try
+        {
+            await FlushWallpaperEdits();
+            CloseAttachedWallpaperViewer();
+            if (_trayManager.IsInitialized || _viewerDetached && _floatingViewer != null) _windowManager.Hide();
+            else App.Current.Shutdown();
+        }
+        finally { _closingMainWindow = false; }
     }
 
     // ------------------------------------------------------------------ ambient liquid-glass light

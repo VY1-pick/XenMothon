@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 namespace XenMotion.UI.Rendering.Video;
 
@@ -154,7 +156,30 @@ public sealed class VideoPlaybackClock
             }
             double remaining = mediaTimeMs - elapsed;
             if (remaining <= 0) return elapsed;
-            await Task.Delay(TimeSpan.FromMilliseconds(Math.Clamp(remaining, 1, 100)), ct).ConfigureAwait(false);
+            double delay = Math.Clamp(remaining, .1, 100);
+            if (!WaitPrecisely(delay, ct))
+                await Task.Delay(TimeSpan.FromMilliseconds(delay), ct).ConfigureAwait(false);
         }
     }
+
+    // Task.Delay can oversleep by a Windows timer tick (about 15.6ms). A waitable
+    // timer keeps media timestamps precise without spinning or changing global timer resolution.
+    private static bool WaitPrecisely(double milliseconds, CancellationToken ct)
+    {
+        if (!OperatingSystem.IsWindows()) return false;
+        using var timer = new TimerHandle { SafeWaitHandle = CreateWaitableTimerExW(IntPtr.Zero, null, 2, 0x1f0003) };
+        if (timer.SafeWaitHandle.IsInvalid) return false;
+        long dueTime = -(long)Math.Ceiling(milliseconds * 10000);
+        if (!SetWaitableTimer(timer.SafeWaitHandle, ref dueTime, 0, IntPtr.Zero, IntPtr.Zero, false)) return false;
+        WaitHandle.WaitAny(new WaitHandle[] { timer, ct.WaitHandle });
+        ct.ThrowIfCancellationRequested();
+        return true;
+    }
+
+    private sealed class TimerHandle : WaitHandle { }
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    private static extern SafeWaitHandle CreateWaitableTimerExW(IntPtr attributes, string? name, uint flags, uint access);
+    [DllImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWaitableTimer(SafeWaitHandle timer, ref long dueTime, int period, IntPtr callback, IntPtr argument, [MarshalAs(UnmanagedType.Bool)] bool resume);
 }

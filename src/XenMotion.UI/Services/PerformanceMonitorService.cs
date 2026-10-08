@@ -114,7 +114,25 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
         }, IntPtr.Zero);
 
         var performance = _settingsService.CurrentSettings.Performance;
+        var foreground = GetForegroundWindow();
+        bool applicationFocused = foreground != IntPtr.Zero && IsWindowVisible(foreground) &&
+            GetClass(foreground) is not ("Progman" or "WorkerW" or "Shell_TrayWnd" or "Shell_SecondaryTrayWnd");
+        bool pauseForFocus = applicationFocused && performance.PauseOnApplicationFocus;
+        if (applicationFocused && !string.IsNullOrWhiteSpace(performance.PauseApplications))
+        {
+            GetWindowThreadProcessId(foreground, out uint processId);
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById((int)processId);
+                pauseForFocus |= PlaybackApplicationRules.Matches(performance.PauseApplications, process.ProcessName);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
+        }
         bool onBattery = IsOnBattery();
+        bool saver = SystemParametersInfo(0x0072, 0, out bool runningSaver, 0) && runningSaver;
+        bool powerSaver = GetSystemPowerStatus(out var power) && power.SystemStatusFlag == 1;
+        pauseForFocus |= performance.PauseOnScreenSaver && saver || performance.PauseOnPowerSaver && powerSaver
+            || performance.PauseOnRemoteSession && GetSystemMetrics(0x1000) != 0;
         int fps = onBattery ? Math.Min(_settingsService.CurrentSettings.GlobalTargetFps, Math.Clamp(performance.BatteryFps, 15, 240)) : _settingsService.CurrentSettings.GlobalTargetFps;
         // Reapply to newly loaded renderers too; changing an FPS limit is an inexpensive field update.
         await _orchestrator.SetGlobalFpsLimitAsync(fps, ct).ConfigureAwait(false);
@@ -139,6 +157,7 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
             if (monitor == null) continue;
 
             PerformanceState state = DesktopVisibilityEvaluator.Evaluate(monitor.Bounds, visibleWindows, performance, onBattery);
+            if (pauseForFocus) state = PerformanceState.PausedByUser;
 
             anyOccluded |= state is PerformanceState.Covered or PerformanceState.FullscreenApplication or PerformanceState.PausedByUser;
             await _orchestrator.UpdatePerformanceStateAsync(monitorId, state, ct).ConfigureAwait(false);
@@ -230,6 +249,10 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
     [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out int value, int size);
     [DllImport("dwmapi.dll")] private static extern int DwmGetWindowAttribute(IntPtr window, int attribute, out DesktopNativeMethods.RECT value, int size);
 
+    [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SystemParametersInfo(uint action, uint parameter, [MarshalAs(UnmanagedType.Bool)] out bool value, uint flags);
+
     private static bool IsOnBattery()
     {
         if (!GetSystemPowerStatus(out var status)) return false;
@@ -257,6 +280,7 @@ public sealed class PerformanceMonitorService : IPerformanceMonitorService
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
     [DllImport("user32.dll")]
     private static extern IntPtr GetShellWindow();

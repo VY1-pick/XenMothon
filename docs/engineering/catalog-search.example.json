@@ -1,0 +1,30 @@
+{
+  "items": [
+    {
+      "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "title": "Server test wallpaper",
+      "description": "Replace media and metadata with the real published asset.",
+      "author": "XenMotion",
+      "thumbnailUrl": "/media/test-v1.jpg",
+      "previewUrl": "/media/test-preview-v1.mp4",
+      "downloadUrl": "/media/test-v1.mp4",
+      "type": "Video",
+      "width": 1920,
+      "height": 1080,
+      "durationSeconds": 10,
+      "fileSizeBytes": 123456,
+      "tags": ["test"],
+      "categoryId": "nature",
+      "categoryName": "Nature",
+      "rating": 0,
+      "ratingCount": 0,
+      "downloadsCount": 0,
+      "createdAtUtc": "2026-10-07T00:00:00Z",
+      "updatedAtUtc": "2026-10-07T00:00:00Z",
+      "isFeatured": true
+    }
+  ],
+  "pageNumber": 1,
+  "pageSize": 24,
+  "totalCount": 1
+}

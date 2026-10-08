@@ -18,6 +18,7 @@ namespace XenMotion.UI;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private readonly ContentControl _mainInteraction = new() { HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
     private bool _syncingPlaybackVolume;
     private readonly MainViewModel _viewModel;
     private readonly IWindowManagementService _windowManager;
@@ -27,6 +28,7 @@ public sealed partial class MainWindow : Window
     private string? _lastError;
     private string? _lastStatus;
     private int _uiUpdatePending;
+    private int _settingsUiUpdatePending;
 
     private void QueueUiUpdate()
     {
@@ -43,6 +45,9 @@ public sealed partial class MainWindow : Window
     public MainWindow(MainViewModel viewModel, IWindowManagementService windowManager, SettingsViewModel settingsViewModel, ISystemTrayManager trayManager)
     {
         InitializeComponent();
+        Content = null;
+        _mainInteraction.Content = RootGrid;
+        Content = _mainInteraction;
 
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _windowManager = windowManager ?? throw new ArgumentNullException(nameof(windowManager));
@@ -65,19 +70,13 @@ public sealed partial class MainWindow : Window
         BindCollections();
 
         // Closing the window hides it to the tray when the shell accepted our icon.
-        AppWindow.Closing += (_, args) =>
+        AppWindow.Closing += async (_, args) =>
         {
-            if (_trayManager.IsInitialized)
-            {
-                args.Cancel = true;
-                _windowManager.Hide();
-                _trayManager.ShowNotification("XenMotion is still running", "The window was minimized to the system tray.");
-            }
-            else
-            {
-                App.Current.Shutdown();
-            }
+            args.Cancel = true;
+            await CloseMainWindowAsync();
         };
+
+        AppWindow.Changed += (_, _) => AlignWallpaperViewer();
 
         ShowFilterTab("Basics");
         ShowSettingsTab("General");
@@ -109,7 +108,12 @@ public sealed partial class MainWindow : Window
         _viewModel.PropertyChanged += (_, _) => QueueUiUpdate();
         _viewModel.ExploreViewModel.PropertyChanged += (_, _) => QueueUiUpdate();
         _viewModel.ExploreViewModel.DetailsViewModel.PropertyChanged += (_, _) => QueueUiUpdate();
-        _settingsViewModel.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(UpdateSettingsUiState);
+        _settingsViewModel.PropertyChanged += (_, _) =>
+        {
+            if (Interlocked.Exchange(ref _settingsUiUpdatePending, 1) != 0) return;
+            if (!DispatcherQueue.TryEnqueue(() => { Interlocked.Exchange(ref _settingsUiUpdatePending, 0); UpdateSettingsUiState(); }))
+                Interlocked.Exchange(ref _settingsUiUpdatePending, 0);
+        };
         _viewModel.ExploreViewModel.WallpaperApplied += (_, e) =>
             DispatcherQueue.TryEnqueue(() => ShowToast($"“{e.Title}” is now on your desktop"));
     }
@@ -161,7 +165,7 @@ public sealed partial class MainWindow : Window
     {
         if (DownloadOverlay.Visibility == Visibility.Visible && DownloadOverlay.Opacity > 0) { CloseDownloadSheet(); return true; }
         if (SettingsOverlay.Visibility == Visibility.Visible && SettingsOverlay.Opacity > 0) { CloseSettingsSheet(); return true; }
-        if (DetailsOverlay.Visibility == Visibility.Visible && DetailsOverlay.Opacity > 0) { _viewModel.ExploreViewModel.CloseDetails(); return true; }
+        if (DetailsDock.Visibility == Visibility.Visible) { CloseWallpaperViewer(); return true; }
         return false;
     }
 
@@ -220,6 +224,7 @@ public sealed partial class MainWindow : Window
         StorageRootTextBlock.Text = _viewModel.StorageRootText;
 
         UpdateDetailsState();
+        RefreshViewerActions();
         UpdateToasts(explore);
     }
 
@@ -300,7 +305,8 @@ public sealed partial class MainWindow : Window
             var size = AppWindow.Size;
             if (size.Width < 1280 || size.Height < 820)
             {
-                AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Max(1280, size.Width), Math.Max(820, size.Height)));
+                var work = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+                AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Min(1280, work.Width), Math.Min(820, work.Height)));
             }
         }
         catch
@@ -312,8 +318,8 @@ public sealed partial class MainWindow : Window
     {
         try
         {
-            const int minWidth = 1040;
-            const int minHeight = 680;
+            int minWidth = Math.Min(900, Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea.Width);
+            int minHeight = Math.Min(600, Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea.Height);
             var size = AppWindow.Size;
             if (size.Width < minWidth || size.Height < minHeight)
             {

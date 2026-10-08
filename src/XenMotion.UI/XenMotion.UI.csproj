@@ -17,14 +17,15 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <PublishReadyToRun>true</PublishReadyToRun>
     <DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <StartupObject>XenMotion.UI.Program</StartupObject>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Version>0.9.0-beta.1</Version>
+    <Version>0.9.0-beta.2</Version>
     <AssemblyVersion>0.9.0.0</AssemblyVersion>
-    <FileVersion>0.9.0.0</FileVersion>
-    <InformationalVersion>0.9.0-beta.1</InformationalVersion>
+    <FileVersion>0.9.0.2</FileVersion>
+    <InformationalVersion>0.9.0-beta.2</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

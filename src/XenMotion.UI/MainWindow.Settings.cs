@@ -5,6 +5,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.Extensions.DependencyInjection;
+using XenMotion.Application.Services;
+using XenMotion.UI.Services;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace XenMotion.UI;
 
@@ -13,18 +18,30 @@ public sealed partial class MainWindow
 {
     private bool _loadingSettings;
 
-    private void OnSettingsClicked(object sender, RoutedEventArgs e)
+    private Window? _settingsWindow;
+    public void OpenSettingsWindow()
     {
         UpdateSettingsUiState();
-        ShowSettingsTab("Performance");
-        ShowOverlay(SettingsOverlay, SettingsPanel, new Vector3(56, 0, 0));
+        if (_settingsWindow is null)
+        {
+            SettingsOverlay.Children.Remove(SettingsPanel);
+            SettingsPanel.RequestedTheme = ElementTheme.Dark;
+            SettingsPanel.Width = double.NaN;
+            SettingsPanel.HorizontalAlignment = HorizontalAlignment.Stretch;
+            SettingsPanel.Margin = new Thickness(0);
+            SettingsPanel.CornerRadius = new CornerRadius(0);
+            _settingsWindow = new Window { Title = "XenMotion Settings", Content = SettingsPanel };
+            var work = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(AppWindow.Id, Microsoft.UI.Windowing.DisplayAreaFallback.Primary).WorkArea;
+            _settingsWindow.AppWindow.Resize(new Windows.Graphics.SizeInt32(Math.Min(720, work.Width), Math.Min(850, work.Height)));
+            _settingsWindow.AppWindow.Closing += (_, e) => { e.Cancel = true; if (!_measuringQuality) CloseSettingsSheet(); };
+        }
+        _settingsWindow.AppWindow.Show();
+        _settingsWindow.Activate();
     }
-
+    private void OnSettingsClicked(object sender, RoutedEventArgs e) => OpenSettingsWindow();
     private void OnCloseSettingsClicked(object sender, RoutedEventArgs e) => CloseSettingsSheet();
-
     private void OnSettingsBackdropTapped(object sender, TappedRoutedEventArgs e) => CloseSettingsSheet();
-
-    private void CloseSettingsSheet() => HideOverlay(SettingsOverlay, SettingsPanel, new Vector3(56, 0, 0));
+    private void CloseSettingsSheet() => _settingsWindow?.AppWindow.Hide();
 
     private void OnSettingsTabClicked(object sender, RoutedEventArgs e)
     {
@@ -54,6 +71,16 @@ public sealed partial class MainWindow
 
             SettingsStartWithWindowsToggle.IsChecked = s.StartWithWindows;
             SettingsStartMinimizedToggle.IsChecked = s.StartMinimizedToTray;
+            SettingsSyncAccentToggle.IsChecked = s.SyncWindowsAccent;
+            SettingsSyncBackgroundToggle.IsChecked = s.SyncDesktopBackground;
+            SettingsLockScreenCombo.SelectedIndex = (int)s.LockScreenMode;
+            SettingsLockScreenImageText.Text = s.LockScreenImagePath;
+            SettingsRemoteCatalogToggle.IsChecked = s.UseRemoteCatalog;
+            SettingsCatalogUrlText.Text = s.CatalogBackendUrl;
+            SettingsCatalogTimeoutNumber.Value = s.CatalogRequestTimeoutSeconds;
+            SettingsLocalFallbackToggle.IsChecked = s.UseLocalCatalogFallback;
+            SettingsPauseFocusToggle.IsChecked = s.PauseOnApplicationFocus;
+            SettingsPauseAppsText.Text = s.PauseApplications;
             SettingsLoopToggle.IsChecked = s.DefaultLoop;
             SettingsDefaultMutedToggle.IsChecked = s.DefaultMuted;
             SettingsPauseFullscreenToggle.IsChecked = s.PauseOnFullscreen;
@@ -139,6 +166,11 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(toggle, SettingsHardwareToggle)) s.UseHardwareDecoding = on;
         else if (ReferenceEquals(toggle, SettingsGlassToggle)) s.EnableGlassEffects = on;
         else if (ReferenceEquals(toggle, SettingsAutoTuneToggle)) s.AutoTunePlayback = on;
+        else if (ReferenceEquals(toggle, SettingsSyncAccentToggle)) s.SyncWindowsAccent = on;
+        else if (ReferenceEquals(toggle, SettingsSyncBackgroundToggle)) s.SyncDesktopBackground = on;
+        else if (ReferenceEquals(toggle, SettingsRemoteCatalogToggle)) s.UseRemoteCatalog = on;
+        else if (ReferenceEquals(toggle, SettingsLocalFallbackToggle)) s.UseLocalCatalogFallback = on;
+        else if (ReferenceEquals(toggle, SettingsPauseFocusToggle)) s.PauseOnApplicationFocus = on;
         RefreshCoverageControls();
         RefreshQualitySummary();
     }
@@ -198,10 +230,12 @@ public sealed partial class MainWindow
             _settingsViewModel.Theme = "Dark";
             await _settingsViewModel.SaveAsync();
             await _viewModel.SyncAudioSettingsAsync();
+            var personalization = App.Current.ServiceProvider.GetRequiredService<WindowsPersonalizationService>();
+            await personalization.ApplyAsync();
             UpdateSettingsUiState();
             TrySetBackdrop();
             CloseSettingsSheet();
-            ShowToast("Settings saved");
+            ShowToast("Settings saved. " + personalization.Status);
         }
         catch (Exception ex)
         {
@@ -241,7 +275,7 @@ public sealed partial class MainWindow
             SettingsUltraRadio.IsChecked = s.QualityPreset == QualityPreset.Ultra;
             string resolution = s.VideoHeightLimit == 0 ? "original resolution" : $"up to {s.VideoHeightLimit}p";
             SettingsQualityText.Text = $"{s.QualityPreset} · {s.GlobalTargetFps} fps ceiling · {resolution} · {s.RenderScale * 100:0}% render";
-            SettingsRecommendedButton.Content = $"Use recommended: {s.RecommendedPreset}";
+            SettingsRecommendedButton.Content = "Automatic — measure my system";
         }
         finally { _loadingSettings = wasLoading; }
     }
@@ -263,5 +297,114 @@ public sealed partial class MainWindow
         if (_loadingSettings || _settingsViewModel is null || !double.IsFinite(e.NewValue)) return;
         _settingsViewModel.CoveredThresholdPercentage = (int)Math.Round(Math.Clamp(e.NewValue, 1, 100));
         RefreshQualitySummary();
+    }
+
+    private void OnAdvancedTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null) return;
+        if (ReferenceEquals(sender, SettingsCatalogUrlText)) _settingsViewModel.CatalogBackendUrl = SettingsCatalogUrlText.Text;
+        else if (ReferenceEquals(sender, SettingsPauseAppsText)) _settingsViewModel.PauseApplications = SettingsPauseAppsText.Text;
+    }
+
+    private void OnCatalogTimeoutChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
+    {
+        if (!_loadingSettings && _settingsViewModel is not null && double.IsFinite(e.NewValue))
+            _settingsViewModel.CatalogRequestTimeoutSeconds = (int)e.NewValue;
+    }
+
+    private void OnLockScreenModeChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null || SettingsLockScreenCombo.SelectedIndex < 0) return;
+        _settingsViewModel.LockScreenMode = (LockScreenWallpaperMode)SettingsLockScreenCombo.SelectedIndex;
+    }
+
+    private async void OnPickLockScreenImageClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(_settingsWindow ?? this));
+            foreach (var extension in new[] { ".jpg", ".jpeg", ".png", ".bmp" }) picker.FileTypeFilter.Add(extension);
+            var file = await picker.PickSingleFileAsync();
+            if (file is null) return;
+            _settingsViewModel.LockScreenImagePath = file.Path;
+            _settingsViewModel.LockScreenMode = LockScreenWallpaperMode.SeparateImage;
+            UpdateSettingsUiState();
+        }
+        catch (Exception ex) { ShowToast("Could not select image: " + ex.Message); }
+    }
+
+    private bool _measuringQuality;
+    public bool IsMeasuringQuality => _measuringQuality;
+    private async void OnMeasureQualityClicked(object sender, RoutedEventArgs e)
+    {
+        if (_measuringQuality) return;
+        var services = App.Current.ServiceProvider;
+        var engine = services.GetRequiredService<IWallpaperEngineOrchestrator>();
+        var saved = services.GetRequiredService<SavedWallpaperService>();
+        var adaptive = services.GetRequiredService<AdaptiveQualityService>();
+        var wallpaper = saved.ActiveWallpaper;
+        var monitor = services.GetRequiredService<MonitorTopologyService>().CurrentMonitors.FirstOrDefault(m => m.IsPrimary);
+        if (wallpaper?.Type != WallpaperType.Video || monitor is null) { SettingsStatusTextBlock.Text = "Apply a video wallpaper first."; return; }
+        var confirmation = new ContentDialog { XamlRoot = SettingsPanel.XamlRoot, RequestedTheme = ElementTheme.Dark,
+            Title = "Measure automatic quality?", Content = "Allow up to 3.5 minutes. Playback pauses and XenMotion controls are unavailable during the test. Close games or heavy applications first. We prioritize your display resolution and only lower it if playback cannot keep up.",
+            PrimaryButtonText = "Start measurement", CloseButtonText = "Cancel" };
+        if (await confirmation.ShowAsync() != ContentDialogResult.Primary) return;
+        using var cancellation = new CancellationTokenSource();
+        var status = new TextBlock { Text = "Preparing measurement…", TextWrapping = TextWrapping.Wrap };
+        var progress = new ProgressBar { IsIndeterminate = true };
+        var content = new StackPanel { Spacing = 16 };
+        content.Children.Add(status); content.Children.Add(progress);
+        var advanced = new Expander { Header = "Advanced: measurement details", Content = new TextBlock { Text = _settingsViewModel.HardwareSummary, TextWrapping = TextWrapping.Wrap, MaxWidth = 430 } };
+        content.Children.Add(advanced);
+        var dialog = new ContentDialog { XamlRoot = SettingsPanel.XamlRoot, RequestedTheme = ElementTheme.Dark, Title = "Automatic quality", Content = content, CloseButtonText = "Cancel" };
+        dialog.Closing += (_, args) => { if (_measuringQuality) { args.Cancel = true; cancellation.Cancel(); status.Text = "Cancelling and restoring playback…"; } };
+        var started = System.Diagnostics.Stopwatch.StartNew();
+        var timer = DispatcherQueue.CreateTimer(); timer.Interval = TimeSpan.FromSeconds(1);
+        timer.Tick += (_, _) => { status.Text = $"Elapsed: {started.Elapsed.TotalSeconds:0}s · Up to 3:30\n{_settingsViewModel.PlaybackMeasurement}"; };
+        bool wasPaused = engine.IsGloballyPaused;
+        bool viewerVisible = _floatingViewer?.AppWindow.IsVisible == true;
+        _floatingViewer?.AppWindow.Hide();
+        _measuringQuality = true; _mainInteraction.IsEnabled = false;
+        var showing = dialog.ShowAsync(); timer.Start();
+        try
+        {
+            await engine.PauseAllAsync();
+            adaptive.AllowMeasurements = true;
+            var requested = services.GetRequiredService<ISettingsService>().CurrentSettings.CreatePlaybackSettings();
+            var baseline = new ApplicationSettings();
+            QualityPresets.Apply(baseline, QualityPresets.ForDisplayPixels((long)monitor.Bounds.Width * monitor.Bounds.Height));
+            requested.VideoHeightLimit = baseline.VideoHeightLimit;
+            requested.RenderScale = 1; requested.TargetFps = 60;
+            requested.PlaybackSpeed = 1; requested.ScalingMode = PlaybackScalingMode.Fill;
+            requested.AutoTunePlayback = true;
+            var tuned = await adaptive.TuneAsync(wallpaper.FilePath, requested, monitor.Bounds, cancellation.Token);
+            if (adaptive.LastMeasurementSucceeded)
+            {
+                _settingsViewModel.VideoHeightLimit = tuned.VideoHeightLimit;
+                _settingsViewModel.RenderScale = tuned.RenderScale;
+                _settingsViewModel.GlobalTargetFps = tuned.TargetFps;
+                _settingsViewModel.DefaultSharpness = tuned.Sharpness;
+                _settingsViewModel.HighQualityFiltering = tuned.HighQualityFiltering;
+                _settingsViewModel.AutoTunePlayback = true;
+                await _settingsViewModel.SaveAsync();
+                status.Text = $"Recommended: {tuned.VideoHeightLimit}p · {tuned.TargetFps} fps · {tuned.RenderScale:P0} render. Settings saved.";
+            }
+            else status.Text = _settingsViewModel.PlaybackMeasurement;
+            advanced.Content = new TextBlock { Text = $"Target display: {monitor.Bounds.Width} × {monitor.Bounds.Height}.\n{_settingsViewModel.HardwareSummary}\n{_settingsViewModel.PlaybackMeasurement}", TextWrapping = TextWrapping.Wrap, MaxWidth = 430 };
+        }
+        catch (OperationCanceledException) { status.Text = "Measurement cancelled. Your previous settings were kept."; }
+        catch (Exception ex) { status.Text = "Measurement failed: " + ex.Message; }
+        finally
+        {
+            timer.Stop(); adaptive.AllowMeasurements = false;
+            try { if (!wasPaused) await engine.ResumeAllAsync(); }
+            catch (Exception ex) { status.Text += " Playback could not resume: " + ex.Message; }
+            _measuringQuality = false; _mainInteraction.IsEnabled = true;
+            if (viewerVisible) _floatingViewer?.AppWindow.Show(false);
+            progress.IsIndeterminate = false; progress.Value = 100;
+            dialog.CloseButtonText = "Done"; UpdateSettingsUiState();
+        }
+        await showing;
     }
 }

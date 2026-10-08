@@ -23,7 +23,7 @@ public sealed class SingleInstanceService : ISingleInstanceService
 
     public event EventHandler? SecondInstanceLaunched;
 
-    public SingleInstanceService(ILogger<SingleInstanceService> logger, string instanceKey = "Lumen_SingleInstance")
+    public SingleInstanceService(ILogger<SingleInstanceService> logger, string instanceKey = "XenMotion_SingleInstance")
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         // Retain the legacy IPC identity so an older installation cannot run a second engine.

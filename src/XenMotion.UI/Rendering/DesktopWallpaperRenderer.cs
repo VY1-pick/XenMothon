@@ -19,6 +19,7 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
     private DesktopSurface? _surface;
     private readonly SemaphoreSlim _surfaceGate = new(1, 1);
     private MonitorBounds _monitorBounds;
+    private IntPtr _shellHwnd;
     private bool _disposed;
     public DesktopWallpaperRenderer(IWallpaperRenderer inner, IDesktopWallpaperHost host,
         MonitorTopologyService monitors, ILogger logger)
@@ -42,14 +43,24 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
                 throw new InvalidOperationException("The desktop shell is unavailable. Retry after Explorer has started.");
             var monitor = _monitors.CurrentMonitors.FirstOrDefault(m => m.IsPrimary) ?? _monitors.Refresh().FirstOrDefault();
             if (monitor is null) throw new InvalidOperationException("No display was found.");
-            _surface?.Dispose();
-            _surface = await Task.Run(() => DesktopSurface.TryCreate(_host.DesktopWorkerWHwnd, monitor.Bounds), ct).ConfigureAwait(false);
-            if (_surface is null) throw new InvalidOperationException("Could not create a desktop render surface.");
-            _logger.LogInformation("Wallpaper surface 0x{Surface:X} for {Type}; shell 0x{Shell:X}; monitor {Monitor}; bounds {Bounds}; file {Path}.",
-                _surface.Handle.ToInt64(), _inner.SupportedType, _host.DesktopWorkerWHwnd.ToInt64(), monitor.DeviceId, monitor.Bounds, mediaPath);
-            if (_inner is ImageWallpaperRenderer image) _surface.PaintRequested += (_, _) => image.Redraw();
-            await _inner.InitializeAsync(_surface.Handle, _surface.LocalBounds, ct).ConfigureAwait(false);
+            if (_surface == null || _shellHwnd != _host.DesktopWorkerWHwnd)
+            {
+                _surface?.Dispose();
+                _surface = await Task.Run(() => DesktopSurface.TryCreate(_host.DesktopWorkerWHwnd, monitor.Bounds), ct).ConfigureAwait(false);
+                if (_surface is null) throw new InvalidOperationException("Could not create a desktop render surface.");
+                _shellHwnd = _host.DesktopWorkerWHwnd;
+                _logger.LogInformation("Wallpaper surface 0x{Surface:X} for {Type}; shell 0x{Shell:X}; monitor {Monitor}; bounds {Bounds}; file {Path}.",
+                    _surface.Handle.ToInt64(), _inner.SupportedType, _shellHwnd.ToInt64(), monitor.DeviceId, monitor.Bounds, mediaPath);
+                if (_inner is ImageWallpaperRenderer image) _surface.PaintRequested += (_, _) => image.Redraw();
+                await _inner.InitializeAsync(_surface.Handle, _surface.LocalBounds, ct).ConfigureAwait(false);
+            }
+            else if (_monitorBounds != monitor.Bounds)
+            {
+                await _surface.ResizeAsync(monitor.Bounds, ct).ConfigureAwait(false);
+                await _inner.ResizeAsync(_surface.LocalBounds, ct).ConfigureAwait(false);
+            }
             await _inner.LoadAsync(mediaPath, settings, ct).ConfigureAwait(false);
+            _surface.SetOpacity(settings.Opacity);
             _monitorBounds = monitor.Bounds;
         }
         finally { _surfaceGate.Release(); }
@@ -63,6 +74,17 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
         {
             await _inner.StopAsync(ct).ConfigureAwait(false);
             _surface?.Dispose(); _surface = null;
+        }
+        finally { _surfaceGate.Release(); }
+    }
+    public async Task<bool> TryApplySettingsAsync(WallpaperSettings settings, CancellationToken ct = default)
+    {
+        await _surfaceGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (_disposed || _surface == null || !await _inner.TryApplySettingsAsync(settings, ct).ConfigureAwait(false)) return false;
+            _surface.SetOpacity(settings.Opacity);
+            return true;
         }
         finally { _surfaceGate.Release(); }
     }

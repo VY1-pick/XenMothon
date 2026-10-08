@@ -8,6 +8,25 @@ namespace XenMotion.Core.Tests.Services;
 public sealed class SettingsServiceTests
 {
     [Fact]
+    public async Task FailedUpdateKeepsPreviousSnapshotAndConcurrentUpdatesArePreserved()
+    {
+        string root = CreateTempDirectory();
+        try
+        {
+            var service = CreateService(root);
+            await service.UpdateSettingsAsync(s => s.DisplayName = "Original");
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateSettingsAsync(s => { s.DisplayName = "Lost"; throw new InvalidOperationException(); }));
+            Assert.Equal("Original", service.CurrentSettings.DisplayName);
+            var ids = Enumerable.Range(0, 20).Select(_ => Guid.NewGuid()).ToArray();
+            await Task.WhenAll(ids.Select(id => service.UpdateSettingsAsync(s => s.CustomEditWallpapers.Add(id))));
+            var reloaded = CreateService(root); await reloaded.LoadSettingsAsync();
+            Assert.Equal(20, reloaded.CurrentSettings.CustomEditWallpapers.Count);
+            Assert.Equal("Original", reloaded.CurrentSettings.DisplayName);
+        }
+        finally { DeleteDirectory(root); }
+    }
+
+    [Fact]
     public async Task LoadSettingsAsync_MissingFile_UsesDefaults()
     {
         string root = CreateTempDirectory();

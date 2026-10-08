@@ -71,9 +71,9 @@ def main():
     native720=option(720,.43);larger=option(1080,.40)
     assert winner([native720,larger],source,env720) is native720;checks+=1
     expensive=option(1080,.60)
-    assert winner([expensive,smaller],source,env) is smaller;checks+=1
+    assert winner([expensive,smaller],source,env) is expensive;checks+=1
     spike=dict(native,resourceRatios={"cpu":.60})
-    assert winner([spike,smaller],source,env) is smaller;checks+=1
+    assert winner([spike,smaller],source,env) is spike;checks+=1
     bad=dict(native,accepted=False)
     assert winner([bad,smaller],source,env) is smaller;checks+=1
     reduced=option(1080,.40,.5)
@@ -83,6 +83,9 @@ def main():
     assert all(r["settings"]["videoHeightLimit"]<=720 and r["settings"]["targetFps"]<=15 and r["settings"]["renderScale"]<=.5 for r in capped["candidates"]);checks+=1
     software=optimize(source,env,simulated_oracle(source,env),max_trials=2,validate=False,caps=(1080,30,1,True))
     assert all(not r["settings"]["useHardwareDecoding"] for r in software["candidates"]);checks+=1
+    display4k=dict(env,width=3840,height=2160)
+    bounded=optimize(source,display4k,simulated_oracle(source,display4k),max_trials=4,validate=False,caps=(2160,60,1,False))
+    assert all(r["settings"]["videoHeightLimit"]>=1440 and r["settings"]["renderScale"]>=.85 for r in bounded["candidates"]);checks+=1
     fractional=dict(source,fps=23.976)
     assert max(c.fps for c in candidates(fractional))==24;checks+=1
     assert geometry_quality(Candidate(1080,1,24),fractional,env)==geometry_quality(Candidate(1080,1,60),fractional,env);checks+=1

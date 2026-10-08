@@ -18,8 +18,23 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly IWallpaperEngineOrchestrator _orchestrator;
     private readonly ILogger<SettingsViewModel> _logger;
 
+    private bool _hasDraftChanges;
     private string _displayName = "Guest";
     private string _theme = "Dark";
+    private bool _syncWindowsAccent, _syncDesktopBackground, _useRemoteCatalog, _useLocalCatalogFallback = true, _pauseOnApplicationFocus;
+    private string _lockScreenImagePath = "", _catalogBackendUrl = "", _pauseApplications = "";
+    private int _catalogRequestTimeoutSeconds = 15;
+    private LockScreenWallpaperMode _lockScreenMode;
+    public bool SyncWindowsAccent { get => _syncWindowsAccent; set => SetField(ref _syncWindowsAccent, value); }
+    public bool SyncDesktopBackground { get => _syncDesktopBackground; set => SetField(ref _syncDesktopBackground, value); }
+    public LockScreenWallpaperMode LockScreenMode { get => _lockScreenMode; set => SetField(ref _lockScreenMode, value); }
+    public string LockScreenImagePath { get => _lockScreenImagePath; set => SetField(ref _lockScreenImagePath, value); }
+    public bool UseRemoteCatalog { get => _useRemoteCatalog; set => SetField(ref _useRemoteCatalog, value); }
+    public string CatalogBackendUrl { get => _catalogBackendUrl; set => SetField(ref _catalogBackendUrl, value); }
+    public int CatalogRequestTimeoutSeconds { get => _catalogRequestTimeoutSeconds; set => SetField(ref _catalogRequestTimeoutSeconds, value); }
+    public bool UseLocalCatalogFallback { get => _useLocalCatalogFallback; set => SetField(ref _useLocalCatalogFallback, value); }
+    public bool PauseOnApplicationFocus { get => _pauseOnApplicationFocus; set => SetField(ref _pauseOnApplicationFocus, value); }
+    public string PauseApplications { get => _pauseApplications; set => SetField(ref _pauseApplications, value); }
     private bool _startWithWindows = true;
     private bool _startMinimizedToTray = true;
     private int _globalTargetFps = 60;
@@ -124,6 +139,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _settingsService.SettingsChanged += OnSettingsChanged;
     }
 
+    public void ResetDraft() => LoadFromSettings(new ApplicationSettings());
+
     public void Reload()
     {
         LoadFromSettings(_settingsService.CurrentSettings);
@@ -145,6 +162,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             {
                 settings.DisplayName = string.IsNullOrWhiteSpace(DisplayName) ? "Guest" : DisplayName.Trim();
                 settings.Theme = Theme;
+                settings.SyncWindowsAccent = SyncWindowsAccent;
+                settings.SyncDesktopBackground = SyncDesktopBackground;
+                settings.LockScreenMode = LockScreenMode;
+                settings.LockScreenImagePath = LockScreenImagePath;
+                settings.UseRemoteCatalog = UseRemoteCatalog;
+                settings.CatalogBackendUrl = CatalogBackendUrl.Trim();
+                settings.CatalogRequestTimeoutSeconds = CatalogRequestTimeoutSeconds;
+                settings.UseLocalCatalogFallback = UseLocalCatalogFallback;
+                settings.Performance.PauseOnApplicationFocus = PauseOnApplicationFocus;
+                settings.Performance.PauseApplications = PauseApplications.Trim();
                 settings.StartWithWindows = StartWithWindows;
                 settings.StartMinimizedToTray = StartMinimizedToTray;
                 settings.GlobalTargetFps = GlobalTargetFps;
@@ -194,6 +221,15 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     private void Validate()
     {
+        if (UseRemoteCatalog && (!Uri.TryCreate(CatalogBackendUrl.Trim(), UriKind.Absolute, out var endpoint) ||
+            (endpoint.Scheme != Uri.UriSchemeHttps && !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback)) ||
+            !string.IsNullOrEmpty(endpoint.UserInfo) || !string.IsNullOrEmpty(endpoint.Query) || !string.IsNullOrEmpty(endpoint.Fragment)))
+            throw new ArgumentException("Catalog server must be an HTTPS base URL (HTTP is allowed only on localhost).");
+        if (CatalogRequestTimeoutSeconds is < 1 or > 60)
+            throw new ArgumentOutOfRangeException(nameof(CatalogRequestTimeoutSeconds), "Server timeout must be between 1 and 60 seconds.");
+        if (LockScreenMode == LockScreenWallpaperMode.SeparateImage &&
+            (!File.Exists(LockScreenImagePath) || !new[] { ".jpg", ".jpeg", ".png", ".bmp" }.Contains(Path.GetExtension(LockScreenImagePath).ToLowerInvariant())))
+            throw new ArgumentException("Choose an existing JPG, PNG or BMP lock screen image.");
         if (string.IsNullOrWhiteSpace(DisplayName))
         {
             DisplayName = "Guest";
@@ -218,6 +254,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private void LoadFromSettings(ApplicationSettings settings)
     {
         _displayName = settings.DisplayName;
+        _syncWindowsAccent = settings.SyncWindowsAccent;
+        _syncDesktopBackground = settings.SyncDesktopBackground;
+        _lockScreenMode = settings.LockScreenMode;
+        _lockScreenImagePath = settings.LockScreenImagePath;
+        _useRemoteCatalog = settings.UseRemoteCatalog;
+        _catalogBackendUrl = settings.CatalogBackendUrl;
+        _catalogRequestTimeoutSeconds = settings.CatalogRequestTimeoutSeconds;
+        _useLocalCatalogFallback = settings.UseLocalCatalogFallback;
+        _pauseOnApplicationFocus = settings.Performance.PauseOnApplicationFocus;
+        _pauseApplications = settings.Performance.PauseApplications;
         _qualityPreset = settings.QualityPreset;
         _autoTunePlayback = settings.AutoTunePlayback;
         _defaultSharpness = Math.Clamp(settings.DefaultSharpness, 0, .3f);
@@ -248,18 +294,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _muteAudioWhenCovered = settings.Performance.MuteAudioWhenCovered;
         _heartbeatIntervalMs = Math.Clamp(settings.Performance.HeartbeatIntervalMs, 250, 5000);
 
+        _hasDraftChanges = false;
         OnPropertyChanged(string.Empty);
     }
 
     private void OnSettingsChanged(object? sender, ApplicationSettings settings)
     {
-        LoadFromSettings(settings);
+        if (!_hasDraftChanges || IsSaving) LoadFromSettings(settings);
     }
 
     private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
         if (EqualityComparer<T>.Default.Equals(field, value)) return;
         field = value;
+        if (propertyName is not (nameof(IsSaving) or nameof(StatusMessage))) _hasDraftChanges = true;
         if (propertyName is nameof(GlobalTargetFps) or nameof(VideoHeightLimit) or nameof(RenderScale) or nameof(HighQualityFiltering) or nameof(UseHardwareDecoding) or nameof(EnableGlassEffects) or nameof(BatteryFps) or nameof(PauseOnBattery) or nameof(PauseOnFullscreen) or nameof(PauseOnMaximized) or nameof(PauseWhenCovered) or nameof(PauseOnlyWhenFullyCovered) or nameof(CoveredThresholdPercentage) or nameof(HeartbeatIntervalMs) or nameof(DefaultSharpness))
         {
             _qualityPreset = QualityPreset.Custom;

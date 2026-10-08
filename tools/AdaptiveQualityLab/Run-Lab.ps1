@@ -13,7 +13,7 @@ if (-not (Test-Path -LiteralPath $probePath)) {
 }
 if (-not $Video) { $Video = (Read-Host 'Video path (leave empty for synthetic scenarios only)').Trim('"') }
 $arguments = @('-B', (Join-Path $labRoot 'lab.py'), '--output', (Join-Path $workspaceRoot 'artifacts/adaptive-quality-lab-v2-final'))
-$settingsPath = Join-Path $env:LOCALAPPDATA 'Lumen/settings.json'
+$settingsPath = Join-Path $env:LOCALAPPDATA 'XenMotion/settings.json'
 if (Test-Path -LiteralPath $settingsPath) { $arguments += @('--settings-file', $settingsPath) }
 if ($Video) { $arguments += @('--video', $Video) }
 if ($Economy) { $arguments += '--economy' }

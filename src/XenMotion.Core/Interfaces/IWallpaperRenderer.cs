@@ -20,4 +20,6 @@ public interface IWallpaperRenderer : IAsyncDisposable
     Task SetVolumeAsync(float volume, CancellationToken ct = default);
     Task SetFpsLimitAsync(int fps, CancellationToken ct = default);
     Task ResizeAsync(MonitorBounds newBounds, CancellationToken ct = default);
+    Task<bool> TryApplySettingsAsync(WallpaperSettings settings, CancellationToken ct = default)
+        => Task.FromResult(false);
 }

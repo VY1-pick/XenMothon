@@ -101,45 +101,9 @@ public sealed partial class MainWindow
 
     // ------------------------------------------------------------------ cards
 
-    private void OnCardPointerEntered(object sender, PointerRoutedEventArgs e)
+    private void OnCatalogItemClicked(object sender, ItemClickEventArgs e)
     {
-        if (sender is FrameworkElement card && card.FindName("HoverLayer") is UIElement hover) hover.Opacity = 1;
-    }
-
-    private void OnCardPointerExited(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is FrameworkElement card && card.FindName("HoverLayer") is UIElement hover) hover.Opacity = 0;
-    }
-
-    private void OnCatalogCardTapped(object sender, TappedRoutedEventArgs e)
-    {
-        // Buttons on the card are independent commands; tapping them must not also open the details.
-        DependencyObject? current = e.OriginalSource as DependencyObject;
-        while (current != null)
-        {
-            if (current is ButtonBase) return;
-            current = VisualTreeHelper.GetParent(current);
-        }
-
-        if (sender is FrameworkElement { DataContext: CatalogItemViewModel item })
-        {
-            _viewModel.ExploreViewModel.OpenDetails(item);
-            e.Handled = true;
-        }
-    }
-
-    private void OnCatalogViewClicked(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: CatalogItemViewModel item }) _viewModel.ExploreViewModel.OpenDetails(item);
-    }
-
-    /// <summary>The round button on a card: download when new, watch progress when busy, set wallpaper when installed.</summary>
-    private async void OnCatalogActionClicked(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: CatalogItemViewModel item })
-        {
-            await RunCatalogPrimaryActionAsync(item, fromSheet: false);
-        }
+        if (e.ClickedItem is CatalogItemViewModel item) _viewModel.ExploreViewModel.OpenDetails(item);
     }
 
     private async Task RunCatalogPrimaryActionAsync(CatalogItemViewModel item, bool fromSheet)
@@ -177,6 +141,7 @@ public sealed partial class MainWindow
 
         if (open)
         {
+            CloseAttachedWallpaperViewer();
             FilterDock.Translation = new Vector3(44, 0, 0);
             FilterDock.Opacity = 0;
             FilterDock.Visibility = Visibility.Visible;
@@ -306,8 +271,11 @@ public sealed partial class MainWindow
                 DetailsDescriptionTextBlock.Text = item.Description;
                 DetailsTagsRepeater.ItemsSource = item.Tags.Select(t => $"#{t}").ToList();
                 DetailsPreviewBrush.ImageSource = item.ThumbnailImage;
+                _viewerId = item.Id;
+                DetailsSubscriptionText.Text = item.IsDownloaded ? "✓ Subscribed" : "Preview · Video editing is available in Library";
+                _ = LoadWallpaperEditorAsync(item.Id);
 
-                ShowOverlay(DetailsOverlay, DetailsPanel, new Vector3(0, 26, 0));
+                ShowWallpaperDock();
             }
 
             RefreshDetailsButtons(item);
@@ -316,7 +284,7 @@ public sealed partial class MainWindow
         {
             _shownDetailsId = null;
             TrackDetailsItem(null);
-            HideOverlay(DetailsOverlay, DetailsPanel, new Vector3(0, 26, 0));
+            if (!_viewerDetached) CloseWallpaperViewer();
         }
     }
 
@@ -327,6 +295,7 @@ public sealed partial class MainWindow
 
         if (item.IsDownloaded)
         {
+            if (_viewerId == item.Id && _viewerWallpaper is null) _ = LoadWallpaperEditorAsync(item.Id);
             DetailsPrimaryButton.Content = "Set as wallpaper";
             DetailsPrimaryButton.IsEnabled = true;
         }
@@ -365,14 +334,19 @@ public sealed partial class MainWindow
         });
     }
 
-    private void OnCloseDetailsClicked(object sender, RoutedEventArgs e) => _viewModel.ExploreViewModel.CloseDetails();
+    private void OnCloseDetailsClicked(object sender, RoutedEventArgs e) => CloseWallpaperViewer();
 
-    private void OnDetailsBackdropTapped(object sender, TappedRoutedEventArgs e) => _viewModel.ExploreViewModel.CloseDetails();
+    private void OnDetailsBackdropTapped(object sender, TappedRoutedEventArgs e) => CloseWallpaperViewer();
 
     private async void OnDetailsPrimaryClicked(object sender, RoutedEventArgs e)
     {
         var item = _viewModel.ExploreViewModel.DetailsViewModel.Item;
         if (item != null) await RunCatalogPrimaryActionAsync(item, fromSheet: false);
+        else if (_viewerId is { } id)
+        {
+            var local = _viewModel.Wallpapers.FirstOrDefault(w => w.Id == id);
+            if (local != null) await _viewModel.SetAsWallpaperAsync(local);
+        }
     }
 
     // ------------------------------------------------------------------ download sheet

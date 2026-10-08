@@ -17,6 +17,12 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
     private readonly string _resolvedThumbnailPath;
     private readonly string _resolvedMediaPath;
     private bool _isApplying;
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set { if (_isSelected != value) { _isSelected = value; OnPropertyChanged(); } }
+    }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -83,7 +89,7 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
             {
                 _thumbnailImage = new BitmapImage { DecodePixelWidth = 384 };
                 if (IsVideo) _ = LoadVideoThumbnailAsync(_thumbnailImage, path);
-                else _thumbnailImage.UriSource = new Uri(path, UriKind.Absolute);
+                else { _thumbnailImage.UriSource = new Uri(path, UriKind.Absolute); _ = LoadImageMetadataAsync(path); }
             }
             catch
             {
@@ -91,6 +97,18 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
             }
             return _thumbnailImage;
         }
+    }
+
+    private async Task LoadImageMetadataAsync(string path)
+    {
+        try
+        {
+            var file = await StorageFile.GetFileFromPathAsync(path);
+            var properties = await file.Properties.GetImagePropertiesAsync();
+            _actualResolution = properties.Width > 0 && properties.Height > 0 ? $"{properties.Width}x{properties.Height}" : "Resolution unavailable";
+            OnPropertyChanged(nameof(ResolutionText)); OnPropertyChanged(nameof(DetailsText));
+        }
+        catch { /* A missing codec must not crash the library. */ }
     }
 
     private async Task LoadVideoThumbnailAsync(BitmapImage image, string path)

@@ -193,6 +193,23 @@ public sealed class RemoteCatalogProviderTests
         Assert.Equal(4, stream.ContentLength);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ResumeRejectsMissingOrIncorrectContentRange(bool wrongOffset)
+    {
+        using var client = CreateClient((_, _) =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.PartialContent) { Content = new ByteArrayContent([1,2,3,4]) };
+            if (wrongOffset) response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(0,3,132);
+            return response;
+        });
+        var item = new CatalogItem { Id = Guid.NewGuid(), Title = "Resume", Description = "", Author = "Test",
+            ThumbnailUrl = "", PreviewUrl = "", DownloadUrl = "/downloads/test.mp4", Type = WallpaperType.Video,
+            Width = 1920, Height = 1080, CategoryId = "test", CategoryName = "Test" };
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateProvider(client).OpenDownloadStreamAsync(item, 128));
+    }
+
     private static RemoteCatalogProvider CreateProvider(HttpClient client, ICatalogProvider? fallback = null)
         => new(
             client,

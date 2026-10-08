@@ -12,8 +12,9 @@ namespace XenMotion.UI.Services;
 public sealed class AdaptiveQualityService(string appDataRoot, HardwareTuningService hardware,
     ILogger<AdaptiveQualityService> logger) : IDisposable
 {
-    public bool AllowMeasurements { get; set; } = true;
-    public const string AlgorithmVersion = "quality-lab-2.2";
+    public bool LastMeasurementSucceeded { get; private set; }
+    public bool AllowMeasurements { get; set; }
+    public const string AlgorithmVersion = "quality-lab-2.3";
     private readonly SemaphoreSlim _gate = new(1);
     private readonly CancellationTokenSource _lifetime = new();
     private readonly string _root = Path.Combine(appDataRoot, "QualityTuning");
@@ -26,13 +27,14 @@ public sealed class AdaptiveQualityService(string appDataRoot, HardwareTuningSer
         await WriteAtomicAsync(path, JsonSerializer.Serialize(new {
             algorithmVersion = AlgorithmVersion, status = "AwaitingFirstVideo",
             hardware = hardware.Hardware, createdUtc = DateTimeOffset.UtcNow,
-            note = "Capability hint only. Actual source/display measurements run on the first automatically tuned video."
+            note = "Capability hint only. Measurements run only after explicit user confirmation."
         }), ct).ConfigureAwait(false);
-        hardware.RecordPlaybackReport("Automatic quality is ready. The first video will be measured; later loads reuse its saved profile.");
+        hardware.RecordPlaybackReport("Automatic quality is optional. Choose Automatic in Settings to measure your active video.");
     }
 
     public async Task<WallpaperSettings> TuneAsync(string video, WallpaperSettings requested, MonitorBounds bounds, CancellationToken ct)
     {
+        LastMeasurementSucceeded = false;
         var original = requested.Clone();
         if (!requested.AutoTunePlayback) return original;
         // The benchmark currently measures Fill at normal speed; other modes must not inherit its evidence.
@@ -58,11 +60,12 @@ public sealed class AdaptiveQualityService(string appDataRoot, HardwareTuningSer
             if (TryReadResult(resultPath, original, out var cached))
             {
                 hardware.RecordPlaybackReport($"Saved automatic quality: {cached.VideoHeightLimit}p / {cached.TargetFps} FPS / {cached.RenderScale:P0}. Display/audio timing remain unverified.");
+                LastMeasurementSucceeded = true;
                 return cached;
             }
             if (!AllowMeasurements)
             {
-                hardware.RecordPlaybackReport("Saved wallpaper restored immediately. Its first quality measurement will run after startup.");
+                hardware.RecordPlaybackReport("Using current quality or a saved profile. Use Measure quality to calibrate while playback is paused.");
                 return original;
             }
             var install = AppContext.BaseDirectory;
@@ -105,6 +108,7 @@ public sealed class AdaptiveQualityService(string appDataRoot, HardwareTuningSer
                 return original;
             }
             hardware.RecordPlaybackReport($"Measured automatic quality: {tuned.VideoHeightLimit}p / {tuned.TargetFps} FPS / {tuned.RenderScale:P0}. Saved for this source and display; display/audio timing remain unverified.");
+            LastMeasurementSucceeded = true;
             return tuned;
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested && !_lifetime.IsCancellationRequested)

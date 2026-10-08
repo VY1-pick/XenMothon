@@ -11,6 +11,8 @@ public interface ISystemTrayManager : IDisposable
     void UpdateToolTip(string tooltip);
 
     event EventHandler? OpenRequested;
+    event EventHandler? SettingsRequested;
+    event EventHandler? ScreenshotRequested;
     event EventHandler? PauseResumeRequested;
     event EventHandler? StopRequested;
     event EventHandler? PlayRequested;

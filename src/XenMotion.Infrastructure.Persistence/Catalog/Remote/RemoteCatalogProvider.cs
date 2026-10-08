@@ -162,8 +162,13 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                     throw new HttpRequestException("The requested download range is no longer valid.");
                 }
 
-                var content = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
                 bool partial = response.StatusCode == System.Net.HttpStatusCode.PartialContent;
+                if (partial && (response.Content.Headers.ContentRange is not { From: var start, To: not null, Unit: "bytes" } || start != offset))
+                {
+                    response.Dispose();
+                    throw new HttpRequestException("Server returned an invalid download range; resume was rejected to protect the file.");
+                }
+                var content = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
                 return new CatalogDownloadStream(new ResponseOwnedStream(response, content), response.Content.Headers.ContentLength, partial);
             }
             catch (OperationCanceledException)

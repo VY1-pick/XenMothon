@@ -22,6 +22,7 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
     private volatile bool _isGloballyMuted;
     private float _lastGlobalVolume = 1.0f;
     private bool _isDisposed;
+    private readonly ISettingsService? _settingsService;
 
     public event EventHandler<(string MonitorDeviceId, WallpaperState State)>? MonitorStateChanged;
     public event EventHandler<bool>? GlobalPauseChanged;
@@ -30,10 +31,12 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
 
     public WallpaperEngineOrchestrator(
         ILogger<WallpaperEngineOrchestrator> logger,
-        Func<WallpaperType, IWallpaperRenderer>? rendererFactory = null)
+        Func<WallpaperType, IWallpaperRenderer>? rendererFactory = null,
+        ISettingsService? settingsService = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _rendererFactory = rendererFactory;
+        _settingsService = settingsService;
     }
 
     public IReadOnlyDictionary<string, WallpaperState> GetActiveMonitorStates()
@@ -96,14 +99,16 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
 
             var previousRenderer = session.CurrentRenderer;
             session.CurrentRenderer = null;
-            renderer = _rendererFactory?.Invoke(wallpaper.Type);
+            // Reuse the device and desktop layer when switching between the same media type.
+            renderer = previousRenderer?.SupportedType == wallpaper.Type ? previousRenderer : _rendererFactory?.Invoke(wallpaper.Type);
             if (previousRenderer != null && !ReferenceEquals(previousRenderer, renderer))
             {
                 try { await previousRenderer.StopAsync(CancellationToken.None).ConfigureAwait(false); }
                 finally { await previousRenderer.DisposeAsync().ConfigureAwait(false); }
             }
             session.CurrentRenderer = renderer;
-            var playbackSettings = settings ?? new WallpaperSettings();
+            var playbackSettings = settings?.Clone() ?? new WallpaperSettings();
+            _settingsService?.CurrentSettings.ApplyEdits(wallpaper.Id, playbackSettings);
             _isGloballyMuted = playbackSettings.IsMuted || playbackSettings.Volume <= 0;
             if (playbackSettings.Volume > 0) _lastGlobalVolume = playbackSettings.Volume;
             if (renderer != null)
@@ -337,7 +342,23 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
                 paused = session.StateMachine.CurrentState == WallpaperState.Paused;
             }
             if (wallpaper is null) continue;
-            // ponytail: reuse the serialized load path; add in-place updates if restart latency becomes noticeable.
+            await session.OperationGate.WaitAsync(ct).ConfigureAwait(false);
+            bool updated = false;
+            try
+            {
+                if (session.ActiveWallpaper?.Id != wallpaper.Id || session.StateMachine.CurrentState is WallpaperState.Stopped or WallpaperState.Error) continue;
+                var effective = settings.Clone();
+                _settingsService?.CurrentSettings.ApplyEdits(wallpaper.Id, effective);
+                if (session.CurrentRenderer != null) updated = await session.CurrentRenderer.TryApplySettingsAsync(effective, ct).ConfigureAwait(false);
+                if (updated)
+                {
+                    session.ActiveSettings = effective;
+                    _isGloballyMuted = effective.IsMuted || effective.Volume <= 0;
+                    if (effective.Volume > 0) _lastGlobalVolume = effective.Volume;
+                }
+            }
+            finally { session.OperationGate.Release(); }
+            if (updated) continue;
             await ApplyWallpaperAsync(session.MonitorDeviceId, wallpaper, settings.Clone(), ct).ConfigureAwait(false);
             if (paused) await PauseAsync(session.MonitorDeviceId, ct).ConfigureAwait(false);
         }

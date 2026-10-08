@@ -29,6 +29,16 @@ public sealed class DesktopSurface : IDisposable
 
     public IntPtr Handle => _hwnd;
 
+    public void SetOpacity(float opacity)
+    {
+        if (!float.IsFinite(opacity)) throw new ArgumentOutOfRangeException(nameof(opacity));
+        var style = GetWindowLongPtr(_hwnd, -20).ToInt64();
+        if (opacity >= 1 && (style & 0x80000) == 0) return;
+        SetWindowLongPtr(_hwnd, -20, new IntPtr(style | 0x80000));
+        if (!SetLayeredWindowAttributes(_hwnd, 0, (byte)Math.Round(Math.Clamp(opacity, 0, 1) * 255), 2))
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Could not apply wallpaper opacity.");
+    }
+
     /// <summary>Size of the surface in pixels (viewport origin is always 0,0 inside the surface).</summary>
     public MonitorBounds LocalBounds { get; private set; }
 

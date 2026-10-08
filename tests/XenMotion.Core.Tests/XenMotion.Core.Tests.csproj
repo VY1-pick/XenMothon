@@ -11,6 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../src/XenMotion.UI/Services/WallpaperViewerPlacement.cs" Link="Windowing/WallpaperViewerPlacement.cs" />
+    <Compile Include="../../src/XenMotion.UI/Services/WallpaperEditAutosave.cs" Link="Windowing/WallpaperEditAutosave.cs" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
     <PackageReference Include="xunit" Version="2.6.6" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">

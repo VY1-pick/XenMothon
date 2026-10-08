@@ -18,7 +18,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-VERSION = "quality-lab-2.2"
+VERSION = "quality-lab-2.3"
 
 
 @dataclasses.dataclass(frozen=True)
@@ -159,21 +159,17 @@ def winner(rows, source=None, env=None):
     for row in eligible: groups.setdefault(tuple(row["coverage"]),[]).append(row)
     coverage = max(groups,key=lambda keys:(len(keys),keys))
     eligible = groups[coverage]
-    best = max(r["qualityLower"] for r in eligible)
-    near = [r for r in eligible if r["qualityLower"] >= best-.02-1e-9]
-    cheapest=min(near,key=lambda r:(r["cost"],r["id"]))
     if source and env:
-        # Five percentage points of each budget: similar max(cost) alone can hide a CPU spike.
-        reference=cheapest.get("resourceRatios",{})
-        close=[r for r in near if r["cost"]<=cheapest["cost"]+.05+1e-9
-               and all(r.get("resourceRatios",{}).get(k,math.inf)<=v+.05+1e-9 for k,v in reference.items())]
         target=display_height(source,env)
         def fit(row):
             settings=row["settings"]
             effective=min(settings["videoHeightLimit"],target*settings["renderScale"])
             return (abs(math.log(max(1,effective)/target)),
-                    abs(math.log(max(1,settings["videoHeightLimit"])/target)),row["cost"],row["id"])
-        return min(close,key=fit)
+                    abs(math.log(max(1,settings["videoHeightLimit"])/target)),
+                    -row["qualityLower"],row["cost"],row["id"])
+        return min(eligible,key=fit)
+    best = max(r["qualityLower"] for r in eligible)
+    near = [r for r in eligible if r["qualityLower"] >= best-.02-1e-9]
     return min(near,key=lambda r:(r["cost"],r["metrics"].get("openMs",math.inf),r["id"]))
 
 
@@ -217,13 +213,18 @@ def optimize(source,env,oracle,*,economy=False,motion="medium",max_trials=12,dea
     monitor_candidate=Candidate(max(1,math.ceil(display_height(source,env))),1,min(240,max(1,math.ceil(source["fps"]))))
     if not economy and monitor_candidate not in space:space.append(monitor_candidate)
     if caps:
+        if caps[3]: space=list(dict.fromkeys(dataclasses.replace(c,hardware=False) for c in space))
         space=[c for c in space if c.height<=caps[0] and c.fps<=caps[1] and c.scale<=caps[2] and (not caps[3] or not c.hardware)]
+        # Production never drops more than one resolution tier below the display target.
+        target=min(source["height"],monitor_candidate.height,caps[0])
+        floor=max([h for h in (720,1080,1440,2160) if h<target],default=min(720,target))
+        space=[c for c in space if c.height>=floor and c.scale>=min(.85,caps[2])]
         if not space: raise ValueError("No candidates within requested limits")
         if reference_candidate not in space: reference_candidate=None
         monitor_candidate=min(space,key=lambda c:abs(c.height-monitor_candidate.height)+abs(c.scale-1)*1000)
     observations=[]; rows=[]; events=[]; used=set()
     middle=min(space,key=lambda c:abs(c.height-min(source["height"],1080))/1080+abs(c.scale-.75)+abs(c.fps-min(source["fps"],24))/30+float(not c.hardware))
-    seeds=list(dict.fromkeys(([reference_candidate] if reference_candidate is not None and not economy else [])+[space[0],middle]+([monitor_candidate] if not economy else [])+[max(space,key=lambda c:geometry_quality(c,source,env,motion))]))
+    seeds=list(dict.fromkeys(([monitor_candidate] if not economy else [])+([reference_candidate] if reference_candidate is not None and not economy else [])+[space[0],middle]+[max(space,key=lambda c:geometry_quality(c,source,env,motion))]))
     flat=0; last_best=0
     for trial in range(max_trials):
         if deadline and time.monotonic()>deadline-58:break

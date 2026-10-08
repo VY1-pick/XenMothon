@@ -21,6 +21,16 @@ public class ThumbnailServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task LargeImagesAreNotTruncated()
+    {
+        var path = Path.Combine(_testRoot, "large.png");
+        var bytes = new byte[600_000]; new Random(42).NextBytes(bytes);
+        await File.WriteAllBytesAsync(path, bytes);
+        var thumbnail = await _thumbnailService.CreateThumbnailAsync(path, Guid.NewGuid(), WallpaperType.Image);
+        Assert.Equal(bytes, await File.ReadAllBytesAsync(thumbnail));
+    }
+
+    [Fact]
     public async Task Thumbnail_CreateAndCache_AvoidsRegenerationWhenCached()
     {
         Guid id = Guid.NewGuid();

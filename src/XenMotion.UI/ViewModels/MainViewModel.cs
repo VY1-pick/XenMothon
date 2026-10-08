@@ -101,6 +101,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (SetField(ref _isLoading, value))
             {
                 OnPropertyChanged(nameof(IsEmpty));
+            _refreshGate.Release();
             }
         }
     }
@@ -169,7 +170,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _isPaused = _orchestrator.IsGloballyPaused;
         _orchestrator.GlobalPauseChanged += OnGlobalPauseChanged;
         _orchestrator.MonitorStateChanged += OnMonitorStateChanged;
-        _libraryService.LibraryChanged += (_, _) => RunOnUi(async () => await RefreshLibraryAsync());
+        _libraryService.LibraryChanged += (_, _) => { if (!_importing) RunOnUi(async () => await RefreshLibraryAsync()); };
 
         RefreshMonitorSummary();
     }
@@ -181,8 +182,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _exploreViewModel.InitializeAsync());
     }
 
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private volatile bool _importing;
+
     public async Task RefreshLibraryAsync()
     {
+        await _refreshGate.WaitAsync();
         IsLoading = true;
         ErrorMessage = null;
 
@@ -225,7 +230,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         ArgumentNullException.ThrowIfNull(filePaths);
 
         var list = filePaths.ToList();
-        if (list.Count == 0) return;
+        if (list.Count == 0 || _importing) return;
+        _importing = true;
 
         IsLoading = true;
         StatusMessage = $"Importing {list.Count} files...";
@@ -260,6 +266,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         finally
         {
             IsLoading = false;
+            _importing = false;
         }
     }
 
@@ -377,7 +384,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (success)
             {
                 await RefreshLibraryAsync();
-                StatusMessage = "Storage root migrated successfully.";
+                await _settingsService.UpdateSettingsAsync(s => s.StoragePath = _storageManager.RootStoragePath);
+                StatusMessage = "Storage root saved. The previous folder is retained as a recovery copy.";
                 return true;
             }
             else

@@ -15,6 +15,7 @@ internal sealed class GpuFramePipeline : IDisposable
     private readonly BindSlots _constantBuffers;
     private readonly IntPtr[] _adjustmentBinding = new IntPtr[1];
     private int _width, _height;
+    private ViewportRectangle _lastViewport;
     private uint _format;
     private bool _hasMips;
     internal int TextureMipLevels
@@ -65,7 +66,7 @@ internal sealed class GpuFramePipeline : IDisposable
             _samplerBinding[0] = _sampler;
             sampler.MaxLod = 0;
             Marshal.ThrowExceptionForHR(Method<CreateSampler>(device, 23)(device, ref sampler, out _baseSampler));
-            var buffer = new BufferDesc { ByteWidth = 16, BindFlags = 4 };
+            var buffer = new BufferDesc { ByteWidth = 32, BindFlags = 4 };
             Marshal.ThrowExceptionForHR(Method<CreateBuffer>(device, 3)(device, ref buffer, IntPtr.Zero, out _adjustments));
             _adjustmentBinding[0] = _adjustments;
             SetVisualAdjustments(1, 1, 1);
@@ -80,9 +81,9 @@ internal sealed class GpuFramePipeline : IDisposable
         _targetBinding[0] = _target;
     }
 
-    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0)
+    public void SetVisualAdjustments(float brightness, float contrast, float saturation, float sharpness = 0, float red = 1, float green = 1, float blue = 1, bool flipHorizontal = false)
     {
-        var values = GCHandle.Alloc(new[] { Math.Clamp(brightness, 0, 2), Math.Clamp(contrast, 0, 2), Math.Clamp(saturation, 0, 2), Math.Clamp(sharpness, 0, .3f) }, GCHandleType.Pinned);
+        var values = GCHandle.Alloc(new[] { Math.Clamp(brightness, 0, 2), Math.Clamp(contrast, 0, 2), Math.Clamp(saturation, 0, 2), Math.Clamp(sharpness, 0, .3f), Math.Clamp(red, 0, 2), Math.Clamp(green, 0, 2), Math.Clamp(blue, 0, 2), flipHorizontal ? 1f : 0f }, GCHandleType.Pinned);
         try { _upload(_context, _adjustments, 0, IntPtr.Zero, values.AddrOfPinnedObject(), 0, 0); }
         finally { values.Free(); }
     }
@@ -126,8 +127,16 @@ internal sealed class GpuFramePipeline : IDisposable
         }
     }
 
+    public bool Redraw()
+    {
+        if (_view == IntPtr.Zero || _lastViewport.IsEmpty) return false;
+        DrawUploaded(_width, _height, _lastViewport);
+        return true;
+    }
+
     private void DrawUploaded(int width, int height, ViewportRectangle viewport)
     {
+        _lastViewport = viewport;
         // Mip filtering avoids aliasing when high-resolution sources are reduced for the display.
         if (HighQualityFiltering && (viewport.Width < width || viewport.Height < height)) _mips(_context, _view);
         _targets(_context, 1, _targetBinding, IntPtr.Zero);
@@ -159,14 +168,14 @@ internal sealed class GpuFramePipeline : IDisposable
     private static byte[] Compile(string profile, string entry)
     {
         const string source = "Texture2D image : register(t0); SamplerState filtering : register(s0); " +
-            "cbuffer Adjustments : register(b0) { float brightness; float contrast; float saturation; float sharpness; }; " +
+            "cbuffer Adjustments : register(b0) { float brightness; float contrast; float saturation; float sharpness; float3 tint; float flipHorizontal; }; " +
             "struct Vertex { float4 position : SV_POSITION; float2 uv : TEXCOORD0; }; " +
             "Vertex VS(uint id : SV_VertexID) { Vertex v; v.uv = float2((id << 1) & 2, id & 2); " +
             "v.position = float4(v.uv * float2(2,-2) + float2(-1,1),0,1); return v; } " +
-            "float4 PS(Vertex v) : SV_TARGET { float3 rgb = image.Sample(filtering,v.uv).rgb; " +
+            "float4 PS(Vertex v) : SV_TARGET { if(flipHorizontal > 0) v.uv.x = 1-v.uv.x; float3 rgb = image.Sample(filtering,v.uv).rgb; " +
             "if (sharpness > 0) { float3 neighbors = image.Sample(filtering,v.uv,int2(1,0)).rgb + image.Sample(filtering,v.uv,int2(-1,0)).rgb + image.Sample(filtering,v.uv,int2(0,1)).rgb + image.Sample(filtering,v.uv,int2(0,-1)).rgb; rgb += (rgb-neighbors*0.25)*sharpness; } " +
             "rgb = lerp(dot(rgb,float3(0.2126,0.7152,0.0722)).xxx,rgb,saturation); " +
-            "return float4(saturate(((rgb-0.5)*contrast+0.5)*brightness),1); }";
+            "return float4(saturate(((rgb-0.5)*contrast+0.5)*brightness*tint),1); }";
         byte[] bytes = Encoding.ASCII.GetBytes(source);
         IntPtr code = IntPtr.Zero, errors = IntPtr.Zero;
         try

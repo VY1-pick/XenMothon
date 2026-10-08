@@ -2,11 +2,11 @@
 
 **Live wallpapers for Windows, with measured automatic quality and a native WinUI 3 interface.**
 
-[فارسی](README.fa.md) · **English** · [Download private beta](https://github.com/VY1-pick/Lumen-Wallpaper/releases/tag/v0.9.0-beta.1) · [Report an issue](https://github.com/VY1-pick/Lumen-Wallpaper/issues)
+[فارسی](README.fa.md) · **English** · [Download private beta](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
 
 ![XenMotion Library with imported video wallpapers and playback controls](docs/images/xenmotion-beta.jpg)
 
-*The Library interface in version 0.9.0-beta.1. Wallpapers shown are example user imports; they are not included in the installer.*
+*The Library interface in version 0.9.0-beta.2. Wallpapers shown are example user imports; they are not included in the installer.*
 
 XenMotion turns local images and videos into desktop wallpapers. Import your own media, manage it in a library, control playback and sound, and choose how much work the wallpaper should do while other applications are running.
 
@@ -38,8 +38,8 @@ There is no certified minimum hardware specification yet. Media codec, bitrate, 
 
 ## Install and start
 
-1. Open the [0.9.0-beta.1 release](https://github.com/VY1-pick/Lumen-Wallpaper/releases/tag/v0.9.0-beta.1) using an account with repository access.
-2. Download `XenMotion-0.9.0-beta.1-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
+1. Open the [0.9.0-beta.2 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) using an account with repository access.
+2. Download `XenMotion-0.9.0-beta.2-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
 3. Run the installer and choose the destination. The default is `%LOCALAPPDATA%\Programs\XenMotion`.
 4. Open XenMotion from its shortcut. In **Library**, choose **Import**, or drop media into the window.
 5. Select **Set as wallpaper** on a library card. Use the **Now Playing** dock to pause, adjust volume, mute or stop.
@@ -50,7 +50,7 @@ The beta installer is **unsigned**. Windows may show a publisher or reputation w
 To inspect the downloaded installer hash in PowerShell, run this from its download folder and compare the full result with `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.1-Setup-x64.exe
+Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.exe
 ```
 
 Closing the window keeps XenMotion in the notification area. Open it again from its tray icon. To end the engine, choose **Exit XenMotion** from the tray menu. Stopping all wallpapers clears the saved startup wallpaper assignment.
@@ -67,20 +67,21 @@ An extension is not a codec guarantee. Video/audio support depends on the stream
 
 The default Explore catalog contains illustrative previews. Its video entries are **preview-only**, not downloadable video files. Import your own videos or configure a real remote catalog. Artwork in the screenshot remains the property of its respective creators; media is not bundled with this repository's license.
 
+## Beta 2 controls
+
+Settings open in their own window, with a reset that preserves the library and custom edits. Playback → Global wallpaper edits shares color, flip, opacity, alignment and playback controls across wallpapers. The editor can switch between global and preserved custom edits; global selection is disabled with a tooltip until enabled in Settings. Images and videos both support visual edits and reset.
+
+Library → Select supports multiple selection, Select all and confirmed batch removal. A tray single click opens the menu; double click opens XenMotion. The menu also opens Settings and Windows screenshot capture. Activity options pause on screen saver, energy saver and Remote Desktop. Motion previews are manual by default to reduce background work.
+
+The installer presents [private-beta terms](docs/legal/BETA-TERMS.txt); the original [MIT license](LICENSE) continues to apply to covered material. Silent installs require `/ACCEPTTERMS=yes`.
+
 ## Automatic quality
 
-Automatic tuning is enabled on a new installation. The first launch records hardware capabilities and a starting configuration. Actual playback measurement needs a video, so it runs when an eligible video is first applied; it does not benchmark an empty installation.
+On a new installation, XenMotion chooses the nearest fixed quality mode to the primary display resolution. It does not run a benchmark or enable automatic tuning.
 
-The optimizer compares candidate configurations using native playback measurements, frame delivery, resource use and quality evidence. It validates the selected candidate before saving it. When quality and resource cost are close, it prefers the effective monitor resolution, accounting for the source aspect ratio and Fill cropping.
+Choose **Settings → Performance → Automatic** after applying a video. Confirm the optional test (up to 3.5 minutes). Playback pauses, application controls are blocked during measurement, and Cancel restores the previous settings. The result and an Advanced explanation are shown at the end.
 
-- Your FPS, video-height and render-scale choices are **ceilings**. Automatic tuning does not raise them, including Economy limits.
-- Resident RAM is budgeted separately from private commit and GPU memory. The resident RAM ceiling is the smaller of 1 GiB and 25% of available RAM; this is a selection budget, not an OS-enforced memory cap.
-- Validated profiles are stored locally for the source, display, hardware/driver, power context and requested ceilings. Later loads can reuse them.
-- Existing wallpaper restoration does not wait for a full benchmark. A fresh measurement can take longer than a cached load.
-- Busy, interrupted or incomplete measurements keep the requested settings rather than applying an unsupported result. The measurement report explains the outcome.
-- This beta measures **Fill at normal speed (1×)**. Other scaling modes or speeds retain your settings without using that measurement as evidence.
-
-The settings summary shows the hardware and measurement report. Preset labels describe requested settings; the active measured profile can be lower within those limits.
+The optimizer prioritizes effective display resolution among configurations that pass its resource and frame-delivery checks. Production search goes down at most one resolution tier, with a small render-scale reduction; if no measured candidate passes, existing settings stay in place. The test measures Fill at normal speed. Results are source/display-specific and do not certify physical desktop smoothness or audio synchronization.
 
 ## Quality and performance settings
 
@@ -88,13 +89,13 @@ Preset defaults in this beta:
 
 | Preset | FPS ceiling | Video-height ceiling | Render scale | Battery FPS |
 | --- | ---: | ---: | ---: | ---: |
-| Economy | 15 | 720p | 50% | 15 |
-| Balanced | 24 | 1080p | 75% | 20 |
+| Economy | 15 | 720p | 100% | 15 |
+| Balanced | 24 | 1080p | 100% | 20 |
 | High | 30 | 1440p | 100% | 24 |
-| Ultra | 60 | Source / no height cap | 100% | 30 |
+| Ultra | 60 | 2160p / 4K | 100% | 30 |
 | Custom | User-selected | User-selected | User-selected | User-selected |
 
-These are fixed preset defaults, not guaranteed measured performance. The first-run recommendation can use a broader automatic search on capable hardware. Economy also disables glass effects/high-quality filtering, uses modest sharpening and pauses on battery.
+These are fixed preset defaults, not guaranteed measured performance. The first-run choice uses display resolution without a benchmark. Economy also disables glass effects/high-quality filtering, uses modest sharpening and pauses on battery.
 
 | Control | What it changes |
 | --- | --- |
@@ -117,7 +118,7 @@ For best measurement reliability, run the first tuning session with the desktop 
 
 ## Storage, privacy and removal
 
-Settings, library metadata and quality reports are local. New installations use `%LOCALAPPDATA%\XenMotion`; an existing `%LOCALAPPDATA%\Lumen` library may be reused for compatibility. A custom library folder can be selected through storage tools.
+Settings, library metadata and quality reports are local. New installations use `%LOCALAPPDATA%\XenMotion`; an existing `%LOCALAPPDATA%\Lumen` library may be reused for compatibility. A custom library folder can be selected through storage tools; it is saved for the next launch. The old folder remains as a recovery copy after migration.
 
 Quality reports under `QualityTuning` can contain file paths, media metadata, hardware/driver information and measurement statistics. Interrupted runs may leave local diagnostic files. Review reports before sharing them.
 
@@ -139,13 +140,13 @@ Do not assume a visually changed video position alone proves pause failure: repo
 
 ## Beta validation and known limits
 
-Version **0.9.0-beta.1** passed **255 .NET tests** and **40 optimizer checks**. Its Release build had zero warnings/errors. Installer upgrade, installed-file hashes and uninstall were tested. The dependency audit reported no known vulnerable NuGet packages at release time.
+Version **0.9.0-beta.2** passed **255 .NET tests** and **40 optimizer checks**. Its Release build had zero warnings/errors. Installer upgrade, installed-file hashes and uninstall were tested. The dependency audit reported no known vulnerable NuGet packages at release time.
 
 These checks are evidence for tested paths, not a security guarantee or certification of every device. Current limits include primary-display targeting, incomplete independent multi-monitor quality allocation, codec/driver-dependent behavior and unverified physical timing on all display/audio devices. Image library metadata still has legacy defaults in parts of persistence. See the [beta review](docs/engineering/private-beta-review.md) for scope and remaining boundaries.
 
 ## Feedback for testers
 
-Open an [issue](https://github.com/VY1-pick/Lumen-Wallpaper/issues) with:
+Open an [issue](https://github.com/VY1-pick/XenMothon/issues) with:
 
 - App version, Windows version, CPU/GPU/RAM and graphics driver.
 - Monitor resolution/refresh rate, power mode and relevant quality/pause settings.
@@ -170,10 +171,10 @@ For installer packaging, provide Inno Setup at the script's default compiler pat
 
 ```powershell
 .\tools\Build-Release.ps1 -InnoCompiler 'C:\Path\To\Inno Setup\ISCC.exe'
-.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.1'
+.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.2'
 ```
 
-The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.1`. GitHub release publication is a separate step.
+The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.2`. GitHub release publication is a separate step.
 
 ## Documentation and license
 

@@ -34,7 +34,6 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
     private ReleaseReadinessService? _releaseReadinessService;
     private IUpdateService? _updateService;
     private bool _isShuttingDown;
-    private readonly CancellationTokenSource _startupQualityCts = new();
 
     public static new App Current => (App)global::Microsoft.UI.Xaml.Application.Current;
     public IServiceProvider ServiceProvider => _serviceProvider ?? throw new InvalidOperationException("App is not initialized.");
@@ -67,28 +66,22 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
 
         // 2. Initialize Database & Settings
         var migrator = _serviceProvider.GetRequiredService<DatabaseMigrator>();
-        await migrator.MigrateAsync().ConfigureAwait(true);
+        var migration = migrator.MigrateAsync();
 
         var settingsService = _serviceProvider.GetRequiredService<ISettingsService>();
         await settingsService.LoadSettingsAsync().ConfigureAwait(true);
+        await migration.ConfigureAwait(true);
         if (settingsService.IsFirstRun)
         {
-            var tuning = _serviceProvider.GetRequiredService<HardwareTuningService>();
+            var display = _serviceProvider.GetRequiredService<MonitorTopologyService>().Refresh().FirstOrDefault(m => m.IsPrimary);
+            var preset = XenMotion.Core.Models.QualityPresets.ForDisplayPixels(display is null ? 1920L * 1080 : (long)display.Bounds.Width * display.Bounds.Height);
             await settingsService.UpdateSettingsAsync(s =>
             {
-                XenMotion.Core.Models.QualityPresets.Apply(s, tuning.RecommendedPreset);
-                s.AutoTunePlayback = true;
-                if (tuning.RecommendedPreset != XenMotion.Core.Models.QualityPreset.Economy)
-                {
-                    // Hardware is a starting hint, not an unmeasured quality ceiling on a new installation.
-                    s.VideoHeightLimit = 0; s.RenderScale = 1; s.GlobalTargetFps = 60;
-                    s.QualityPreset = XenMotion.Core.Models.QualityPreset.Custom;
-                }
+                XenMotion.Core.Models.QualityPresets.Apply(s, preset);
+                s.AutoTunePlayback = false;
             }).ConfigureAwait(true);
-            _logger.LogInformation("First-run quality recommendation: {Preset}; {Hardware}.", tuning.RecommendedPreset, tuning.Summary);
+            _logger.LogInformation("First-run display preset: {Preset}; no benchmark was run.", preset);
         }
-        await _serviceProvider.GetRequiredService<AdaptiveQualityService>().InitializeAsync().ConfigureAwait(true);
-        await _releaseReadinessService.ValidateAsync().ConfigureAwait(true);
 
         // 3. Resolve Services
         _windowManager = _serviceProvider.GetRequiredService<IWindowManagementService>();
@@ -112,26 +105,35 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             await Task.Delay(250).ConfigureAwait(true);
         }
         await _desktopHost.UpdateMonitorLayoutAsync(monitors).ConfigureAwait(true);
-        _performanceMonitor.Start();
 
         // Keep the XAML window, catalog and thumbnails out of the background startup path.
         _windowManager.SetMainWindowFactory(CreateMainWindow);
         _trayManager.OpenRequested += (_, _) => _windowManager.ShowAndActivate();
-        _trayManager.PauseResumeRequested += async (_, _) => await GetPlaybackViewModel().TogglePauseResumeAsync();
+        _trayManager.PauseResumeRequested += async (_, _) => { if (_mainWindow?.IsMeasuringQuality != true) await GetPlaybackViewModel().TogglePauseResumeAsync(); };
         _trayManager.StopRequested += async (_, _) =>
         {
-            await GetPlaybackViewModel().StopAllWallpapersAsync();
+            if (_mainWindow?.IsMeasuringQuality != true) await GetPlaybackViewModel().StopAllWallpapersAsync();
         };
-        _trayManager.PlayRequested += async (_, _) => await GetPlaybackViewModel().ResumeAllWallpapersAsync();
-        _trayManager.MuteRequested += async (_, _) => await GetPlaybackViewModel().ToggleMuteAsync();
+        _trayManager.PlayRequested += async (_, _) => { if (_mainWindow?.IsMeasuringQuality != true) await GetPlaybackViewModel().ResumeAllWallpapersAsync(); };
+        _trayManager.MuteRequested += async (_, _) => { if (_mainWindow?.IsMeasuringQuality != true) await GetPlaybackViewModel().ToggleMuteAsync(); };
         _trayManager.NextWallpaperRequested += async (_, _) =>
         {
+            if (_mainWindow?.IsMeasuringQuality == true) return;
             var vm = GetPlaybackViewModel();
             if (vm.Wallpapers.Count == 0) await vm.RefreshLibraryAsync();
             await vm.NextWallpaperAsync();
         };
+        _trayManager.SettingsRequested += (_, _) => { _windowManager.ShowAndActivate(); _mainWindow?.OpenSettingsWindow(); };
+        _trayManager.ScreenshotRequested += async (_, _) =>
+        {
+            try
+            {
+                if (!await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-screenclip:")))
+                    _trayManager.ShowNotification("Screenshot unavailable", "Enable Windows Snipping Tool to capture your screen.");
+            }
+            catch (Exception ex) { _logger.LogWarning(ex, "Could not open screenshot tool."); }
+        };
         _trayManager.ExitRequested += (_, _) => Shutdown();
-        _trayManager.Initialize();
         var adaptiveQuality = _serviceProvider.GetRequiredService<AdaptiveQualityService>();
         adaptiveQuality.AllowMeasurements = false;
         try
@@ -139,8 +141,10 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             await _serviceProvider.GetRequiredService<SavedWallpaperService>().RestorePrimaryAsync();
         }
         catch (Exception ex) { _logger.LogError(ex, "Could not restore the saved wallpaper at startup."); }
-        finally { adaptiveQuality.AllowMeasurements = true; }
+        finally { adaptiveQuality.AllowMeasurements = false; }
         _logger.LogInformation("Background startup ready in {Elapsed} ms; UI created: {Created}.", startupWatch.ElapsedMilliseconds, _mainWindow is not null);
+        _performanceMonitor.Start();
+        _trayManager.Initialize();
         _startupService.Apply(settingsService.CurrentSettings.StartWithWindows);
         _ = CheckForUpdatesInBackgroundAsync();
 
@@ -167,40 +171,18 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             }
             _windowManager.ShowAndActivate();
         }
-        _ = MeasureRestoredQualityAsync();
+        _ = CompleteStartupAsync();
     }
 
-    private async Task MeasureRestoredQualityAsync()
+    private async Task CompleteStartupAsync()
     {
         try
         {
-            var saved = ServiceProvider.GetRequiredService<SavedWallpaperService>();
-            var wallpaper = saved.ActiveWallpaper;
-            var settings = ServiceProvider.GetRequiredService<ISettingsService>();
-            var requested = settings.CurrentSettings.CreatePlaybackSettings();
-            var monitor = _monitorTopology?.CurrentMonitors.FirstOrDefault(m => m.IsPrimary);
-            if (wallpaper?.Type != XenMotion.Core.Enums.WallpaperType.Video || !requested.AutoTunePlayback || monitor is null ||
-                _orchestrator?.GetMonitorState("PRIMARY_MONITOR") != XenMotion.Core.Enums.WallpaperState.Playing) return;
-            var identity = System.Text.Json.JsonSerializer.Serialize(requested);
-            using var measurement = CancellationTokenSource.CreateLinkedTokenSource(_startupQualityCts.Token);
-            var measuring = ServiceProvider.GetRequiredService<AdaptiveQualityService>().TuneAsync(
-                wallpaper.FilePath, requested, monitor.Bounds, measurement.Token);
-            while (!measuring.IsCompleted)
-            {
-                await Task.WhenAny(measuring, Task.Delay(1000, _startupQualityCts.Token));
-                if (_orchestrator?.GetMonitorState("PRIMARY_MONITOR") != XenMotion.Core.Enums.WallpaperState.Playing || saved.ActiveWallpaper?.Id != wallpaper.Id)
-                    measurement.Cancel();
-            }
-            var tuned = await measuring;
-            if (_isShuttingDown || saved.ActiveWallpaper?.Id != wallpaper.Id ||
-                System.Text.Json.JsonSerializer.Serialize(settings.CurrentSettings.CreatePlaybackSettings()) != identity ||
-                System.Text.Json.JsonSerializer.Serialize(tuned) == identity) return;
-            // Apply the measured profile once; do not start a second search using its reduced settings as new caps.
-            tuned.AutoTunePlayback = false;
-            await saved.ApplyAsync("PRIMARY_MONITOR", wallpaper, tuned, _startupQualityCts.Token);
+            await ServiceProvider.GetRequiredService<AdaptiveQualityService>().InitializeAsync();
+            await _releaseReadinessService!.ValidateAsync();
+            await ServiceProvider.GetRequiredService<WindowsPersonalizationService>().ApplyAsync();
         }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) { _logger?.LogWarning(ex, "Startup quality measurement unavailable; saved wallpaper remains active."); }
+        catch (Exception ex) { _logger?.LogWarning(ex, "Background startup checks/personalization failed."); }
     }
 
     private void CreateMainWindow()
@@ -299,7 +281,6 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             return;
         }
         _isShuttingDown = true;
-        _startupQualityCts.Cancel();
 
         _logger?.LogInformation("Application clean shutdown initiated.");
 

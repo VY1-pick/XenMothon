@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Release',
-    [string]$OutputDirectory = "$PSScriptRoot\..\artifacts\publish\0.9.0-beta.1",
+    [string]$OutputDirectory = "$PSScriptRoot\..\artifacts\publish\0.9.0-beta.2",
     [switch]$SkipTests,
     [string]$InnoCompiler = "$PSScriptRoot\..\artifacts\build-dependencies\inno\ISCC.exe"
 )
@@ -36,8 +36,8 @@ Expand-Archive -LiteralPath $runtimeZip -DestinationPath (Join-Path $publish 'Ru
 $optimizer = Join-Path $publish 'tools/AdaptiveQualityLab'
 New-Item -ItemType Directory -Path $optimizer -Force | Out-Null
 Copy-Item -LiteralPath tools/AdaptiveQualityLab/lab.py,tools/AdaptiveQualityLab/report-template.html -Destination $optimizer
-Copy-Item -LiteralPath LICENSE -Destination $publish
-Copy-Item -LiteralPath docs/engineering/private-beta-review.md -Destination (Join-Path $publish 'BETA-REVIEW.md')
+Copy-Item -LiteralPath LICENSE,docs/legal/BETA-TERMS.txt,docs/legal/BETA-TERMS.fa.txt -Destination $publish
+Copy-Item -LiteralPath docs/engineering/beta2-review.md -Destination (Join-Path $publish 'BETA-REVIEW.md')
 $version = ([xml](Get-Content 'src/XenMotion.UI/XenMotion.UI.csproj' -Raw)).Project.PropertyGroup.Version
 $commit = git rev-parse HEAD
 @("XenMotion Private Beta", "Version: $version", "Commit: $commit", "Runtime: win-x64", "BuiltUtc: $([DateTime]::UtcNow.ToString('O'))") |

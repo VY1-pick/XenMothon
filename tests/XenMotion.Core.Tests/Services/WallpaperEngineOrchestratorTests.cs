@@ -10,6 +10,49 @@ namespace XenMotion.Core.Tests.Services;
 
 public class WallpaperEngineOrchestratorTests
 {
+    [Fact]
+    public async Task LiveVisualChanges_DoNotReloadOrRestartPausedWallpaper()
+    {
+        var renderer = new Mock<IWallpaperRenderer>();
+        renderer.Setup(r => r.TryApplySettingsAsync(It.IsAny<WallpaperSettings>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        await using var engine = new WallpaperEngineOrchestrator(NullLogger<WallpaperEngineOrchestrator>.Instance, _ => renderer.Object);
+        await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "Edits", FilePath = "v.mp4", Type = WallpaperType.Video, ContentHash = "1" });
+        await engine.PauseAsync("M1");
+        await engine.ApplyPlaybackSettingsAllAsync(new WallpaperSettings { Contrast = 1.3f });
+        renderer.Verify(r => r.LoadAsync(It.IsAny<string>(), It.IsAny<WallpaperSettings>(), It.IsAny<CancellationToken>()), Times.Once);
+        renderer.Verify(r => r.PlayAsync(It.IsAny<CancellationToken>()), Times.Once);
+        renderer.Verify(r => r.TryApplySettingsAsync(It.Is<WallpaperSettings>(s => s.Contrast == 1.3f), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Equal(WallpaperState.Paused, engine.GetMonitorState("M1"));
+    }
+    [Fact]
+    public async Task SameTypeSwitch_ReusesRendererWithoutStoppingOrDisposingItsDevice()
+    {
+        var renderer = new Mock<IWallpaperRenderer>();
+        renderer.SetupGet(r => r.SupportedType).Returns(WallpaperType.Video);
+        int creations = 0;
+        await using var engine = new WallpaperEngineOrchestrator(NullLogger<WallpaperEngineOrchestrator>.Instance,
+            _ => { creations++; return renderer.Object; });
+        await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "First", FilePath = "first.mp4", Type = WallpaperType.Video, ContentHash = "1" });
+        await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "Second", FilePath = "second.mp4", Type = WallpaperType.Video, ContentHash = "2" });
+        Assert.Equal(1, creations);
+        renderer.Verify(r => r.StopAsync(It.IsAny<CancellationToken>()), Times.Never);
+        renderer.Verify(r => r.DisposeAsync(), Times.Never);
+        renderer.Verify(r => r.LoadAsync("second.mp4", It.IsAny<WallpaperSettings>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task DifferentTypeSwitch_ReleasesOldRenderer()
+    {
+        var video = new Mock<IWallpaperRenderer>();
+        video.SetupGet(r => r.SupportedType).Returns(WallpaperType.Video);
+        var image = new Mock<IWallpaperRenderer>();
+        await using var engine = new WallpaperEngineOrchestrator(NullLogger<WallpaperEngineOrchestrator>.Instance,
+            type => type == WallpaperType.Video ? video.Object : image.Object);
+        await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "Video", FilePath = "v.mp4", Type = WallpaperType.Video, ContentHash = "1" });
+        await engine.ApplyWallpaperAsync("M1", new Wallpaper { Title = "Image", FilePath = "i.png", Type = WallpaperType.Image, ContentHash = "2" });
+        video.Verify(r => r.StopAsync(It.IsAny<CancellationToken>()), Times.Once);
+        video.Verify(r => r.DisposeAsync(), Times.Once);
+    }
     private readonly NullLogger<WallpaperEngineOrchestrator> _logger = NullLogger<WallpaperEngineOrchestrator>.Instance;
 
     [Fact]

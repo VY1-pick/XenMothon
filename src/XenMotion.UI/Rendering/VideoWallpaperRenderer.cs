@@ -36,6 +36,7 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
     private int _fpsLimit = 60;
     private int _calibratedFps = int.MaxValue;
     private long _presentedFrames;
+    internal double FirstFrameLoadMilliseconds { get; private set; }
     internal long PresentedFrameCount => Interlocked.Read(ref _presentedFrames);
     private readonly Action<string>? _calibrationCompleted;
     private readonly double _calibrationBudget;
@@ -122,6 +123,7 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
         ArgumentNullException.ThrowIfNull(settings);
         ct.ThrowIfCancellationRequested();
 
+        var loadingWatch = System.Diagnostics.Stopwatch.StartNew();
         // 1. Validate supported format and existence
         MediaFormatValidator.Validate(mediaPath);
 
@@ -130,6 +132,7 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
 
         // 2. Stop and detach any active playback render loop
         await StopRenderLoopAsync().ConfigureAwait(false);
+        _audio.Pause();
 
         lock (_syncLock)
         {
@@ -150,6 +153,15 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
             // Decode on the source cadence, not the display cap (which used to change playback speed).
             _clock.FpsLimit = (int)Math.Clamp(Math.Round(_mediaEngine.NativeFps), 1, 240);
 
+            // A coverage/battery rule can pause immediately after loading. Seed the surface
+            // before declaring it ready so a paused wallpaper always has a visible picture.
+            using (var firstFrame = _mediaEngine.ReadNextFrame(false))
+            {
+                if (firstFrame is null) throw new InvalidDataException("Video has no decodable first frame.");
+                _presenter.PresentFrame(firstFrame, settings.ScalingMode);
+                Interlocked.Increment(ref _presentedFrames);
+            }
+            FirstFrameLoadMilliseconds = loadingWatch.Elapsed.TotalMilliseconds;
             _state = WallpaperState.Ready;
         }
 
@@ -302,6 +314,23 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
         _logger.LogDebug("Video playback stopped for '{Path}'.", _mediaPath);
     }
 
+    public Task<bool> TryApplySettingsAsync(WallpaperSettings settings, CancellationToken ct = default)
+    {
+        ct.ThrowIfCancellationRequested();
+        ThrowIfDisposed();
+        lock (_syncLock)
+        {
+            if (_settings.VideoHeightLimit != settings.VideoHeightLimit || _settings.UseHardwareDecoding != settings.UseHardwareDecoding ||
+                _settings.AutoTunePlayback != settings.AutoTunePlayback || _settings.PlaybackSpeed != settings.PlaybackSpeed || _settings.RenderScale != settings.RenderScale) return Task.FromResult(false);
+            _settings = settings.Clone();
+            _presenter.SetVisualAdjustments(settings);
+            _volume = settings.IsMuted ? 0 : settings.Volume;
+            _audio.SetVolume(_volume);
+            _fpsLimit = settings.TargetFps;
+            return Task.FromResult(true);
+        }
+    }
+
     public Task SetVolumeAsync(float volume, CancellationToken ct = default)
     {
         ThrowIfDisposed();
@@ -418,11 +447,14 @@ public sealed class VideoWallpaperRenderer : IWallpaperRenderer
                 lastFrameMs = frame.Timestamp.TotalMilliseconds / speed;
                 double elapsedMs = await _clock.WaitUntilAsync(lastFrameMs, ct, _resumeEvent.WaitAsync).ConfigureAwait(false);
                 await _resumeEvent.WaitAsync(ct).ConfigureAwait(false);
-                if (schedule.ShouldPresent(lastFrameMs, elapsedMs, _mediaEngine.NativeFps * speed, CurrentFpsLimit))
+                lock (_syncLock)
                 {
-                    // 4. Present frame to Direct3D 11 viewport
-                    _presenter.PresentFrame(frame, scalingMode);
-                    Interlocked.Increment(ref _presentedFrames);
+                    // Pause must finish after the last submission, including a frame already decoded.
+                    if (_state == WallpaperState.Playing && schedule.ShouldPresent(lastFrameMs, elapsedMs, _mediaEngine.NativeFps * speed, CurrentFpsLimit))
+                    {
+                        _presenter.PresentFrame(frame, _settings.ScalingMode);
+                        Interlocked.Increment(ref _presentedFrames);
+                    }
                 }
             }
         }

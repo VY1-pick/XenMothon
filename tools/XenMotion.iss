@@ -4,14 +4,15 @@
 #ifndef ReleaseDir
   #error ReleaseDir is required
 #endif
-#define AppVersion "0.9.0-beta.1"
+#define AppVersion "0.9.0-beta.2"
 [Setup]
 AppId={{E911D190-7392-4D2B-A2D5-86544DDC7C45}
 AppName=XenMotion
 AppVersion={#AppVersion}
+VersionInfoVersion=0.9.0.2
 AppVerName=XenMotion {#AppVersion} Private Beta
 AppPublisher=XenMotion
-AppPublisherURL=https://github.com/VY1-pick/Lumen-Wallpaper
+AppPublisherURL=https://github.com/VY1-pick/XenMothon
 DefaultDirName={localappdata}\Programs\XenMotion
 DefaultGroupName=XenMotion
 PrivilegesRequired=lowest
@@ -27,7 +28,7 @@ SetupIconFile=..\src\XenMotion.UI\Assets\xenmotion-logo.ico
 UninstallDisplayIcon={app}\XenMotion.UI.exe
 CloseApplications=yes
 RestartApplications=no
-LicenseFile=..\LICENSE
+LicenseFile=..\docs\legal\BETA-TERMS.txt
 
 [Tasks]
 Name: desktopicon; Description: "Create a desktop shortcut"; Flags: unchecked
@@ -42,7 +43,16 @@ Name: "{autodesktop}\XenMotion"; Filename: "{app}\XenMotion.UI.exe"; Parameters:
 [Run]
 Filename: "{app}\XenMotion.UI.exe"; Parameters: "--show"; Description: "Launch XenMotion"; Flags: nowait postinstall skipifsilent
 
+[Registry]
+Root: HKCU; Subkey: "Software\XenMotion"; ValueType: string; ValueName: "AcceptedBetaTerms"; ValueData: "1.0 / 2026-10-08"
+
 [Code]
+function InitializeSetup(): Boolean;
+begin
+  Result := (not WizardSilent) or (CompareText(ExpandConstant('{param:ACCEPTTERMS|no}'), 'yes') = 0);
+  if not Result then Log('Silent installation requires /ACCEPTTERMS=yes.');
+end;
+
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 var
   Scheduler, Folder: Variant;

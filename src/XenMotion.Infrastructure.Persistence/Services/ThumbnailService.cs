@@ -154,26 +154,10 @@ public sealed class ThumbnailService : IThumbnailService
 
     private static async Task GenerateImageThumbnailAsync(string imagePath, string destinationPath, CancellationToken ct)
     {
-        // For static images, copy image or header slice to create thumbnail
-        const int bufferSize = 65536;
-        await using var sourceStream = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize, useAsync: true);
-        await using var destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize, useAsync: true);
-
-        // Copy up to 256KB or full image for thumbnail representation
-        long bytesToCopy = Math.Min(sourceStream.Length, 262144);
-        byte[] buffer = new byte[bufferSize];
-        long totalCopied = 0;
-
-        while (totalCopied < bytesToCopy)
-        {
-            ct.ThrowIfCancellationRequested();
-            int toRead = (int)Math.Min(buffer.Length, bytesToCopy - totalCopied);
-            int read = await sourceStream.ReadAsync(buffer.AsMemory(0, toRead), ct).ConfigureAwait(false);
-            if (read == 0) break;
-
-            await destStream.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
-            totalCopied += read;
-        }
+        // Preserve the complete encoded image; truncating compressed data produces corrupt previews.
+        await using var source = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
+        await using var destination = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
+        await source.CopyToAsync(destination, ct).ConfigureAwait(false);
     }
 
     private static async Task GenerateVideoThumbnailAsync(string videoPath, string destinationPath, CancellationToken ct)

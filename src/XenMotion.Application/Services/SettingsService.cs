@@ -45,7 +45,7 @@ public sealed class SettingsService : ISettingsService
             else
             {
 
-            if (new FileInfo(_settingsFilePath).Length > 1024 * 1024) throw new InvalidDataException("Settings file exceeds the 1 MiB limit.");
+            if (new FileInfo(_settingsFilePath).Length > 16 * 1024 * 1024) throw new InvalidDataException("Settings file exceeds the 16 MiB limit.");
             string json = await File.ReadAllTextAsync(_settingsFilePath, ct).ConfigureAwait(false);
             var loaded = JsonSerializer.Deserialize<ApplicationSettings>(json, JsonOptions);
             _currentSettings = loaded ?? new ApplicationSettings();
@@ -69,44 +69,38 @@ public sealed class SettingsService : ISettingsService
     public async Task SaveSettingsAsync(CancellationToken ct = default)
     {
         await _fileLock.WaitAsync(ct).ConfigureAwait(false);
-        try
-        {
-            string directory = Path.GetDirectoryName(_settingsFilePath) ?? string.Empty;
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            string tempFile = _settingsFilePath + ".tmp";
-            _currentSettings.Normalize();
-            string json = JsonSerializer.Serialize(_currentSettings, JsonOptions);
-            await File.WriteAllTextAsync(tempFile, json, ct).ConfigureAwait(false);
-            File.Move(tempFile, _settingsFilePath, overwrite: true);
-
-            _logger.LogInformation("Successfully persisted application settings to '{Path}'.", _settingsFilePath);
-        }
-        finally
-        {
-            _fileLock.Release();
-        }
-
+        try { await PersistAsync(_currentSettings, ct).ConfigureAwait(false); }
+        finally { _fileLock.Release(); }
         SettingsChanged?.Invoke(this, _currentSettings);
     }
 
     public async Task UpdateSettingsAsync(Action<ApplicationSettings> updateAction, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(updateAction);
-
         await _fileLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            updateAction(_currentSettings);
+            // Readers keep a stable snapshot until both validation and the atomic write succeed.
+            var next = JsonSerializer.Deserialize<ApplicationSettings>(JsonSerializer.Serialize(_currentSettings, JsonOptions), JsonOptions)!;
+            updateAction(next);
+            await PersistAsync(next, ct).ConfigureAwait(false);
+            _currentSettings = next;
         }
-        finally
-        {
-            _fileLock.Release();
-        }
+        finally { _fileLock.Release(); }
+        SettingsChanged?.Invoke(this, _currentSettings);
+    }
 
-        await SaveSettingsAsync(ct).ConfigureAwait(false);
+    private async Task PersistAsync(ApplicationSettings settings, CancellationToken ct)
+    {
+        string? directory = Path.GetDirectoryName(_settingsFilePath);
+        if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+        settings.Normalize();
+        string json = JsonSerializer.Serialize(settings, JsonOptions);
+        if (System.Text.Encoding.UTF8.GetByteCount(json) > 16 * 1024 * 1024)
+            throw new InvalidDataException("Settings exceed the 16 MiB limit; previous settings were kept.");
+        string temporary = _settingsFilePath + ".tmp";
+        await File.WriteAllTextAsync(temporary, json, ct).ConfigureAwait(false);
+        File.Move(temporary, _settingsFilePath, overwrite: true);
+        _logger.LogInformation("Successfully persisted application settings to '{Path}'.", _settingsFilePath);
     }
 }
