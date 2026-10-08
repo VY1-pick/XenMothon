@@ -59,8 +59,7 @@ public sealed partial class MainWindow
             presenter.IsResizable = false;
             presenter.SetBorderAndTitleBar(false, false);
         }
-        uint noBorder = 0xFFFFFFFE;
-        DwmSetWindowAttribute(WinRT.Interop.WindowNative.GetWindowHandle(viewer), 34, ref noBorder, sizeof(uint));
+        viewer.Activated += (_, _) => ApplyViewerFrame(viewer);
         DetailsDragRegion.SizeChanged += OnViewerTitleSizeChanged;
         viewer.AppWindow.Changed += (_, args) =>
         {
@@ -86,6 +85,7 @@ public sealed partial class MainWindow
         };
         AlignWallpaperViewer();
         viewer.Activate();
+        ApplyViewerFrame(viewer);
         if (!_viewerLightsCreated)
         {
             AttachGlow(ViewerHeaderGlowHost, Windows.UI.Color.FromArgb(255, 94, 242, 207), 0x8C, drift: false);
@@ -124,8 +124,18 @@ public sealed partial class MainWindow
             _attachedViewerPosition = new PointInt32(bounds.X, bounds.Y);
             viewer.AppWindow.MoveAndResize(new RectInt32(bounds.X, bounds.Y, width, bounds.Height));
             viewer.AppWindow.Show(false);
+            ApplyViewerFrame(viewer);
         }
         finally { _aligningViewer = false; }
+    }
+
+    private static void ApplyViewerFrame(Window viewer)
+    {
+        var handle = WinRT.Interop.WindowNative.GetWindowHandle(viewer);
+        uint darkMode = 1, noBorder = 0xFFFFFFFE;
+        DwmSetWindowAttribute(handle, 20, ref darkMode, sizeof(uint));
+        // Activation can restore the native frame, so reapply after showing and activating.
+        DwmSetWindowAttribute(handle, 34, ref noBorder, sizeof(uint));
     }
 
     private void OnViewerTitleSizeChanged(object sender, SizeChangedEventArgs e) => UpdateViewerDragRegion();
