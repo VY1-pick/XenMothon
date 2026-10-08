@@ -268,7 +268,7 @@ public sealed partial class MainWindow
             if (_viewerId != id || _viewerFromLibrary != allowEditing) return;
             if (wallpaper is null)
             {
-                if (!allowEditing) LoadCatalogMotionPreview(id);
+                if (!allowEditing && services.GetRequiredService<ISettingsService>().CurrentSettings.AutoPlayMotionPreviews) LoadCatalogMotionPreview(id);
                 return;
             }
             _viewerWallpaper = wallpaper;

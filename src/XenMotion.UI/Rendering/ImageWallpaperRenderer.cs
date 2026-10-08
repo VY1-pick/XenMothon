@@ -57,6 +57,7 @@ public sealed class ImageWallpaperRenderer : IWallpaperRenderer
             _pixels = GCHandle.Alloc(data.DetachPixelData(), GCHandleType.Pinned);
             _width = (int)width; _height = (int)height; _heightLimit = settings.VideoHeightLimit; _scaling = settings.ScalingMode; _state = WallpaperState.Ready;
             _presenter.SetVisualAdjustments(settings);
+            _presenter.PresentFrame(_pixels.AddrOfPinnedObject(), _width, _height, _scaling);
         }
     }
     public void Redraw()
