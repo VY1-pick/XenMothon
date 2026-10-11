@@ -30,12 +30,17 @@ Each item needs a stable GUID, title, description, author, thumbnail/preview/dow
 type, dimensions, duration in seconds, byte size, category, tags and timestamps. Thumbnail
 URLs point to actual image bytes; previews/downloads point to the corresponding media.
 Relative media paths are resolved against the configured base URL. Prefer root-host deployment
-or explicit absolute CDN URLs. Keep download URLs immutable when bytes change; resume currently
-uses byte ranges, not ETag/If-Range identity tracking.
+or explicit absolute CDN URLs. Keep download URLs immutable when bytes change. The client now
+resumes only with a strong ETag and If-Range; without a validator it restarts safely.
+
+A compatible local server is implemented in `src/XenMotion.Server`. See
+[catalog-server.md](catalog-server.md) for setup, content layout and verification. No public deployment has been made.
 
 ## Media hosting and resume
 
 - Initial GET: HTTP 200 and accurate `Content-Length`.
+- Supply a strong `ETag` for resumable media. Match `If-Range` before returning 206;
+  when the validator differs, return the full file with HTTP 200 and its current ETag.
 - `Range: bytes=N-`: HTTP 206, `Content-Range: bytes N-END/TOTAL`, accurate remaining
   `Content-Length`, `Accept-Ranges: bytes`, and unchanged media bytes.
 - If range is unsupported, return HTTP 200 with the entire file. The client restarts the file.

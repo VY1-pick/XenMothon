@@ -2,7 +2,7 @@
 
 **والپیپر زنده برای ویندوز، با تنظیم خودکار کیفیت بر اساس اندازه‌گیری واقعی و رابط بومی WinUI 3.**
 
-**فارسی** · [English](README.md) · [دانلود بتای خصوصی](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) · [گزارش مشکل](https://github.com/VY1-pick/XenMothon/issues)
+**فارسی** · [English](README.md) · [دانلود بتای خصوصی](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) · [گزارش مشکل](https://github.com/VY1-pick/XenMothon/issues)
 
 ![صفحهٔ Library در XenMotion، همراه با ویدیوهای واردشده و کنترل‌های پخش](docs/images/xenmotion-beta.jpg)
 
@@ -38,9 +38,9 @@ XenMotion تصویر و ویدیوی محلی را به والپیپر دسکت�
 
 ## نصب و شروع
 
-۱. با حساب دارای دسترسی به مخزن، [ریلیز 0.9.0-beta.2](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) را باز کن.
+۱. با حساب دارای دسترسی به مخزن، [ریلیز 0.9.0-beta.3](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) را باز کن.
 
-۲. فایل `XenMotion-0.9.0-beta.2-Setup-x64.exe` را دانلود کن. فایل‌های `SHA256SUMS.txt` و `BETA-REVIEW.md` هم در ریلیز موجودند.
+۲. فایل `XenMotion-0.9.0-beta.3-Setup-x64.exe` را دانلود کن. فایل‌های `SHA256SUMS.txt` و `BETA-REVIEW.md` هم در ریلیز موجودند.
 
 ۳. نصاب را اجرا و مسیر نصب را انتخاب کن. مسیر پیش‌فرض `%LOCALAPPDATA%\Programs\XenMotion` است.
 
@@ -55,7 +55,7 @@ XenMotion تصویر و ویدیوی محلی را به والپیپر دسکت�
 برای بررسی هش در PowerShell، از پوشهٔ دانلود دستور زیر را اجرا کن و نتیجهٔ کامل را با `SHA256SUMS.txt` مقایسه کن:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.exe
+Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.3-Setup-x64.exe
 ```
 
 بستن پنجره برنامه را به تری کنار ساعت می‌برد. از آیکن تری دوباره بازش کن. برای خروج کامل موتور والپیپر، **Exit XenMotion** را از منوی تری انتخاب کن. توقف همهٔ والپیپرها، والپیپر ذخیره‌شده برای شروع بعدی را هم پاک می‌کند.
@@ -72,7 +72,11 @@ Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.e
 
 کاتالوگ پیش‌فرض Explore شامل پیش‌نمایش‌های نمایشی است. ورودی‌های ویدیویی آن **فقط پیش‌نمایش** هستند و فایل ویدیویی قابل دانلود ندارند. ویدیوی خودت را وارد کن یا یک کاتالوگ واقعی آنلاین تنظیم کن. آثار تصویر متعلق به سازندگانشان هستند؛ مجوز برنامه شامل این رسانه‌ها نمی‌شود.
 
-## کنترل‌های بتای دوم
+## سرور کاتالوگ
+
+با اجرای `powershell -File .\tools\Start-CatalogServer.ps1` سرور محلی کاتالوگ و دانلود در آدرس `http://127.0.0.1:5188` اجرا می‌شود. نمونهٔ محلی دو تصویر قابل دانلود دارد. برای افزودن رسانه، اتصال XenMotion و شرایط استقرار، [راهنمای سرور](docs/engineering/catalog-server.md) را ببین.
+
+## کنترل‌های نسخهٔ بتا
 
 تنظیمات در پنجرهٔ مستقل باز می‌شوند و ریست آن‌ها کتابخانه و ادیت شخصی را پاک نمی‌کند. در Playback، بخش Global wallpaper edits تنظیمات رنگ، شفافیت، چرخش افقی، تراز و پخش را سراسری می‌کند. در ادیت هر والپیپر می‌توان بین تنظیم سراسری و ادیت شخصیِ حفظ‌شده جابه‌جا شد. تا فعال‌شدن تنظیم سراسری، گزینهٔ مربوط خاموش و راهنمای آن قابل مشاهده است. عکس و ویدیو هر دو ادیت تصویری و ریست دارند.
 
@@ -145,7 +149,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.e
 
 ## اعتبارسنجی و محدودیت‌های بتا
 
-نسخهٔ **0.9.0-beta.2**، **۲۵۵ تست ‎.NET** و **۴۰ بررسی الگوریتم** را پاس کرده است. بیلد Release بدون هشدار و خطا بود. ارتقای نصاب، هش فایل‌های نصب‌شده و حذف برنامه تست شدند. در زمان ریلیز، بررسی وابستگی‌های NuGet آسیب‌پذیری شناخته‌شده‌ای گزارش نکرد.
+نسخهٔ **0.9.0-beta.3** سولوشن را به **‎.NET 10** و **Windows App SDK 2.5.1** (به‌جای شاخهٔ ۱.۸ که عمر پشتیبانی‌اش تمام شده) منتقل می‌کند. بیلد Release بدون هشدار و خطا بود و **۳۱۶ تست ‎.NET** پاس شد. ارتقای نصاب، هش فایل‌های نصب‌شده و حذف برنامه تست شدند. در زمان ریلیز، بررسی وابستگی‌های NuGet آسیب‌پذیری شناخته‌شده‌ای گزارش نکرد.
 
 این نتایج شواهد مسیرهای تست‌شده هستند، نه تضمین امنیت یا تأیید همهٔ دستگاه‌ها. محدودیت‌های فعلی شامل هدف‌گیری نمایشگر اصلی، کامل‌نبودن تخصیص کیفیت مستقل چندمانیتوره، وابستگی به کدک و درایور و تأییدنشدن زمان‌بندی واقعی روی تمام نمایشگرها و دستگاه‌های صداست. بخشی از اطلاعات تصویر در لایهٔ ذخیره‌سازی هنوز پیش‌فرض‌های قدیمی دارد. دامنهٔ بررسی و محدودیت‌ها در [گزارش بتا](docs/engineering/private-beta-review.md) ثبت شده‌اند.
 
@@ -162,7 +166,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.e
 
 ## ساخت از سورس
 
-از ویندوز x64، SDK نسخهٔ ‎.NET 8 و ابزارهای ساخت Windows/WinUI مورد نیاز سولوشن استفاده کن. فایل `XenMotion.sln` را باز کن یا از ریشهٔ مخزن اجرا کن:
+از ویندوز x64، SDK نسخهٔ ‎.NET 10 و ابزارهای ساخت Windows/WinUI مورد نیاز سولوشن استفاده کن؛ **Windows App SDK 2.5.1** از NuGet بازیابی می‌شود. فایل `XenMotion.sln` را باز کن یا از ریشهٔ مخزن اجرا کن:
 
 ```powershell
 dotnet restore XenMotion.sln
@@ -170,16 +174,18 @@ dotnet build XenMotion.sln -c Release --no-restore
 dotnet test tests/XenMotion.Core.Tests/XenMotion.Core.Tests.csproj -c Release --no-build --no-restore
 ```
 
+برای نسخهٔ محلی با مسیر اجرای ساده، `.\tools\Build-Preview.ps1` را اجرا کن و سپس `artifacts\XenMotion\XenMotion.lnk` را باز کن. نام فایل اجرایی `XenMotion.exe` است و فایل‌های موردنیاز آن در زیرپوشهٔ `App` کنار هم قرار می‌گیرند.
+
 سولوشن شامل Core، Application، Infrastructure.Persistence و رابط بومی WinUI است. بیلد فرانت‌اند Node/npm لازم نیست. ابزار مستقل الگوریتم در `tools/AdaptiveQualityLab` و پروب بومی سنجش پخش کنار آن است.
 
 برای بسته‌بندی نصاب، Inno Setup را در مسیر پیش‌فرض اسکریپت قرار بده یا مسیر کامپایلر را با `-InnoCompiler` مشخص کن:
 
 ```powershell
 .\tools\Build-Release.ps1 -InnoCompiler 'C:\Path\To\Inno Setup\ISCC.exe'
-.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.2'
+.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.3'
 ```
 
-اسکریپت وابستگی‌ها را بازیابی و بررسی می‌کند، بیلد و تست می‌گیرد، محیط‌های اجرا را بسته‌بندی می‌کند، فایل Python را دانلود و هش آن را تأیید می‌کند، فایل‌های بسته را بررسی می‌کند و نصاب را می‌سازد. خروجی در `artifacts/releases/0.9.0-beta.2` است. انتشار ریلیز گیت‌هاب مرحله‌ای جداگانه است.
+اسکریپت وابستگی‌ها را بازیابی و بررسی می‌کند، بیلد و تست می‌گیرد، محیط‌های اجرا را بسته‌بندی می‌کند، فایل Python را دانلود و هش آن را تأیید می‌کند، فایل‌های بسته را بررسی می‌کند و نصاب را می‌سازد. خروجی در `artifacts/releases/0.9.0-beta.3` است. انتشار ریلیز گیت‌هاب مرحله‌ای جداگانه است.
 
 ## مستندات و مجوز
 

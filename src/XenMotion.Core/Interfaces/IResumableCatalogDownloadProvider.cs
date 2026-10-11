@@ -8,5 +8,6 @@ public interface IResumableCatalogDownloadProvider
     Task<CatalogDownloadStream> OpenDownloadStreamAsync(
         CatalogItem item,
         long offset,
-        CancellationToken ct = default);
+        CancellationToken ct = default,
+        string? entityTag = null);
 }

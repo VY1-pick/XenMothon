@@ -1,8 +1,9 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Release',
-    [string]$OutputDirectory = "$PSScriptRoot\..\artifacts\publish\0.9.0-beta.2",
+    [string]$OutputDirectory = "$PSScriptRoot\..\artifacts\publish\0.9.0-beta.3",
     [switch]$SkipTests,
+    [switch]$SkipInstaller,
     [string]$InnoCompiler = "$PSScriptRoot\..\artifacts\build-dependencies\inno\ISCC.exe"
 )
 $ErrorActionPreference = 'Stop'
@@ -37,7 +38,7 @@ $optimizer = Join-Path $publish 'tools/AdaptiveQualityLab'
 New-Item -ItemType Directory -Path $optimizer -Force | Out-Null
 Copy-Item -LiteralPath tools/AdaptiveQualityLab/lab.py,tools/AdaptiveQualityLab/report-template.html -Destination $optimizer
 Copy-Item -LiteralPath LICENSE,docs/legal/BETA-TERMS.txt,docs/legal/BETA-TERMS.fa.txt -Destination $publish
-Copy-Item -LiteralPath docs/engineering/beta2-review.md -Destination (Join-Path $publish 'BETA-REVIEW.md')
+Copy-Item -LiteralPath docs/engineering/beta3-review.md -Destination (Join-Path $publish 'BETA-REVIEW.md')
 $version = ([xml](Get-Content 'src/XenMotion.UI/XenMotion.UI.csproj' -Raw)).Project.PropertyGroup.Version
 $commit = git rev-parse HEAD
 @("XenMotion Private Beta", "Version: $version", "Commit: $commit", "Runtime: win-x64", "BuiltUtc: $([DateTime]::UtcNow.ToString('O'))") |
@@ -47,6 +48,7 @@ Get-ChildItem -LiteralPath $publish -Recurse -File | Where-Object { $_.FullName 
     Sort-Object FullName | ForEach-Object { '{0}  {1}' -f (Get-FileHash -LiteralPath $_.FullName).Hash,[IO.Path]::GetRelativePath($publish,$_.FullName) } |
     Set-Content -LiteralPath $hashFile -Encoding UTF8
 & "$PSScriptRoot/Verify-Release.ps1" -PublishDirectory $publish
+if ($SkipInstaller) { Write-Host "Application ready: $publish"; return }
 if (-not (Test-Path -LiteralPath $InnoCompiler)) { throw 'Inno Setup compiler missing; published application preserved.' }
 $release = Join-Path $root "artifacts/releases/$version"
 New-Item -ItemType Directory -Path $release -Force | Out-Null

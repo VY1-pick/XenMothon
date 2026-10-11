@@ -224,6 +224,7 @@ public sealed class ExploreCatalogService : IExploreCatalogService
                 string ext = item.Type == WallpaperType.Video ? ".mp4" : ".png";
                 string safeFileName = PathSanitizer.SanitizeFileName($"{item.Title}{ext}");
                 string finalMediaPath = await _storageManager.CommitImportAsync(stagedPath, item.Id, safeFileName, ct).ConfigureAwait(false);
+                TryDelete(stagedPath + ".etag");
                 stagedPath = string.Empty;
 
                 progress?.Report(80);
@@ -264,12 +265,14 @@ public sealed class ExploreCatalogService : IExploreCatalogService
                 if (_catalogProvider is not IResumableCatalogDownloadProvider && File.Exists(stagedPath))
                 {
                     TryDelete(stagedPath);
+                    TryDelete(stagedPath + ".etag");
                 }
                 throw;
             }
             catch
             {
                 TryDelete(stagedPath);
+                TryDelete(stagedPath + ".etag");
                 await CleanUpArtifactsAsync(null, item.Id).ConfigureAwait(false);
                 SetState(item.Id, CatalogDownloadState.Failed);
                 throw;
@@ -292,7 +295,9 @@ public sealed class ExploreCatalogService : IExploreCatalogService
             try
             {
                 long offset = File.Exists(stagedPath) ? new FileInfo(stagedPath).Length : 0;
-                await using var source = await OpenDownloadSourceAsync(item, offset, ct).ConfigureAwait(false);
+                string? entityTag = File.Exists(stagedPath + ".etag")
+                    ? await File.ReadAllTextAsync(stagedPath + ".etag", ct).ConfigureAwait(false) : null;
+                await using var source = await OpenDownloadSourceAsync(item, offset, entityTag, ct).ConfigureAwait(false);
 
                 if (offset > 0 && !source.IsPartial)
                 {
@@ -302,6 +307,9 @@ public sealed class ExploreCatalogService : IExploreCatalogService
 
                 var mode = offset > 0 ? FileMode.Append : FileMode.Create;
                 await using var target = new FileStream(stagedPath, mode, FileAccess.Write, FileShare.None, 128 * 1024, useAsync: true);
+                if (!string.IsNullOrEmpty(source.EntityTag))
+                    await File.WriteAllTextAsync(stagedPath + ".etag", source.EntityTag, ct).ConfigureAwait(false);
+                else TryDelete(stagedPath + ".etag");
                 byte[] buffer = new byte[128 * 1024];
                 long written = offset;
                 int read;
@@ -313,6 +321,8 @@ public sealed class ExploreCatalogService : IExploreCatalogService
                     if (total > 0) progress?.Report(Math.Clamp(written * 75d / total, 0, 75));
                 }
                 await target.FlushAsync(ct).ConfigureAwait(false);
+                if (source.ContentLength is { } expected && written - offset != expected)
+                    throw new IOException("Catalog download ended before the expected content length.");
                 return;
             }
             catch (OperationCanceledException)
@@ -333,11 +343,11 @@ public sealed class ExploreCatalogService : IExploreCatalogService
         throw new IOException($"Catalog download failed after {MaxDownloadAttempts} attempts.", last);
     }
 
-    private async Task<CatalogDownloadStream> OpenDownloadSourceAsync(CatalogItem item, long offset, CancellationToken ct)
+    private async Task<CatalogDownloadStream> OpenDownloadSourceAsync(CatalogItem item, long offset, string? entityTag, CancellationToken ct)
     {
         if (_catalogProvider is IResumableCatalogDownloadProvider resumable)
         {
-            return await resumable.OpenDownloadStreamAsync(item, offset, ct).ConfigureAwait(false);
+            return await resumable.OpenDownloadStreamAsync(item, offset, ct, entityTag).ConfigureAwait(false);
         }
 
         if (offset > 0)
@@ -345,7 +355,8 @@ public sealed class ExploreCatalogService : IExploreCatalogService
             TryDelete(Path.Combine(_storageManager.TempDirectory, $"{item.Id:N}_sub.tmp"));
         }
 
-        return new CatalogDownloadStream(await _catalogProvider.OpenDownloadStreamAsync(item, ct).ConfigureAwait(false), item.FileSizeBytes > 0 ? item.FileSizeBytes : null, false);
+        var content = await _catalogProvider.OpenDownloadStreamAsync(item, ct).ConfigureAwait(false);
+        return new CatalogDownloadStream(content, content.CanSeek ? content.Length - content.Position : null, false);
     }
 
     private static void TryDelete(string path)

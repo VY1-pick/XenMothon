@@ -2,11 +2,11 @@
 
 **Live wallpapers for Windows, with measured automatic quality and a native WinUI 3 interface.**
 
-[فارسی](README.fa.md) · **English** · [Download private beta](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
+[فارسی](README.fa.md) · **English** · [Download private beta](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
 
 ![XenMotion Library with imported video wallpapers and playback controls](docs/images/xenmotion-beta.jpg)
 
-*The Library interface in version 0.9.0-beta.2. Wallpapers shown are example user imports; they are not included in the installer.*
+*The Library interface in version 0.9.0-beta.3. Wallpapers shown are example user imports; they are not included in the installer.*
 
 XenMotion turns local images and videos into desktop wallpapers. Import your own media, manage it in a library, control playback and sound, and choose how much work the wallpaper should do while other applications are running.
 
@@ -38,8 +38,8 @@ There is no certified minimum hardware specification yet. Media codec, bitrate, 
 
 ## Install and start
 
-1. Open the [0.9.0-beta.2 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.2) using an account with repository access.
-2. Download `XenMotion-0.9.0-beta.2-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
+1. Open the [0.9.0-beta.3 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) using an account with repository access.
+2. Download `XenMotion-0.9.0-beta.3-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
 3. Run the installer and choose the destination. The default is `%LOCALAPPDATA%\Programs\XenMotion`.
 4. Open XenMotion from its shortcut. In **Library**, choose **Import**, or drop media into the window.
 5. Select **Set as wallpaper** on a library card. Use the **Now Playing** dock to pause, adjust volume, mute or stop.
@@ -50,7 +50,7 @@ The beta installer is **unsigned**. Windows may show a publisher or reputation w
 To inspect the downloaded installer hash in PowerShell, run this from its download folder and compare the full result with `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.2-Setup-x64.exe
+Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.3-Setup-x64.exe
 ```
 
 Closing the window keeps XenMotion in the notification area. Open it again from its tray icon. To end the engine, choose **Exit XenMotion** from the tray menu. Stopping all wallpapers clears the saved startup wallpaper assignment.
@@ -67,7 +67,11 @@ An extension is not a codec guarantee. Video/audio support depends on the stream
 
 The default Explore catalog contains illustrative previews. Its video entries are **preview-only**, not downloadable video files. Import your own videos or configure a real remote catalog. Artwork in the screenshot remains the property of its respective creators; media is not bundled with this repository's license.
 
-## Beta 2 controls
+## Catalog server
+
+Run `powershell -File .\tools\Start-CatalogServer.ps1` to start the local catalog and download server at `http://127.0.0.1:5188`. The demo contains two downloadable images. See the [server guide](docs/engineering/catalog-server.md) for publishing media, connecting XenMotion and deployment requirements.
+
+## Beta controls
 
 Settings open in their own window, with a reset that preserves the library and custom edits. Playback → Global wallpaper edits shares color, flip, opacity, alignment and playback controls across wallpapers. The editor can switch between global and preserved custom edits; global selection is disabled with a tooltip until enabled in Settings. Images and videos both support visual edits and reset.
 
@@ -140,7 +144,7 @@ Do not assume a visually changed video position alone proves pause failure: repo
 
 ## Beta validation and known limits
 
-Version **0.9.0-beta.2** passed **255 .NET tests** and **40 optimizer checks**. Its Release build had zero warnings/errors. Installer upgrade, installed-file hashes and uninstall were tested. The dependency audit reported no known vulnerable NuGet packages at release time.
+Version **0.9.0-beta.3** moves the solution to **.NET 10** and **Windows App SDK 2.5.1** (replacing the end-of-life 1.8 servicing line). Its Release build had zero warnings/errors and passed **316 .NET tests**. Installer upgrade, installed-file hashes and uninstall were tested. The dependency audit reported no known vulnerable NuGet packages at release time.
 
 These checks are evidence for tested paths, not a security guarantee or certification of every device. Current limits include primary-display targeting, incomplete independent multi-monitor quality allocation, codec/driver-dependent behavior and unverified physical timing on all display/audio devices. Image library metadata still has legacy defaults in parts of persistence. See the [beta review](docs/engineering/private-beta-review.md) for scope and remaining boundaries.
 
@@ -157,7 +161,7 @@ Remove private paths or unrelated information from reports. Share media only whe
 
 ## Build from source
 
-Use Windows x64, the .NET 8 SDK and the Windows/WinUI build tools required by the solution. Open `XenMotion.sln`, or run from the repository root:
+Use Windows x64, the .NET 10 SDK and the Windows/WinUI build tools required by the solution; **Windows App SDK 2.5.1** is restored from NuGet. Open `XenMotion.sln`, or run from the repository root:
 
 ```powershell
 dotnet restore XenMotion.sln
@@ -165,16 +169,18 @@ dotnet build XenMotion.sln -c Release --no-restore
 dotnet test tests/XenMotion.Core.Tests/XenMotion.Core.Tests.csproj -c Release --no-build --no-restore
 ```
 
+For an easy-to-open local build, run `.\tools\Build-Preview.ps1` and open `artifacts\XenMotion\XenMotion.lnk`. The executable is named `XenMotion.exe`; its supporting files stay together in the `App` subfolder.
+
 The solution contains Core, Application, Infrastructure.Persistence and the native WinUI UI. It does not require a Node/npm frontend build. The independent optimizer lives in `tools/AdaptiveQualityLab`, with a native probe for real playback measurement.
 
 For installer packaging, provide Inno Setup at the script's default compiler path or pass `-InnoCompiler`:
 
 ```powershell
 .\tools\Build-Release.ps1 -InnoCompiler 'C:\Path\To\Inno Setup\ISCC.exe'
-.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.2'
+.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.3'
 ```
 
-The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.2`. GitHub release publication is a separate step.
+The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.3`. GitHub release publication is a separate step.
 
 ## Documentation and license
 

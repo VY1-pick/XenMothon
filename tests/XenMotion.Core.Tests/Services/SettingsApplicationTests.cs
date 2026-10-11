@@ -12,6 +12,25 @@ namespace XenMotion.Core.Tests.Services;
 public class SettingsApplicationTests
 {
     [Fact]
+    public async Task CatalogChangesKeepRestartNoticeUntilRelaunch()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"xenmotion-catalog-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            var settings = new SettingsService(path, NullLogger<SettingsService>.Instance);
+            var vm = new SettingsViewModel(settings, Mock.Of<IWallpaperEngineOrchestrator>(), NullLogger<SettingsViewModel>.Instance)
+            { CatalogBackendUrl = "https://catalog.example.com/", UseRemoteCatalog = true };
+            await vm.SaveAsync();
+            Assert.Contains("Restart XenMotion", vm.StatusMessage);
+            await vm.SaveAsync();
+            Assert.Contains("Restart XenMotion", vm.StatusMessage);
+            var reopened = new SettingsViewModel(settings, Mock.Of<IWallpaperEngineOrchestrator>(), NullLogger<SettingsViewModel>.Instance);
+            await reopened.SaveAsync();
+            Assert.Equal("Settings saved.", reopened.StatusMessage);
+        }
+        finally { File.Delete(path); }
+    }
+    [Fact]
     public async Task ActivityAndPreviewDraftPersistsAndReloads()
     {
         string path = Path.Combine(Path.GetTempPath(), $"xenmotion-activity-{Guid.NewGuid():N}.json");

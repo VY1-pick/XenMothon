@@ -1,4 +1,5 @@
 using XenMotion.UI.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -45,16 +46,35 @@ public sealed partial class MainWindow
         bool selecting = LibrarySelectionToggle.IsChecked == true;
         WallpaperGridView.SelectionMode = selecting ? ListViewSelectionMode.Multiple : ListViewSelectionMode.None;
         WallpaperGridView.IsItemClickEnabled = !selecting;
-        LibrarySelectAllButton.Visibility = LibraryDeleteSelectedButton.Visibility = selecting ? Visibility.Visible : Visibility.Collapsed;
+        LibrarySelectionLabel.Text = selecting ? "Done" : "Select";
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(LibrarySelectionToggle, selecting ? "Finish selecting wallpapers" : "Select wallpapers");
+        if (selecting) ShowOverlay(LibrarySelectionActions, LibrarySelectionActions, new System.Numerics.Vector3(0, -12, 0));
+        else HideOverlay(LibrarySelectionActions, LibrarySelectionActions, new System.Numerics.Vector3(0, -12, 0));
+        UpdateLibrarySelectionState();
     }
     private void OnLibrarySelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_viewModel is null) return;
         foreach (var item in _viewModel.Wallpapers)
             item.IsSelected = LibrarySelectionToggle.IsChecked == true ? WallpaperGridView.SelectedItems.Contains(item) : item.Id == _viewerId;
-        LibraryDeleteSelectedButton.Content = $"Remove selected ({WallpaperGridView.SelectedItems.Count})";
+        UpdateLibrarySelectionState();
     }
-    private void OnSelectAllWallpapersClicked(object sender, RoutedEventArgs e) => WallpaperGridView.SelectAll();
+    private void UpdateLibrarySelectionState()
+    {
+        int count = WallpaperGridView.SelectedItems.Count;
+        bool all = count > 0 && count == _viewModel.Wallpapers.Count;
+        LibrarySelectionCountText.Text = count == 0 ? "Choose wallpapers" : $"{count} selected";
+        LibrarySelectAllButton.Content = all ? "Deselect all" : "Select all";
+        LibrarySelectAllButton.IsEnabled = _viewModel.Wallpapers.Count > 0;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(LibrarySelectAllButton, all ? "Deselect all wallpapers" : "Select all wallpapers");
+        LibraryDeleteSelectedButton.Content = $"Remove selected ({count})";
+        LibraryDeleteSelectedButton.IsEnabled = count > 0;
+    }
+    private void OnSelectAllWallpapersClicked(object sender, RoutedEventArgs e)
+    {
+        if (WallpaperGridView.SelectedItems.Count == _viewModel.Wallpapers.Count) WallpaperGridView.SelectedItems.Clear();
+        else WallpaperGridView.SelectAll();
+    }
     private async void OnDeleteSelectedWallpapersClicked(object sender, RoutedEventArgs e)
     {
         var selected = WallpaperGridView.SelectedItems.OfType<WallpaperItemViewModel>().ToArray();
@@ -75,6 +95,39 @@ public sealed partial class MainWindow
     }
 
     private async void OnPauseResumeClicked(object sender, RoutedEventArgs e) => await _viewModel.TogglePauseResumeAsync();
+
+    private async void OnRenameWallpaperClicked(object sender, RoutedEventArgs e)
+    {
+        if (_viewerId is not { } id) return;
+        var item = _viewModel.Wallpapers.FirstOrDefault(w => w.Id == id);
+        if (item is null) return;
+        var title = new TextBox { Text = item.Title, Header = "Wallpaper title", MaxLength = 200 };
+        var dialog = new ContentDialog
+        {
+            XamlRoot = DetailsDock.XamlRoot, RequestedTheme = ElementTheme.Dark,
+            Title = "Rename wallpaper", Content = title, PrimaryButtonText = "Save", CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary
+        };
+        dialog.PrimaryButtonClick += (_, args) =>
+        {
+            if (!string.IsNullOrWhiteSpace(title.Text)) return;
+            args.Cancel = true;
+            title.Description = "Enter a wallpaper title.";
+        };
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        try
+        {
+            await App.Current.ServiceProvider.GetRequiredService<XenMotion.Core.Interfaces.ILibraryService>()
+                .RenameWallpaperAsync(id, title.Text);
+            if (_viewerId == id)
+            {
+                DetailsTitleTextBlock.Text = title.Text.Trim();
+                if (_viewerWallpaper != null) _viewerWallpaper.Title = title.Text.Trim();
+                if (_floatingViewer != null) _floatingViewer.Title = "XenMotion · " + title.Text.Trim();
+            }
+        }
+        catch (Exception ex) { ShowToast("Could not rename wallpaper: " + ex.Message, true); }
+    }
 
     private async void OnDeleteWallpaperClicked(object sender, RoutedEventArgs e)
     {

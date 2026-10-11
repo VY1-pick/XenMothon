@@ -11,6 +11,7 @@ public interface ILibraryService
 
     Task<IReadOnlyList<Wallpaper>> GetWallpapersAsync(CancellationToken ct = default);
     Task<Wallpaper?> GetWallpaperByIdAsync(Guid id, CancellationToken ct = default);
+    Task RenameWallpaperAsync(Guid id, string title, CancellationToken ct = default);
     Task<DeleteResult> DeleteWallpaperAsync(Guid id, CancellationToken ct = default);
     Task<ReconciliationResult> ReconcileLibraryAsync(CancellationToken ct = default);
     Task<StorageUsageInfo> GetStorageUsageAsync(CancellationToken ct = default);

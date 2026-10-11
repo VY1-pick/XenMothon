@@ -5,6 +5,7 @@ using System.Security.Principal;
 using System.Xml.Linq;
 using Microsoft.Win32;
 using Microsoft.Extensions.Logging;
+using XenMotion.Application.Services;
 
 namespace XenMotion.UI.Services;
 
@@ -78,6 +79,15 @@ public sealed class WindowsStartupService : IDisposable
         key.DeleteValue("Lumen", throwOnMissingValue: false);
         _logger.LogInformation("XenMotion Windows startup registration enabled.");
         _lastEnabled = true;
+    }
+
+    public async Task ApplyInstallerChoiceAsync(ISettingsService settings)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(@"Software\XenMotion", writable: true);
+        if (key?.GetValue("PendingStartupChoice") is not int choice || choice is not (0 or 1)) return;
+        await settings.UpdateSettingsAsync(s => s.StartWithWindows = choice == 1);
+        // Consume once; later changes in Settings must remain the user's choice.
+        key.DeleteValue("PendingStartupChoice", throwOnMissingValue: false);
     }
 
     private bool ConfigureLogonTask(string? executable)

@@ -32,6 +32,34 @@ public class LibraryServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task RenamePersistsTitleWithoutChangingMediaPath()
+    {
+        var wallpaper = new Wallpaper { Title = "raw_file", FilePath = "Media/original.mp4", ContentHash = "hash" };
+        _mockRepo.Setup(r => r.GetByIdAsync(wallpaper.Id, It.IsAny<CancellationToken>())).ReturnsAsync(wallpaper);
+        bool changed = false;
+        _libraryService.LibraryChanged += (_, _) => changed = true;
+        await _libraryService.RenameWallpaperAsync(wallpaper.Id, "  Tokyo at night  ");
+        _mockRepo.Verify(r => r.UpdateAsync(It.Is<Wallpaper>(w => w.Title == "Tokyo at night" && w.FilePath == "Media/original.mp4"), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.True(changed);
+        await Assert.ThrowsAsync<ArgumentException>(() => _libraryService.RenameWallpaperAsync(wallpaper.Id, "  "));
+        await Assert.ThrowsAsync<ArgumentException>(() => _libraryService.RenameWallpaperAsync(wallpaper.Id, new string('x', 201)));
+    }
+
+    [Fact]
+    public async Task LibraryLoadRepairsAndPersistsThumbnailPath()
+    {
+        string file = Path.Combine(_testRoot, "source.png");
+        await File.WriteAllTextAsync(file, "source");
+        var wallpaper = new Wallpaper { Title = "Image", FilePath = file, ContentHash = "hash" };
+        _mockRepo.Setup(r => r.GetAllAsync(It.IsAny<CancellationToken>())).ReturnsAsync([wallpaper]);
+        string thumb = _storageManager.ThumbnailsDirectory + "/" + wallpaper.Id + ".jpg";
+        _mockThumb.Setup(t => t.CreateThumbnailAsync(file, wallpaper.Id, wallpaper.Type, It.IsAny<CancellationToken>())).ReturnsAsync(thumb);
+        await _libraryService.GetWallpapersAsync();
+        Assert.Equal(_storageManager.MakeStorageRelativePath(thumb), wallpaper.ThumbnailPath);
+        _mockRepo.Verify(r => r.UpdateAsync(wallpaper, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Library_GetWallpapers_MarksMissingIfFileDeletedOnDisk()
     {
         Guid id = Guid.NewGuid();

@@ -159,6 +159,27 @@ public class CatalogSubscriptionTests : IDisposable
         Assert.Empty(Directory.GetFiles(_storageManager.TempDirectory));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ResumeAppendsOnlyPartialResponsesAndRemovesValidatorOnSuccess(bool sameVersion)
+    {
+        var item = (await _catalogProvider.GetByIdAsync(Guid.Parse("10000000-0000-0000-0000-000000000001")))!;
+        string staged = Path.Combine(_storageManager.TempDirectory, $"{item.Id:N}_sub.tmp");
+        await File.WriteAllTextAsync(staged, "old-");
+        await File.WriteAllTextAsync(staged + ".etag", "\"v1\"");
+        var provider = new Mock<ICatalogProvider>();
+        provider.As<IResumableCatalogDownloadProvider>()
+            .Setup(p => p.OpenDownloadStreamAsync(item, 4, It.IsAny<CancellationToken>(), "\"v1\""))
+            .ReturnsAsync(() => new CatalogDownloadStream(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(sameVersion ? "tail" : "new-version")),
+                sameVersion ? 4 : 11, sameVersion, sameVersion ? "\"v1\"" : "\"v2\""));
+        var service = new ExploreCatalogService(provider.Object, _mockRepo.Object, _storageManager, _mockThumb.Object, NullLogger<ExploreCatalogService>.Instance);
+        var wallpaper = await service.SubscribeAsync(item);
+        Assert.NotNull(wallpaper);
+        Assert.Equal(sameVersion ? "old-tail" : "new-version", await File.ReadAllTextAsync(_storageManager.ResolveAbsolutePath(wallpaper.FilePath)));
+        Assert.False(File.Exists(staged + ".etag"));
+    }
+
     [Fact]
     public async Task GetDownloadStates_SynchronizesWithLocalDatabase()
     {

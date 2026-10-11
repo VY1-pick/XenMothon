@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using XenMotion.Core.Enums;
 using XenMotion.Core.Interfaces;
 using XenMotion.Core.Models;
@@ -14,14 +13,15 @@ public sealed class ThumbnailService : IThumbnailService
 {
     private readonly IStorageManager _storageManager;
     private readonly ILogger<ThumbnailService> _logger;
-    private readonly object _syncLock = new();
+    private readonly IThumbnailCodec _codec;
 
     public string ThumbnailsDirectory => _storageManager.ThumbnailsDirectory;
 
-    public ThumbnailService(IStorageManager storageManager, ILogger<ThumbnailService> logger)
+    public ThumbnailService(IStorageManager storageManager, ILogger<ThumbnailService> logger, IThumbnailCodec codec)
     {
         _storageManager = storageManager ?? throw new ArgumentNullException(nameof(storageManager));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _codec = codec ?? throw new ArgumentNullException(nameof(codec));
 
         if (!Directory.Exists(ThumbnailsDirectory))
         {
@@ -44,8 +44,7 @@ public sealed class ThumbnailService : IThumbnailService
 
         try
         {
-            // Verify thumbnail is not a zero-byte or corrupt file
-            return new FileInfo(path).Length > 0;
+            return _codec.IsValid(path);
         }
         catch
         {
@@ -60,6 +59,7 @@ public sealed class ThumbnailService : IThumbnailService
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(mediaPath);
+        ct.ThrowIfCancellationRequested();
 
         string finalThumbPath = GetThumbnailPath(wallpaperId);
 
@@ -76,18 +76,14 @@ public sealed class ThumbnailService : IThumbnailService
             return string.Empty;
         }
 
-        string tempThumbPath = Path.Combine(_storageManager.TempDirectory, $"{wallpaperId:N}_thumb.tmp");
+        string tempThumbPath = Path.Combine(_storageManager.TempDirectory, $"{wallpaperId:N}_{Guid.NewGuid():N}_thumb.tmp");
 
         try
         {
-            if (type == WallpaperType.Image)
-            {
-                await GenerateImageThumbnailAsync(absoluteMediaPath, tempThumbPath, ct).ConfigureAwait(false);
-            }
-            else
-            {
-                await GenerateVideoThumbnailAsync(absoluteMediaPath, tempThumbPath, ct).ConfigureAwait(false);
-            }
+            using (File.Create(tempThumbPath)) { }
+            await _codec.GenerateAsync(absoluteMediaPath, tempThumbPath, type, ct).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            if (!_codec.IsValid(tempThumbPath)) throw new InvalidDataException("Thumbnail is not a readable, reduced-size JPEG.");
 
             // Atomic move into persistent thumbnail cache
             File.Move(tempThumbPath, finalThumbPath, overwrite: true);
@@ -101,6 +97,7 @@ public sealed class ThumbnailService : IThumbnailService
             {
                 try { File.Delete(tempThumbPath); } catch { }
             }
+            if (ex is OperationCanceledException) throw;
             return string.Empty;
         }
     }
@@ -152,57 +149,4 @@ public sealed class ThumbnailService : IThumbnailService
         return regeneratedCount;
     }
 
-    private static async Task GenerateImageThumbnailAsync(string imagePath, string destinationPath, CancellationToken ct)
-    {
-        // Preserve the complete encoded image; truncating compressed data produces corrupt previews.
-        await using var source = new FileStream(imagePath, FileMode.Open, FileAccess.Read, FileShare.Read, 65536, true);
-        await using var destination = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None, 65536, true);
-        await source.CopyToAsync(destination, ct).ConfigureAwait(false);
-    }
-
-    private static async Task GenerateVideoThumbnailAsync(string videoPath, string destinationPath, CancellationToken ct)
-    {
-        // Deterministic BMP thumbnail header placeholder (256x144 24bpp)
-        // Provides instant, zero-memory-leak, native Windows compliant thumbnail
-        int width = 256;
-        int height = 144;
-        int rowBytes = (width * 3 + 3) & ~3;
-        int imageSize = rowBytes * height;
-        int fileSize = 54 + imageSize;
-
-        byte[] bmp = new byte[fileSize];
-
-        // BITMAPFILEHEADER
-        bmp[0] = 0x42; // 'B'
-        bmp[1] = 0x4D; // 'M'
-        BitConverter.GetBytes(fileSize).CopyTo(bmp, 2);
-        BitConverter.GetBytes(54).CopyTo(bmp, 10); // Offset to pixel data
-
-        // BITMAPINFOHEADER
-        BitConverter.GetBytes(40).CopyTo(bmp, 14); // Header size
-        BitConverter.GetBytes(width).CopyTo(bmp, 18);
-        BitConverter.GetBytes(height).CopyTo(bmp, 22);
-        BitConverter.GetBytes((short)1).CopyTo(bmp, 26); // Color planes
-        BitConverter.GetBytes((short)24).CopyTo(bmp, 28); // 24 bpp
-        BitConverter.GetBytes(imageSize).CopyTo(bmp, 34);
-
-        // Fill with a modern dark gradient representing a video frame
-        for (int y = 0; y < height; y++)
-        {
-            byte blue = (byte)(20 + (y * 40 / height));
-            byte green = (byte)(25 + (y * 50 / height));
-            byte red = (byte)(35 + (y * 60 / height));
-
-            int rowStart = 54 + (y * rowBytes);
-            for (int x = 0; x < width; x++)
-            {
-                int px = rowStart + (x * 3);
-                bmp[px] = blue;
-                bmp[px + 1] = green;
-                bmp[px + 2] = red;
-            }
-        }
-
-        await File.WriteAllBytesAsync(destinationPath, bmp, ct).ConfigureAwait(false);
-    }
 }

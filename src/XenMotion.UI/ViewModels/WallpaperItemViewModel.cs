@@ -83,13 +83,18 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
         get
         {
             if (_thumbnailImage != null) return _thumbnailImage;
-            string path = _resolvedMediaPath;
+            string path = ThumbnailPath;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return null;
             try
             {
                 _thumbnailImage = new BitmapImage { DecodePixelWidth = 384 };
-                if (IsVideo) _ = LoadVideoThumbnailAsync(_thumbnailImage, path);
-                else { _thumbnailImage.UriSource = new Uri(path, UriKind.Absolute); _ = LoadImageMetadataAsync(path); }
+                if (IsVideo && path == _resolvedMediaPath) _ = LoadVideoThumbnailAsync(_thumbnailImage, path);
+                else
+                {
+                    _thumbnailImage.UriSource = new Uri(path, UriKind.Absolute);
+                    if (IsVideo) _ = LoadVideoMetadataAsync(_resolvedMediaPath);
+                    else _ = LoadImageMetadataAsync(_resolvedMediaPath);
+                }
             }
             catch
             {
@@ -117,11 +122,7 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
         try
         {
             var file = await StorageFile.GetFileFromPathAsync(path);
-            var properties = await file.Properties.GetVideoPropertiesAsync();
-            _actualResolution = properties.Width > 0 && properties.Height > 0
-                ? $"{properties.Width}x{properties.Height}" : "Preview unavailable";
-            _actualDuration = properties.Duration;
-            OnPropertyChanged(nameof(DetailsText));
+            await LoadVideoMetadataAsync(path);
             using var thumbnail = await file.GetThumbnailAsync(ThumbnailMode.SingleItem, 384, ThumbnailOptions.ResizeThumbnail);
             if (thumbnail != null && thumbnail.Type == ThumbnailType.Image)
                 await image.SetSourceAsync(thumbnail);
@@ -130,19 +131,35 @@ public sealed class WallpaperItemViewModel : INotifyPropertyChanged
         finally { ThumbnailSlots.Release(); }
     }
 
+    private async Task LoadVideoMetadataAsync(string path)
+    {
+        try
+        {
+            var properties = await (await StorageFile.GetFileFromPathAsync(path)).Properties.GetVideoPropertiesAsync();
+            _actualResolution = properties.Width > 0 && properties.Height > 0
+                ? $"{properties.Width}x{properties.Height}" : "Resolution unavailable";
+            _actualDuration = properties.Duration;
+            OnPropertyChanged(nameof(ResolutionText));
+            OnPropertyChanged(nameof(DetailsText));
+        }
+        catch { /* A missing codec must not crash the library. */ }
+    }
+
     /// <summary>True while this wallpaper is the one currently running on the desktop.</summary>
     public bool IsActive
     {
         get => _isActive;
-        set { if (_isActive != value) { _isActive = value; OnPropertyChanged(); } }
+        set { if (_isActive != value) { _isActive = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsPlaying)); } }
     }
+
+    public bool IsPlaying => _isActive && !_isPaused;
 
     public string PauseGlyph => _isPaused ? "\uE768" : "\uE769";
     public string MuteGlyph => _isMuted ? "\uE74F" : "\uE767";
 
     public void SetPlaybackState(bool isPaused, bool isMuted)
     {
-        if (_isPaused != isPaused) { _isPaused = isPaused; OnPropertyChanged(nameof(PauseGlyph)); }
+        if (_isPaused != isPaused) { _isPaused = isPaused; OnPropertyChanged(nameof(PauseGlyph)); OnPropertyChanged(nameof(IsPlaying)); }
         if (_isMuted != isMuted) { _isMuted = isMuted; OnPropertyChanged(nameof(MuteGlyph)); }
     }
 

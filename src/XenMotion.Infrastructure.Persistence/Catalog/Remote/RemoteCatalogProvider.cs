@@ -134,11 +134,16 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
     public async Task<Stream> OpenDownloadStreamAsync(CatalogItem item, CancellationToken ct = default)
         => (await OpenDownloadStreamAsync(item, 0, ct).ConfigureAwait(false)).Content;
 
-    public async Task<CatalogDownloadStream> OpenDownloadStreamAsync(CatalogItem item, long offset, CancellationToken ct = default)
+    public async Task<CatalogDownloadStream> OpenDownloadStreamAsync(CatalogItem item, long offset, CancellationToken ct = default, string? entityTag = null)
     {
         ArgumentNullException.ThrowIfNull(item);
         if (offset < 0) throw new ArgumentOutOfRangeException(nameof(offset));
         ct.ThrowIfCancellationRequested();
+
+        // Without a strong validator, restart rather than append a potentially different version.
+        System.Net.Http.Headers.EntityTagHeaderValue? validator = null;
+        if (offset > 0 && (!System.Net.Http.Headers.EntityTagHeaderValue.TryParse(entityTag, out validator) || validator.IsWeak || validator.Tag == "*"))
+            offset = 0;
 
         if (!string.IsNullOrWhiteSpace(item.DownloadUrl))
         {
@@ -148,6 +153,7 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 if (offset > 0)
                 {
                     request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(offset, null);
+                    request.Headers.IfRange = new System.Net.Http.Headers.RangeConditionHeaderValue(validator!);
                 }
 
                 var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
@@ -163,13 +169,15 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 }
 
                 bool partial = response.StatusCode == System.Net.HttpStatusCode.PartialContent;
-                if (partial && (response.Content.Headers.ContentRange is not { From: var start, To: not null, Unit: "bytes" } || start != offset))
+                if (partial && (offset == 0 || response.Content.Headers.ContentRange is not { From: var start, To: not null, Unit: "bytes" } || start != offset ||
+                    (offset > 0 && response.Headers.ETag?.ToString() != validator!.ToString())))
                 {
                     response.Dispose();
                     throw new HttpRequestException("Server returned an invalid download range; resume was rejected to protect the file.");
                 }
                 var content = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-                return new CatalogDownloadStream(new ResponseOwnedStream(response, content), response.Content.Headers.ContentLength, partial);
+                string? tag = response.Headers.ETag is { IsWeak: false } etag && etag.Tag != "*" ? etag.ToString() : null;
+                return new CatalogDownloadStream(new ResponseOwnedStream(response, content), response.Content.Headers.ContentLength, partial, tag);
             }
             catch (OperationCanceledException)
             {

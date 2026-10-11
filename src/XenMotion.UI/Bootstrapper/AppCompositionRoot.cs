@@ -106,6 +106,7 @@ public static class AppCompositionRoot
                 ? mediaStoragePath : sp.GetRequiredService<ISettingsService>().CurrentSettings.StoragePath,
                 sp.GetRequiredService<ILogger<LocalStorageManager>>()));
 
+        services.AddSingleton<IThumbnailCodec, WindowsThumbnailCodec>();
         services.AddSingleton<IThumbnailService, ThumbnailService>();
         services.AddSingleton<IWallpaperImportService, WallpaperImportService>();
         services.AddSingleton<ILibraryService, LibraryService>();

@@ -61,7 +61,7 @@ public sealed partial class MainWindow
             presenter.IsMinimizable = false;
             presenter.IsMaximizable = false;
             presenter.IsResizable = false;
-            presenter.SetBorderAndTitleBar(false, false);
+            presenter.SetBorderAndTitleBar(true, false);
         }
         viewer.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(viewer));
         DetailsDragRegion.SizeChanged += OnViewerTitleSizeChanged;
@@ -226,10 +226,16 @@ public sealed partial class MainWindow
         var local = _viewModel.Wallpapers.FirstOrDefault(item => item.Id == _viewerId);
         DetailsRemoveButton.Tag = local;
         DetailsRemoveButton.Visibility = local != null ? Visibility.Visible : Visibility.Collapsed;
+        DetailsRenameButton.Visibility = local != null ? Visibility.Visible : Visibility.Collapsed;
         bool active = local?.IsActive == true;
         DetailsPlaybackActions.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
         DetailsPauseButton.Content = _viewModel.IsPaused ? "Resume" : "Pause";
         DetailsMuteButton.Content = _viewModel.IsMuted ? "Unmute" : "Mute";
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(DetailsPauseButton, DetailsPauseButton.Content.ToString());
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(DetailsPauseButton, _viewModel.IsPaused ? "Paused" : "Playing");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(DetailsMuteButton, DetailsMuteButton.Content.ToString());
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetItemStatus(DetailsMuteButton, _viewModel.IsMuted ? "Muted" : "Unmuted");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(DetailsPrimaryButton, DetailsPrimaryButton.Content?.ToString() ?? "Set as wallpaper");
         if (_detailsItem is null) DetailsPrimaryButton.IsEnabled = local is { IsMissing: false, IsApplying: false };
     }
 
@@ -247,7 +253,7 @@ public sealed partial class MainWindow
         UpdateDetailsPreviewAspect(item.Wallpaper.Width, item.Wallpaper.Height);
         DetailsSizeText.Text = item.FormattedSize;
         DetailsAspectText.Text = item.TypeBadge;
-        DetailsStatsTextBlock.Text = "Lightweight still preview · Original file is preserved";
+        DetailsStatsTextBlock.Text = "Original file is preserved";
         DetailsDescriptionTextBlock.Text = item.Wallpaper.Description;
         DetailsTagsRepeater.ItemsSource = item.Wallpaper.Tags.Select(t => "#" + t).ToList();
         DetailsPreviewBrush.ImageSource = item.ThumbnailImage;
@@ -316,7 +322,7 @@ public sealed partial class MainWindow
             loop.Click += (_, _) => { _viewerEdits.Loop = loop.IsChecked == true; QueueWallpaperEdits(); };
             muted.Click += (_, _) => { _viewerEdits.IsMuted = muted.IsChecked == true; QueueWallpaperEdits(); };
             var flip = new ToggleButton { Content = "Flip", IsChecked = playback.FlipHorizontal, Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["XenMotionChipStyle"] };
-            flip.Click += (_, _) => { _viewerEdits.FlipHorizontal = flip.IsChecked == true; _motionPlayer?.Pause(); DetailsMotionPreview.Visibility = Visibility.Collapsed; if (_motionPlayer != null) DetailsMotionButton.Content = "Play motion preview"; RenderEditedPreview(); QueueWallpaperEdits(); };
+            flip.Click += (_, _) => { _viewerEdits.FlipHorizontal = flip.IsChecked == true; _motionPlayer?.Pause(); DetailsMotionPreview.Visibility = Visibility.Collapsed; UpdateMotionPreviewState(); RenderEditedPreview(); QueueWallpaperEdits(); };
             var options = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
             options.Children.Add(loop); options.Children.Add(muted); options.Children.Add(flip); WallpaperEditorPanel.Children.Add(options);
             var alignment = new ComboBox { Header = "Alignment", HorizontalAlignment = HorizontalAlignment.Stretch };
@@ -408,7 +414,7 @@ public sealed partial class MainWindow
         {
             set((float)e.NewValue / 100); amount.Text = $"{e.NewValue:0}%";
             _motionPlayer?.Pause(); DetailsMotionPreview.Visibility = Visibility.Collapsed;
-            if (_motionPlayer != null) DetailsMotionButton.Content = "Play motion preview";
+            UpdateMotionPreviewState();
             RenderEditedPreview();
             QueueWallpaperEdits();
         };

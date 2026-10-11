@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -13,14 +13,14 @@
   <ItemGroup>
     <Compile Include="../../src/XenMotion.UI/Services/WallpaperViewerPlacement.cs" Link="Windowing/WallpaperViewerPlacement.cs" />
     <Compile Include="../../src/XenMotion.UI/Services/WallpaperEditAutosave.cs" Link="Windowing/WallpaperEditAutosave.cs" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
-    <PackageReference Include="xunit" Version="2.6.6" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6">
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Moq" Version="4.20.70" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Moq" Version="4.21.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,6 +40,7 @@
     <ProjectReference Include="..\..\src\XenMotion.Contracts\XenMotion.Contracts.csproj" />
     <ProjectReference Include="..\..\src\XenMotion.Application\XenMotion.Application.csproj" />
     <ProjectReference Include="..\..\src\XenMotion.Infrastructure.Persistence\XenMotion.Infrastructure.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\XenMotion.Server\XenMotion.Server.csproj" />
   </ItemGroup>
 
 </Project>

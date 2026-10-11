@@ -17,6 +17,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly ISettingsService _settingsService;
     private readonly IWallpaperEngineOrchestrator _orchestrator;
     private readonly ILogger<SettingsViewModel> _logger;
+    private readonly (bool Online, string Url, int Timeout, bool Fallback) _initialCatalog;
 
     private bool _hasDraftChanges;
     private string _displayName = "Guest";
@@ -143,7 +144,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _tuning = tuning ?? new HardwareTuningService();
         _tuning.PlaybackReportChanged += (_, _) => OnPropertyChanged(nameof(PlaybackMeasurement));
 
-        LoadFromSettings(_settingsService.CurrentSettings);
+        var initial = _settingsService.CurrentSettings;
+        _initialCatalog = (initial.UseRemoteCatalog, initial.CatalogBackendUrl, initial.CatalogRequestTimeoutSeconds, initial.UseLocalCatalogFallback);
+        LoadFromSettings(initial);
         _settingsService.SettingsChanged += OnSettingsChanged;
     }
 
@@ -216,7 +219,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
             await _orchestrator.ApplyPlaybackSettingsAllAsync(_settingsService.CurrentSettings.CreatePlaybackSettings(), ct).ConfigureAwait(false);
 
-            StatusMessage = "Settings saved.";
+            var saved = _settingsService.CurrentSettings;
+            bool catalogChanged = _initialCatalog != (saved.UseRemoteCatalog, saved.CatalogBackendUrl, saved.CatalogRequestTimeoutSeconds, saved.UseLocalCatalogFallback);
+            StatusMessage = catalogChanged ? "Settings saved. Restart XenMotion to apply catalog changes." : "Settings saved.";
             SettingsSaved?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception ex)

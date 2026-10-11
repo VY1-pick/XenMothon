@@ -5,6 +5,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:XenMotion.UI"
     xmlns:vm="using:XenMotion.UI.ViewModels"
+    xmlns:controls="using:XenMotion.UI.Controls"
     xmlns:cat="using:XenMotion.Core.Models.Catalog">
 
   <Grid x:Name="RootGrid" Background="{StaticResource XenMotionPageBrush}" RequestedTheme="Dark">
@@ -12,35 +13,41 @@
 
       <!-- Thumbnail-first gallery cards; all commands live in the details dock. -->
       <DataTemplate x:Key="ExploreCardTemplate" x:DataType="vm:CatalogItemViewModel">
-        <Grid Width="216" Height="216" Background="Transparent" ToolTipService.ToolTip="{x:Bind Title}">
+        <Grid Width="216" Height="216" Background="Transparent" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" AutomationProperties.Name="{x:Bind Title, Mode=OneWay}">
           <Border Margin="3" CornerRadius="16">
             <Border.Background><ImageBrush ImageSource="{x:Bind ThumbnailImage}" Stretch="UniformToFill" /></Border.Background>
           </Border>
           <Border Margin="3" Height="28" VerticalAlignment="Bottom" CornerRadius="0,0,16,16" Background="{StaticResource XenMotionCardScrimBrush}" Padding="8,4">
-            <TextBlock Text="{x:Bind Title}" FontSize="10" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontSize="10" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </Border>
           <Border CornerRadius="18" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1" IsHitTestVisible="False" />
+          <Border HorizontalAlignment="Left" VerticalAlignment="Top" Margin="11" CornerRadius="8" Padding="8,5" Background="#ED10212B">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <FontIcon Glyph="{x:Bind TypeGlyph}" FontSize="12" Foreground="{StaticResource XenMotionMintTextBrush}" />
+              <TextBlock Text="{x:Bind TypeBadgeText}" FontSize="11" FontWeight="SemiBold" Foreground="White" />
+            </StackPanel>
+          </Border>
           <Border CornerRadius="18" BorderBrush="{StaticResource XenMotionMintTextBrush}" BorderThickness="2" Visibility="{x:Bind IsSelected, Mode=OneWay}" IsHitTestVisible="False" />
         </Grid>
       </DataTemplate>
 
       <DataTemplate x:Key="LibraryCardTemplate" x:DataType="vm:WallpaperItemViewModel">
-        <Grid Width="216" Height="216" Background="Transparent" ToolTipService.ToolTip="{x:Bind Title}">
+        <Grid Width="216" Height="216" Background="Transparent" ToolTipService.ToolTip="{x:Bind Title, Mode=OneWay}" AutomationProperties.Name="{x:Bind Title, Mode=OneWay}">
           <Border Margin="3" CornerRadius="16">
             <Border.Background><ImageBrush ImageSource="{x:Bind ThumbnailImage}" Stretch="UniformToFill" /></Border.Background>
           </Border>
           <Border Margin="3" Height="28" VerticalAlignment="Bottom" CornerRadius="0,0,16,16" Background="{StaticResource XenMotionCardScrimBrush}" Padding="8,4">
-            <TextBlock Text="{x:Bind Title}" FontSize="10" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+            <TextBlock Text="{x:Bind Title, Mode=OneWay}" FontSize="10" Foreground="White" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
           </Border>
           <Border CornerRadius="18" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1" IsHitTestVisible="False" />
           <Border CornerRadius="18" BorderBrush="{StaticResource XenMotionMintTextBrush}" BorderThickness="2" Visibility="{x:Bind IsSelected, Mode=OneWay}" IsHitTestVisible="False" />
-          <Ellipse Width="7" Height="7" Margin="11" HorizontalAlignment="Right" VerticalAlignment="Top" Fill="{StaticResource XenMotionMintTextBrush}" Visibility="{x:Bind IsActive, Mode=OneWay}" IsHitTestVisible="False" />
+          <controls:ActiveWallpaperOverlay Visibility="{x:Bind IsActive, Mode=OneWay}" IsPlaying="{x:Bind IsPlaying, Mode=OneWay}" />
         </Grid>
       </DataTemplate>
 
       <!-- ============================ small pieces ============================ -->
       <DataTemplate x:Key="CategoryChipTemplate" x:DataType="cat:CatalogCategory">
-        <ToggleButton Style="{StaticResource XenMotionChipStyle}" Click="OnCategoryChipClicked" Tag="{x:Bind Id}">
+        <ToggleButton Style="{StaticResource XenMotionChipStyle}" Click="OnCategoryChipClicked" AutomationProperties.Name="{x:Bind DisplayName}" Tag="{x:Bind Id}">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="{x:Bind IconGlyph}" FontSize="13" />
             <TextBlock Text="{x:Bind DisplayName}" />
@@ -50,7 +57,7 @@
 
       <DataTemplate x:Key="TagPillTemplate" x:DataType="x:String">
         <Button Style="{StaticResource XenMotionGhostButtonStyle}" MinHeight="30" Height="30" Padding="12,0" CornerRadius="15" FontWeight="Medium" FontSize="12"
-                Background="{StaticResource XenMotionSectionBrush}" Tag="{x:Bind}" Click="OnTagPillClicked">
+                Background="{StaticResource XenMotionSectionBrush}" Tag="{x:Bind}" Click="OnTagPillClicked" AutomationProperties.Name="{x:Bind}">
           <TextBlock>
             <Run Text="#" Foreground="{StaticResource XenMotionMintTextBrush}" /><Run Text="{x:Bind}" />
           </TextBlock>
@@ -66,7 +73,7 @@
     <!-- the mint glow that sits beside the logo and fades with distance -->
     <Grid x:Name="HeaderGlowHost" Width="820" Height="320" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-330,-124,0,0" IsHitTestVisible="False" />
 
-    <Grid x:Name="ShellGrid" Margin="0" Background="{StaticResource XenMotionSectionBrush}" CornerRadius="8" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1">
+    <Grid x:Name="ShellGrid" Margin="0" Background="Transparent" CornerRadius="8" BorderBrush="{StaticResource XenMotionRimSoftBrush}" BorderThickness="1">
       <Grid.RowDefinitions>
         <RowDefinition Height="72" />
         <RowDefinition Height="*" />
@@ -95,10 +102,10 @@
 
         <Border x:Name="NavPill" Grid.Column="1" Margin="34,0,0,0" Style="{StaticResource XenMotionGlassPanelStyle}" CornerRadius="17" Padding="4" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="2">
-            <ToggleButton x:Name="NavExploreButton" Style="{StaticResource XenMotionSegmentStyle}" Click="OnNavExploreClicked">
+            <ToggleButton x:Name="NavExploreButton" Style="{StaticResource XenMotionSegmentStyle}" Click="OnNavExploreClicked" AutomationProperties.Name="Explore">
               <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE774;" FontSize="14" /><TextBlock Text="Explore" /></StackPanel>
             </ToggleButton>
-            <ToggleButton x:Name="NavLibraryButton" Style="{StaticResource XenMotionSegmentStyle}" Click="OnNavLibraryClicked">
+            <ToggleButton x:Name="NavLibraryButton" Style="{StaticResource XenMotionSegmentStyle}" Click="OnNavLibraryClicked" AutomationProperties.Name="Library">
               <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE8F1;" FontSize="14" /><TextBlock Text="Library" /></StackPanel>
             </ToggleButton>
           </StackPanel>
@@ -107,20 +114,20 @@
         <Grid x:Name="DragRegion" Grid.Column="2" Background="Transparent" />
 
         <StackPanel x:Name="HeaderActions" Grid.Column="3" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,12,0">
-          <Button x:Name="ImportButton" Style="{StaticResource XenMotionButtonStyle}" Click="OnImportButtonClicked" Visibility="Collapsed">
+          <Button x:Name="ImportButton" Style="{StaticResource XenMotionButtonStyle}" Click="OnImportButtonClicked" Visibility="Collapsed" AutomationProperties.Name="Import files">
             <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE710;" FontSize="13" /><TextBlock Text="Import" /></StackPanel>
           </Button>
-          <Button x:Name="RefreshButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnRefreshClicked" ToolTipService.ToolTip="Refresh"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE72C;" FontSize="15" /></Button>
-          <Button x:Name="SettingsButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnSettingsClicked" ToolTipService.ToolTip="Settings"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE713;" FontSize="15" /></Button>
+          <Button x:Name="RefreshButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnRefreshClicked" ToolTipService.ToolTip="Refresh" AutomationProperties.Name="Refresh" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE72C;" FontSize="15" /></Button>
+          <Button x:Name="SettingsButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnSettingsClicked" ToolTipService.ToolTip="Settings" AutomationProperties.Name="Settings"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE713;" FontSize="15" /></Button>
         </StackPanel>
 
         <Border x:Name="CaptionPanel" Grid.Column="4" Style="{StaticResource XenMotionGlassPanelStyle}" CornerRadius="16" Padding="3" VerticalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="2">
-            <Button x:Name="MinimizeButton" Style="{StaticResource XenMotionCaptionButtonStyle}" Click="OnMinimizeClicked" ToolTipService.ToolTip="Minimize"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE921;" FontSize="10" /></Button>
-            <Button x:Name="MaximizeButton" Style="{StaticResource XenMotionCaptionButtonStyle}" Click="OnMaximizeClicked" ToolTipService.ToolTip="Maximize">
+            <Button x:Name="MinimizeButton" Style="{StaticResource XenMotionCaptionButtonStyle}" Click="OnMinimizeClicked" ToolTipService.ToolTip="Minimize" AutomationProperties.Name="Minimize" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE921;" FontSize="10" /></Button>
+            <Button x:Name="MaximizeButton" Style="{StaticResource XenMotionCaptionButtonStyle}" Click="OnMaximizeClicked" ToolTipService.ToolTip="Maximize" AutomationProperties.Name="Maximize" >
               <FontIcon x:Name="MaximizeGlyph" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE922;" FontSize="10" />
             </Button>
-            <Button x:Name="CloseButton" Style="{StaticResource XenMotionCaptionCloseStyle}" Click="OnCloseClicked" ToolTipService.ToolTip="Close to tray"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE8BB;" FontSize="10" /></Button>
+            <Button x:Name="CloseButton" Style="{StaticResource XenMotionCaptionCloseStyle}" Click="OnCloseClicked" ToolTipService.ToolTip="Close to tray" AutomationProperties.Name="Close to tray" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE8BB;" FontSize="10" /></Button>
           </StackPanel>
         </Border>
       </Grid>
@@ -158,15 +165,15 @@
                   </Grid.ColumnDefinitions>
                   <FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE721;" FontSize="15" Foreground="{StaticResource XenMotionFaintTextBrush}" VerticalAlignment="Center"/>
                   <TextBox x:Name="ExploreSearchBox" Grid.Column="1" Style="{StaticResource XenMotionTextBoxStyle}" VerticalAlignment="Center"
-                           PlaceholderText="Search wallpapers, moods, tags..." TextChanged="OnSearchTextChanged" KeyDown="OnSearchKeyDown" />
+                           PlaceholderText="Search wallpapers, moods, tags..." TextChanged="OnSearchTextChanged" KeyDown="OnSearchKeyDown" AutomationProperties.Name="Search wallpapers" />
                   <Button x:Name="SearchClearButton" Grid.Column="2" Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0"
-                          Click="OnSearchClearClicked" Visibility="Collapsed" VerticalAlignment="Center"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="11" /></Button>
+                          Click="OnSearchClearClicked" Visibility="Collapsed" VerticalAlignment="Center" AutomationProperties.Name="Clear search"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="11" /></Button>
                   <Border Grid.Column="3" Style="{StaticResource XenMotionBadgeStyle}" VerticalAlignment="Center" Background="#14FFFFFF">
                     <TextBlock Text="Ctrl K" FontSize="10" FontWeight="SemiBold" Foreground="{StaticResource XenMotionFaintTextBrush}" />
                   </Border>
                 </Grid>
               </Border>
-              <ToggleButton x:Name="FiltersToggleButton" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" MinHeight="48" Padding="20,0" CornerRadius="24" Click="OnFiltersToggleClicked">
+              <ToggleButton x:Name="FiltersToggleButton" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" MinHeight="48" Padding="20,0" CornerRadius="24" Click="OnFiltersToggleClicked" AutomationProperties.Name="Filters">
                 <StackPanel Orientation="Horizontal" Spacing="10">
                   <FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE71C;" FontSize="14" />
                   <TextBlock Text="Filters" VerticalAlignment="Center" />
@@ -199,13 +206,13 @@
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                 <TextBlock x:Name="ExploreCountTextBlock" Style="{StaticResource XenMotionCaptionTextStyle}" VerticalAlignment="Center" />
                 <Button x:Name="ClearFiltersLink" Style="{StaticResource XenMotionGhostButtonStyle}" MinHeight="28" Height="28" Padding="10,0" CornerRadius="14" FontSize="12"
-                        Foreground="{StaticResource XenMotionMintTextBrush}" Click="OnClearFiltersClicked" Visibility="Collapsed" Content="Clear all" />
+                        Foreground="{StaticResource XenMotionMintTextBrush}" Click="OnClearFiltersClicked" Visibility="Collapsed" Content="Clear all"  AutomationProperties.Name="Clear all" />
               </StackPanel>
             </Grid>
 
             <Grid Grid.Row="3">
-              <GridView x:Name="ExploreGridView" ItemTemplate="{StaticResource ExploreCardTemplate}" ItemContainerStyle="{StaticResource XenMotionCardItemStyle}"
-                        SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnCatalogItemClicked" Padding="0,4,0,120" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+              <GridView x:Name="ExploreGridView" Background="Transparent" ItemTemplate="{StaticResource ExploreCardTemplate}" ItemContainerStyle="{StaticResource XenMotionCardItemStyle}"
+                        SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnCatalogItemClicked" Padding="0,4,0,16" ScrollViewer.VerticalScrollBarVisibility="Auto" />
 
               <StackPanel x:Name="ExploreLoadingPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" Visibility="Collapsed">
                 <ProgressRing IsActive="True" Width="44" Height="44" />
@@ -218,14 +225,14 @@
                 </Border>
                 <TextBlock Text="Nothing matches yet" Style="{StaticResource XenMotionHeadingTextStyle}" HorizontalAlignment="Center" />
                 <TextBlock Text="Try a different word, or loosen a few filters." Style="{StaticResource XenMotionBodyTextStyle}" TextAlignment="Center" HorizontalAlignment="Center" />
-                <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Center" Content="Reset everything" Click="OnClearFiltersClicked" />
+                <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Center" Content="Reset everything" Click="OnClearFiltersClicked"  AutomationProperties.Name="Reset everything" />
               </StackPanel>
 
               <Border x:Name="PaginationPill" Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="18" Padding="4" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,22" Visibility="Collapsed">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <Button x:Name="PrevPageButton" Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnPrevPageClicked" ToolTipService.ToolTip="Previous page"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE76B;" FontSize="11" /></Button>
+                  <Button x:Name="PrevPageButton" Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnPrevPageClicked" ToolTipService.ToolTip="Previous page" AutomationProperties.Name="Previous page"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE76B;" FontSize="11" /></Button>
                   <TextBlock x:Name="PageSummaryTextBlock" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource XenMotionTextBrush}" VerticalAlignment="Center" MinWidth="42" TextAlignment="Center" />
-                  <Button x:Name="NextPageButton" Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnNextPageClicked" ToolTipService.ToolTip="Next page"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE76C;" FontSize="11" /></Button>
+                  <Button x:Name="NextPageButton" Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnNextPageClicked" ToolTipService.ToolTip="Next page" AutomationProperties.Name="Next page"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE76C;" FontSize="11" /></Button>
                 </StackPanel>
               </Border>
             </Grid>
@@ -234,6 +241,7 @@
           <!-- LIBRARY -->
           <Grid x:Name="LibraryContentGrid" Margin="28,14,28,0" RowSpacing="16" Visibility="Collapsed">
             <Grid.RowDefinitions>
+              <RowDefinition Height="Auto" />
               <RowDefinition Height="Auto" />
               <RowDefinition Height="*" />
             </Grid.RowDefinitions>
@@ -248,11 +256,12 @@
                 <TextBlock x:Name="LibrarySubtitleText" Style="{StaticResource XenMotionCaptionTextStyle}" FontSize="12" />
               </StackPanel>
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                <ToggleButton x:Name="LibrarySelectionToggle" Content="Select" Click="OnLibrarySelectionClicked" Style="{StaticResource XenMotionChipStyle}" />
-                <Button x:Name="LibrarySelectAllButton" Content="All" Click="OnSelectAllWallpapersClicked" Visibility="Collapsed" />
-                <Button x:Name="LibraryDeleteSelectedButton" Content="Remove selected" Click="OnDeleteSelectedWallpapersClicked" Visibility="Collapsed" />
+                <ToggleButton x:Name="LibrarySelectionToggle" Click="OnLibrarySelectionClicked" Style="{StaticResource XenMotionChipStyle}"
+                              Height="40" MinHeight="40" Padding="18,0" CornerRadius="14" FontWeight="SemiBold" Foreground="{StaticResource XenMotionTextBrush}" AutomationProperties.Name="Select wallpapers">
+                  <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE762;" FontSize="14" /><TextBlock x:Name="LibrarySelectionLabel" Text="Select" /></StackPanel>
+                </ToggleButton>
               </StackPanel>
-              <Button x:Name="StorageButton" Grid.Column="2" Style="{StaticResource XenMotionButtonStyle}" VerticalAlignment="Center">
+              <Button x:Name="StorageButton" Grid.Column="2" Style="{StaticResource XenMotionButtonStyle}" VerticalAlignment="Center" AutomationProperties.Name="Library storage">
                 <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xEDA2;" FontSize="14" /><TextBlock Text="Storage" /></StackPanel>
                 <Button.Flyout>
                   <Flyout x:Name="StorageFlyout" Placement="BottomEdgeAlignedRight" FlyoutPresenterStyle="{StaticResource XenMotionFlyoutPresenterStyle}">
@@ -263,10 +272,10 @@
                         <TextBlock x:Name="StorageRootTextBlock" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" IsTextSelectionEnabled="True" />
                       </StackPanel>
                       <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
-                      <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Click="OnReconcileClicked">
+                      <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Click="OnReconcileClicked" AutomationProperties.Name="Repair library previews">
                         <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE895;" FontSize="13" /><TextBlock Text="Rescan library" /></StackPanel>
                       </Button>
-                      <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Click="OnChangeStorageRootClicked">
+                      <Button Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Click="OnChangeStorageRootClicked" AutomationProperties.Name="Change library storage folder">
                         <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE8B7;" FontSize="13" /><TextBlock Text="Move library folder..." /></StackPanel>
                       </Button>
                     </StackPanel>
@@ -275,9 +284,21 @@
               </Button>
             </Grid>
 
-            <Grid Grid.Row="1" x:Name="LibraryDropZone" AllowDrop="True" Background="Transparent" DragOver="OnGridDragOver" Drop="OnGridDrop">
-              <GridView x:Name="WallpaperGridView" ItemTemplate="{StaticResource LibraryCardTemplate}" ItemContainerStyle="{StaticResource XenMotionCardItemStyle}"
-                        SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnLibraryItemClicked" SelectionChanged="OnLibrarySelectionChanged" Padding="0,4,0,120" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+            <Border x:Name="LibrarySelectionActions" Grid.Row="1" CornerRadius="18" Background="{StaticResource XenMotionGlassBrush}" BorderBrush="{StaticResource XenMotionAccentRimBrush}"
+                    BorderThickness="1" Padding="12" Visibility="Collapsed" Opacity="0">
+              <Border.OpacityTransition><ScalarTransition Duration="0:0:0.24" /></Border.OpacityTransition>
+              <Border.TranslationTransition><Vector3Transition Duration="0:0:0.32" /></Border.TranslationTransition>
+              <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="LibrarySelectionCountText" Text="Choose wallpapers" VerticalAlignment="Center" Style="{StaticResource XenMotionCaptionTextStyle}" AutomationProperties.LiveSetting="Polite" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <Button x:Name="LibrarySelectAllButton" Content="Select all" Click="OnSelectAllWallpapersClicked" Style="{StaticResource XenMotionButtonStyle}" AutomationProperties.Name="Select all wallpapers" />
+                  <Button x:Name="LibraryDeleteSelectedButton" Content="Remove selected" Click="OnDeleteSelectedWallpapersClicked" Style="{StaticResource XenMotionDangerButtonStyle}" IsEnabled="False" AutomationProperties.Name="Remove selected wallpapers" />
+                </StackPanel>
+              </Grid>
+            </Border>
+            <Grid Grid.Row="2" x:Name="LibraryDropZone" AllowDrop="True" Background="Transparent" DragOver="OnGridDragOver" Drop="OnGridDrop">
+              <GridView x:Name="WallpaperGridView" Background="Transparent" ItemTemplate="{StaticResource LibraryCardTemplate}" ItemContainerStyle="{StaticResource XenMotionCardItemStyle}"
+                        SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnLibraryItemClicked" SelectionChanged="OnLibrarySelectionChanged" Padding="0,4,0,16" ScrollViewer.VerticalScrollBarVisibility="Auto" />
 
               <StackPanel x:Name="LoadingPanel" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" Visibility="Collapsed">
                 <ProgressRing IsActive="True" Width="44" Height="44" />
@@ -292,10 +313,10 @@
                   <TextBlock Text="Nothing here yet" Style="{StaticResource XenMotionHeadingTextStyle}" HorizontalAlignment="Center" />
                   <TextBlock Text="Drop images or videos anywhere in this window, or grab something beautiful from Explore." Style="{StaticResource XenMotionBodyTextStyle}" TextAlignment="Center" />
                   <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
-                    <Button Style="{StaticResource XenMotionPrimaryButtonStyle}" Click="OnImportButtonClicked">
+                    <Button Style="{StaticResource XenMotionPrimaryButtonStyle}" Click="OnImportButtonClicked" AutomationProperties.Name="Import files">
                       <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE710;" FontSize="13" /><TextBlock Text="Import files" /></StackPanel>
                     </Button>
-                    <Button Style="{StaticResource XenMotionButtonStyle}" Content="Browse Explore" Click="OnNavExploreClicked" />
+                    <Button Style="{StaticResource XenMotionButtonStyle}" Content="Browse Explore" Click="OnNavExploreClicked"  AutomationProperties.Name="Browse Explore" />
                   </StackPanel>
                 </StackPanel>
               </Border>
@@ -336,7 +357,8 @@
                   <MediaPlayerElement x:Name="DetailsMotionPreview" AreTransportControlsEnabled="False" Stretch="Uniform" Visibility="Collapsed" />
                 </Grid>
               </Border>
-              <Button x:Name="DetailsMotionButton" Style="{StaticResource XenMotionButtonStyle}" Content="Motion preview" Click="OnMotionPreviewClicked" Visibility="Collapsed" />
+              <TextBlock x:Name="DetailsPreviewStatusText" Text="Still preview" Style="{StaticResource XenMotionCaptionTextStyle}" AutomationProperties.LiveSetting="Polite" />
+              <Button x:Name="DetailsMotionButton" Style="{StaticResource XenMotionButtonStyle}" Content="Motion preview" Click="OnMotionPreviewClicked" Visibility="Collapsed"  AutomationProperties.Name="Motion preview" />
               <StackPanel Spacing="8">
                 <TextBlock x:Name="DetailsCategoryTextBlock" Style="{StaticResource XenMotionEyebrowTextStyle}" />
                 <TextBlock x:Name="DetailsTitleTextBlock" Style="{StaticResource XenMotionTitleTextStyle}" FontSize="23" TextWrapping="Wrap" />
@@ -371,12 +393,13 @@
               <StackPanel x:Name="DetailsPlaybackActions" Spacing="8" Visibility="Collapsed">
                 <Grid ColumnSpacing="8">
                   <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-                  <Button x:Name="DetailsPauseButton" Style="{StaticResource XenMotionButtonStyle}" Content="Pause" HorizontalAlignment="Stretch" Click="OnPauseResumeClicked" />
-                  <Button x:Name="DetailsMuteButton" Grid.Column="1" Style="{StaticResource XenMotionButtonStyle}" Content="Mute" HorizontalAlignment="Stretch" Click="OnMuteClicked" />
+                  <Button x:Name="DetailsPauseButton" Style="{StaticResource XenMotionButtonStyle}" Content="Pause" HorizontalAlignment="Stretch" Click="OnPauseResumeClicked"  AutomationProperties.Name="Pause" />
+                  <Button x:Name="DetailsMuteButton" Grid.Column="1" Style="{StaticResource XenMotionButtonStyle}" Content="Mute" HorizontalAlignment="Stretch" Click="OnMuteClicked"  AutomationProperties.Name="Mute" />
                 </Grid>
-                <Button Style="{StaticResource XenMotionButtonStyle}" Content="Stop wallpaper" HorizontalAlignment="Stretch" Click="OnStopClicked" />
+                <Button Style="{StaticResource XenMotionButtonStyle}" Content="Stop wallpaper" HorizontalAlignment="Stretch" Click="OnStopClicked"  AutomationProperties.Name="Stop wallpaper" />
               </StackPanel>
-              <Button x:Name="DetailsRemoveButton" Style="{StaticResource XenMotionDangerButtonStyle}" Content="Remove from library" HorizontalAlignment="Stretch" Click="OnDeleteWallpaperClicked" Visibility="Collapsed" />
+              <Button x:Name="DetailsRenameButton" Style="{StaticResource XenMotionButtonStyle}" Content="Rename wallpaper" HorizontalAlignment="Stretch" Click="OnRenameWallpaperClicked" Visibility="Collapsed"  AutomationProperties.Name="Rename wallpaper" />
+              <Button x:Name="DetailsRemoveButton" Style="{StaticResource XenMotionDangerButtonStyle}" Content="Remove from library" HorizontalAlignment="Stretch" Click="OnDeleteWallpaperClicked" Visibility="Collapsed"  AutomationProperties.Name="Remove from library" />
               <Rectangle Height="1" Fill="{StaticResource XenMotionHairlineBrush}" />
               <StackPanel x:Name="WallpaperEditorPanel" Spacing="14" Visibility="Collapsed" />
               <TextBlock x:Name="DetailsDescriptionTextBlock" Style="{StaticResource XenMotionBodyTextStyle}" />
@@ -409,7 +432,7 @@
                 <TextBlock Text="ADVANCED" Style="{StaticResource XenMotionEyebrowTextStyle}" />
                 <TextBlock Text="Filters" Style="{StaticResource XenMotionTitleTextStyle}" FontSize="24" />
               </StackPanel>
-              <Button Grid.Column="1" Style="{StaticResource XenMotionSmallIconButtonStyle}" VerticalAlignment="Top" Click="OnFiltersToggleClicked" ToolTipService.ToolTip="Close filters"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="12" /></Button>
+              <Button Grid.Column="1" Style="{StaticResource XenMotionSmallIconButtonStyle}" VerticalAlignment="Top" Click="OnFiltersToggleClicked" ToolTipService.ToolTip="Close filters" AutomationProperties.Name="Close filters" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="12" /></Button>
             </Grid>
 
             <Border Grid.Row="1" Style="{StaticResource XenMotionGlassPanelStyle}" CornerRadius="15" Padding="4">
@@ -417,10 +440,10 @@
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <ToggleButton x:Name="FilterTabBasics" Grid.Column="0" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Basics" Click="OnFilterTabClicked" Content="Basics" />
-                <ToggleButton x:Name="FilterTabQuality" Grid.Column="1" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Quality" Click="OnFilterTabClicked" Content="Quality" />
-                <ToggleButton x:Name="FilterTabLength" Grid.Column="2" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Length" Click="OnFilterTabClicked" Content="Length" />
-                <ToggleButton x:Name="FilterTabTags" Grid.Column="3" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Tags" Click="OnFilterTabClicked" Content="Tags" />
+                <ToggleButton x:Name="FilterTabBasics" Grid.Column="0" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Basics" Click="OnFilterTabClicked" Content="Basics"  AutomationProperties.Name="Basics" />
+                <ToggleButton x:Name="FilterTabQuality" Grid.Column="1" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Quality" Click="OnFilterTabClicked" Content="Quality"  AutomationProperties.Name="Quality" />
+                <ToggleButton x:Name="FilterTabLength" Grid.Column="2" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Length" Click="OnFilterTabClicked" Content="Length"  AutomationProperties.Name="Length" />
+                <ToggleButton x:Name="FilterTabTags" Grid.Column="3" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Tags" Click="OnFilterTabClicked" Content="Tags"  AutomationProperties.Name="Tags" />
               </Grid>
             </Border>
 
@@ -437,7 +460,7 @@
               </ItemsRepeater.Layout>
               <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:FilterChip">
-                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="38">
+                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="38">
                     <TextBlock Text="{x:Bind Label}" TextTrimming="CharacterEllipsis" />
                   </ToggleButton>
                 </DataTemplate>
@@ -455,7 +478,7 @@
               </ItemsRepeater.Layout>
               <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:FilterChip">
-                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="38">
+                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="38">
                     <TextBlock Text="{x:Bind Label}" TextTrimming="CharacterEllipsis" />
                   </ToggleButton>
                 </DataTemplate>
@@ -477,7 +500,7 @@
               </ItemsRepeater.Layout>
               <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:FilterChip">
-                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="38">
+                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="38">
                     <TextBlock Text="{x:Bind Label}" TextTrimming="CharacterEllipsis" />
                   </ToggleButton>
                 </DataTemplate>
@@ -495,7 +518,7 @@
               </ItemsRepeater.Layout>
               <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:FilterChip">
-                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="38">
+                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="38">
                     <TextBlock Text="{x:Bind Label}" TextTrimming="CharacterEllipsis" />
                   </ToggleButton>
                 </DataTemplate>
@@ -510,7 +533,7 @@
                         <TextBlock Text="Minimum rating" Style="{StaticResource XenMotionLabelTextStyle}" />
                         <TextBlock x:Name="MinRatingText" Grid.Column="1" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource XenMotionMintTextBrush}" />
                       </Grid>
-                      <Slider x:Name="MinRatingSlider" Minimum="0" Maximum="5" StepFrequency="0.5" SmallChange="0.5" ValueChanged="OnMinRatingChanged" />
+                      <Slider x:Name="MinRatingSlider" Minimum="0" Maximum="5" StepFrequency="0.5" SmallChange="0.5" ValueChanged="OnMinRatingChanged" AutomationProperties.Name="Minimum rating" />
                     </StackPanel>
                   </Border>
                 </StackPanel>
@@ -527,7 +550,7 @@
               </ItemsRepeater.Layout>
               <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:FilterChip">
-                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="38">
+                  <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="38">
                     <TextBlock Text="{x:Bind Label}" TextTrimming="CharacterEllipsis" />
                   </ToggleButton>
                 </DataTemplate>
@@ -548,7 +571,7 @@
                           <TextBlock x:Name="TagsHintText" Text="Pick several. A wallpaper must carry every tag you choose." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                         </StackPanel>
                         <Button Grid.Column="1" Style="{StaticResource XenMotionGhostButtonStyle}" MinHeight="28" Height="28" Padding="10,0" CornerRadius="14" FontSize="12"
-                                Foreground="{StaticResource XenMotionMintTextBrush}" Content="Clear" Click="OnClearTagsClicked" VerticalAlignment="Top" />
+                                Foreground="{StaticResource XenMotionMintTextBrush}" Content="Clear" Click="OnClearTagsClicked" VerticalAlignment="Top"  AutomationProperties.Name="Clear" />
                       </Grid>
                       <ItemsRepeater x:Name="TagFilterRepeater">
                         <ItemsRepeater.Layout>
@@ -556,7 +579,7 @@
                         </ItemsRepeater.Layout>
                         <ItemsRepeater.ItemTemplate>
                           <DataTemplate x:DataType="vm:FilterChip">
-                            <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" HorizontalAlignment="Stretch" MinHeight="36" Padding="8,0">
+                            <ToggleButton Style="{StaticResource XenMotionChipStyle}" Tag="{x:Bind}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" Click="OnFilterChipClicked" AutomationProperties.Name="{x:Bind Label}" HorizontalAlignment="Stretch" MinHeight="36" Padding="8,0">
                               <TextBlock TextTrimming="CharacterEllipsis"><Run Text="#" Foreground="{StaticResource XenMotionMintTextBrush}" /><Run Text="{x:Bind Label}" /></TextBlock>
                             </ToggleButton>
                           </DataTemplate>
@@ -575,8 +598,8 @@
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
               <TextBlock x:Name="FilterSummaryText" Style="{StaticResource XenMotionCaptionTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
-              <Button Grid.Column="1" Style="{StaticResource XenMotionButtonStyle}" Content="Reset" Click="OnResetFiltersClicked" />
-              <Button Grid.Column="2" Style="{StaticResource XenMotionPrimaryButtonStyle}" Content="Done" Click="OnFiltersToggleClicked" />
+              <Button Grid.Column="1" Style="{StaticResource XenMotionButtonStyle}" Content="Reset" Click="OnResetFiltersClicked"  AutomationProperties.Name="Reset" />
+              <Button Grid.Column="2" Style="{StaticResource XenMotionPrimaryButtonStyle}" Content="Done" Click="OnFiltersToggleClicked"  AutomationProperties.Name="Done" />
             </Grid>
           </Grid>
         </Grid>
@@ -584,10 +607,10 @@
     </Grid>
 
     <!-- ============================ NOW PLAYING DOCK ============================ -->
-    <Border x:Name="NowPlayingPanel" Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="26" Padding="14,10,10,10"
-            HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="28,0,0,22" Visibility="Collapsed">
+    <Border x:Name="NowPlayingPanel" Style="{StaticResource XenMotionGlassStrongPanelStyle}" Background="{StaticResource XenMotionPlaybackGlassBrush}" CornerRadius="26" Padding="14,10,10,10"
+            HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="28,0,28,22" SizeChanged="OnPlaybackDockSizeChanged" Visibility="Collapsed">
       <StackPanel Orientation="Horizontal" Spacing="14">
-        <Border Width="40" Height="40" CornerRadius="15" Background="{StaticResource XenMotionAccentSoftBrush}" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="1" VerticalAlignment="Center">
+        <Border x:Name="NowPlayingVolumeHalo" Width="40" Height="40" CornerRadius="15" Background="{StaticResource XenMotionAccentSoftBrush}" BorderBrush="{StaticResource XenMotionAccentRimBrush}" BorderThickness="1" VerticalAlignment="Center">
           <FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE93E;" FontSize="16" Foreground="{StaticResource XenMotionMintTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Border>
         <StackPanel VerticalAlignment="Center" Spacing="0" MinWidth="120" MaxWidth="240">
@@ -595,18 +618,26 @@
           <TextBlock x:Name="NowPlayingTitleTextBlock" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource XenMotionTextBrush}" TextTrimming="CharacterEllipsis" />
         </StackPanel>
         <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-          <Button x:Name="PauseResumeButton" Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnPauseResumeClicked">
+          <Button x:Name="PauseResumeButton" Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnPauseResumeClicked" AutomationProperties.Name="Pause wallpaper">
             <FontIcon x:Name="NowPlayingPauseIcon" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE769;" FontSize="14" />
           </Button>
-          <Slider x:Name="NowPlayingVolumeSlider" Width="110" Minimum="0" Maximum="100" StepFrequency="1" ValueChanged="OnPlaybackVolumeChanged" ToolTipService.ToolTip="Wallpaper volume" />
+          <Slider x:Name="NowPlayingVolumeSlider" Width="110" Minimum="0" Maximum="100" StepFrequency="1" ValueChanged="OnPlaybackVolumeChanged" ToolTipService.ToolTip="Wallpaper volume" AutomationProperties.Name="Wallpaper volume" />
+          <StackPanel x:Name="NowPlayingVolumePulse" Orientation="Horizontal" Spacing="2" Height="22" VerticalAlignment="Center" IsHitTestVisible="False" AutomationProperties.AccessibilityView="Raw">
+            <Border Width="2" Height="10" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource XenMotionMintTextBrush}" />
+            <Border Width="2" Height="18" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource XenMotionAccentBrush}" />
+            <Border Width="2" Height="22" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource XenMotionMintTextBrush}" />
+            <Border Width="2" Height="14" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource XenMotionAccentBrush}" />
+            <Border Width="2" Height="8" VerticalAlignment="Bottom" CornerRadius="1" Background="{StaticResource XenMotionMintTextBrush}" />
+          </StackPanel>
           <TextBlock x:Name="NowPlayingVolumeText" Width="38" VerticalAlignment="Center" Text="100%" />
-          <Button Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnMuteClicked" ToolTipService.ToolTip="Mute / unmute">
+          <Button x:Name="NowPlayingMuteButton" Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnMuteClicked" ToolTipService.ToolTip="Mute / unmute" AutomationProperties.Name="Mute wallpaper">
             <FontIcon x:Name="NowPlayingMuteIcon" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE767;" FontSize="14" />
           </Button>
-          <Button Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnStopClicked" ToolTipService.ToolTip="Stop and restore the normal wallpaper"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE71A;" FontSize="13" /></Button>
+          <Button Style="{StaticResource XenMotionIconButtonStyle}" Width="38" Height="38" MinHeight="38" CornerRadius="19" Click="OnStopClicked" ToolTipService.ToolTip="Stop and restore the normal wallpaper" AutomationProperties.Name="Stop and restore the normal wallpaper" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE71A;" FontSize="13" /></Button>
         </StackPanel>
       </StackPanel>
     </Border>
+
 
     <!-- ============================ TOAST ============================ -->
     <Border x:Name="ToastHost" Style="{StaticResource XenMotionGlassStrongPanelStyle}" CornerRadius="20" Padding="16,12,10,12"
@@ -618,7 +649,7 @@
           <FontIcon x:Name="ToastIcon" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE73E;" FontSize="13" Foreground="{StaticResource XenMotionMintTextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <TextBlock x:Name="ToastText" FontSize="13" Foreground="{StaticResource XenMotionTextBrush}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="440" />
-        <Button Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnToastCloseClicked" VerticalAlignment="Center"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="11" /></Button>
+        <Button Style="{StaticResource XenMotionSmallIconButtonStyle}" Background="Transparent" BorderThickness="0" Click="OnToastCloseClicked" AutomationProperties.Name="Dismiss notification" VerticalAlignment="Center"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="11" /></Button>
       </StackPanel>
     </Border>
 
@@ -659,8 +690,8 @@
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Button x:Name="DownloadSecondaryButton" Grid.Column="0" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Height="46" CornerRadius="16" Content="Not now" Click="OnDownloadSecondaryClicked" />
-            <Button x:Name="DownloadPrimaryButton" Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" HorizontalAlignment="Stretch" Height="46" CornerRadius="16" Content="Download" Click="OnDownloadPrimaryClicked" />
+            <Button x:Name="DownloadSecondaryButton" Grid.Column="0" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" Height="46" CornerRadius="16" Content="Not now" Click="OnDownloadSecondaryClicked"  AutomationProperties.Name="Not now" />
+            <Button x:Name="DownloadPrimaryButton" Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" HorizontalAlignment="Stretch" Height="46" CornerRadius="16" Content="Download" Click="OnDownloadPrimaryClicked"  AutomationProperties.Name="Download" />
           </Grid>
         </StackPanel>
       </Border>
@@ -692,15 +723,15 @@
               <TextBlock Text="PREFERENCES" Style="{StaticResource XenMotionEyebrowTextStyle}" />
               <TextBlock Text="Settings" Style="{StaticResource XenMotionTitleTextStyle}" />
             </StackPanel>
-            <Button Grid.Column="1" Style="{StaticResource XenMotionSmallIconButtonStyle}" VerticalAlignment="Top" Click="OnCloseSettingsClicked"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="12" /></Button>
+            <Button Grid.Column="1" Style="{StaticResource XenMotionSmallIconButtonStyle}" VerticalAlignment="Top" Click="OnCloseSettingsClicked" AutomationProperties.Name="Close settings"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE711;" FontSize="12" /></Button>
           </Grid>
 
           <Border Grid.Row="1" Style="{StaticResource XenMotionGlassPanelStyle}" CornerRadius="15" Padding="4">
             <Grid ColumnSpacing="2">
               <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
-              <ToggleButton x:Name="SettingsTabGeneral" Grid.Column="0" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="General" Click="OnSettingsTabClicked" Content="General" />
-              <ToggleButton x:Name="SettingsTabPlayback" Grid.Column="1" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Playback" Click="OnSettingsTabClicked" Content="Playback" />
-              <ToggleButton x:Name="SettingsTabPerformance" Grid.Column="2" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Performance" Click="OnSettingsTabClicked" Content="Performance" />
+              <ToggleButton x:Name="SettingsTabGeneral" Grid.Column="0" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="General" Click="OnSettingsTabClicked" Content="General"  AutomationProperties.Name="General" />
+              <ToggleButton x:Name="SettingsTabPlayback" Grid.Column="1" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Playback" Click="OnSettingsTabClicked" Content="Playback"  AutomationProperties.Name="Playback" />
+              <ToggleButton x:Name="SettingsTabPerformance" Grid.Column="2" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Performance" Click="OnSettingsTabClicked" Content="Performance"  AutomationProperties.Name="Performance" />
             </Grid>
           </Border>
 
@@ -711,7 +742,7 @@
                   <StackPanel Spacing="10">
                     <TextBlock Text="Your name" Style="{StaticResource XenMotionLabelTextStyle}" />
                     <Border Style="{StaticResource XenMotionFieldStyle}" Height="44">
-                      <TextBox x:Name="SettingsDisplayNameTextBox" Style="{StaticResource XenMotionTextBoxStyle}" VerticalAlignment="Center" PlaceholderText="How should XenMotion call you?" TextChanged="OnSettingsDisplayNameChanged" />
+                      <TextBox x:Name="SettingsDisplayNameTextBox" Style="{StaticResource XenMotionTextBoxStyle}" VerticalAlignment="Center" PlaceholderText="How should XenMotion call you?" TextChanged="OnSettingsDisplayNameChanged" AutomationProperties.Name="Display name" />
                     </Border>
                   </StackPanel>
                 </Border>
@@ -723,7 +754,7 @@
                 <TextBlock Text="Launch with Windows" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Start XenMotion quietly when you sign in." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsStartWithWindowsToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsStartWithWindowsToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Start with Windows" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -732,7 +763,7 @@
                 <TextBlock Text="Start in the tray" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Skip the window and stay in the system tray." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsStartMinimizedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsStartMinimizedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Start minimized to tray" />
             </Grid>
           </StackPanel>
         </Border>
@@ -740,16 +771,16 @@
                   <StackPanel Spacing="12">
                     <TextBlock Text="Windows personalization" FontSize="18" FontWeight="SemiBold" />
                     <TextBlock Text="Sync once when you change wallpapers. Videos use a cached still image. Disabling sync keeps the current Windows appearance." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                    <ToggleButton x:Name="SettingsSyncAccentToggle" Style="{StaticResource XenMotionChipStyle}" Content="Match Windows accent color" Click="OnSettingsToggleClicked" />
+                    <ToggleButton x:Name="SettingsSyncAccentToggle" Style="{StaticResource XenMotionChipStyle}" Content="Match Windows accent color" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Match Windows accent color" />
                     <TextBlock Text="Enables Windows automatic accent color and updates its static background. Windows chooses the color from that image." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                    <ToggleButton x:Name="SettingsSyncBackgroundToggle" Style="{StaticResource XenMotionChipStyle}" Content="Match static desktop background" Click="OnSettingsToggleClicked" />
+                    <ToggleButton x:Name="SettingsSyncBackgroundToggle" Style="{StaticResource XenMotionChipStyle}" Content="Match static desktop background" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Match static desktop background" />
                     <TextBlock Text="Shows the matching still before XenMotion starts at sign-in." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     <ComboBox x:Name="SettingsLockScreenCombo" Header="Lock screen / sign-in image" SelectionChanged="OnLockScreenModeChanged" HorizontalAlignment="Stretch">
                       <ComboBoxItem Content="Keep Windows setting" />
                       <ComboBoxItem Content="Use desktop wallpaper still" />
                       <ComboBoxItem Content="Use a separate image" />
                     </ComboBox>
-                    <Button Content="Choose separate image" Click="OnPickLockScreenImageClicked" />
+                    <Button Content="Choose separate image" Click="OnPickLockScreenImageClicked"  AutomationProperties.Name="Choose separate image" />
                     <TextBlock x:Name="SettingsLockScreenImageText" TextWrapping="Wrap" Style="{StaticResource XenMotionCaptionTextStyle}" />
                     <TextBlock Text="Windows supports a static lock screen only. To also show it behind sign-in, enable Show the lock screen background picture on the sign-in screen in Windows Settings." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>
@@ -757,10 +788,10 @@
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Wallpaper server" FontSize="18" FontWeight="SemiBold" />
-                    <ToggleButton x:Name="SettingsRemoteCatalogToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use online catalog" Click="OnSettingsToggleClicked" />
+                    <ToggleButton x:Name="SettingsRemoteCatalogToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use online catalog" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Use online catalog" />
                     <TextBox x:Name="SettingsCatalogUrlText" Header="HTTPS server base URL" PlaceholderText="https://catalog.example.com/" TextChanged="OnAdvancedTextChanged" />
                     <NumberBox x:Name="SettingsCatalogTimeoutNumber" Header="Request timeout (seconds)" Minimum="1" Maximum="60" SmallChange="1" ValueChanged="OnCatalogTimeoutChanged" />
-                    <ToggleButton x:Name="SettingsLocalFallbackToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use local catalog when server is unavailable" Click="OnSettingsToggleClicked" />
+                    <ToggleButton x:Name="SettingsLocalFallbackToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use local catalog when server is unavailable" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Use local catalog when server is unavailable" />
                     <TextBlock Text="Save and restart to change catalog servers. Downloads support progress, cancellation and resume. Leave online catalog disabled until your server is ready." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
@@ -769,7 +800,7 @@
 
             <ScrollViewer x:Name="SettingsPlaybackSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
               <StackPanel Spacing="14"><Border Style="{StaticResource XenMotionSectionStyle}"><StackPanel Spacing="10"><TextBlock Text="Wallpaper previews" FontSize="18" FontWeight="SemiBold" /><Grid ColumnSpacing="16" MinHeight="48"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions><StackPanel Spacing="2" VerticalAlignment="Center"><TextBlock Text="Play motion previews automatically" Style="{StaticResource XenMotionLabelTextStyle}" /><TextBlock Text="Keep off to prepare video previews only when you press Play." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" /></StackPanel><ToggleButton x:Name="SettingsMotionPreviewsToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Play motion previews automatically" /></Grid></StackPanel></Border>
-                <Button Content="Global wallpaper edits" Click="OnGlobalEditsClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
+                <Button Content="Global wallpaper edits" Click="OnGlobalEditsClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch"  AutomationProperties.Name="Global wallpaper edits" />
                 <TextBlock Text="Share color, alignment and playback edits across wallpapers, with per-wallpaper custom overrides." TextWrapping="Wrap" Style="{StaticResource XenMotionCaptionTextStyle}" />
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
@@ -780,11 +811,11 @@
                     <Grid ColumnSpacing="8" RowSpacing="8">
                       <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                       <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                      <ToggleButton x:Name="ScaleFillChip" Grid.Row="0" Grid.Column="0" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Fill" Content="Fill" Click="OnScalingChipClicked" />
-                      <ToggleButton x:Name="ScaleFitChip" Grid.Row="0" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Fit" Content="Fit" Click="OnScalingChipClicked" />
-                      <ToggleButton x:Name="ScaleStretchChip" Grid.Row="0" Grid.Column="2" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Stretch" Content="Stretch" Click="OnScalingChipClicked" />
-                      <ToggleButton x:Name="ScaleCenterChip" Grid.Row="1" Grid.Column="0" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Center" Content="Center" Click="OnScalingChipClicked" />
-                      <ToggleButton x:Name="ScaleSpanChip" Grid.Row="1" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Span" Content="Span" Click="OnScalingChipClicked" />
+                      <ToggleButton x:Name="ScaleFillChip" Grid.Row="0" Grid.Column="0" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Fill" Content="Fill" Click="OnScalingChipClicked"  AutomationProperties.Name="Fill" />
+                      <ToggleButton x:Name="ScaleFitChip" Grid.Row="0" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Fit" Content="Fit" Click="OnScalingChipClicked"  AutomationProperties.Name="Fit" />
+                      <ToggleButton x:Name="ScaleStretchChip" Grid.Row="0" Grid.Column="2" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Stretch" Content="Stretch" Click="OnScalingChipClicked"  AutomationProperties.Name="Stretch" />
+                      <ToggleButton x:Name="ScaleCenterChip" Grid.Row="1" Grid.Column="0" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Center" Content="Center" Click="OnScalingChipClicked"  AutomationProperties.Name="Center" />
+                      <ToggleButton x:Name="ScaleSpanChip" Grid.Row="1" Grid.Column="1" Style="{StaticResource XenMotionChipStyle}" HorizontalAlignment="Stretch" Tag="Span" Content="Span" Click="OnScalingChipClicked"  AutomationProperties.Name="Span" />
                     </Grid>
                   </StackPanel>
                 </Border>
@@ -796,7 +827,7 @@
                 <TextBlock Text="Loop videos" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Replay animated wallpapers forever." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsLoopToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsLoopToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Loop video" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -805,7 +836,7 @@
                 <TextBlock Text="Start muted" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="New wallpapers begin without sound." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsDefaultMutedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsDefaultMutedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Mute new wallpapers" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -819,7 +850,7 @@
                   <TextBlock x:Name="SettingsDefaultVolumeSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsDefaultVolumeSlider" Minimum="0" Maximum="100" StepFrequency="1" SmallChange="1" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsDefaultVolumeSlider" Minimum="0" Maximum="100" StepFrequency="1" SmallChange="1" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Default volume" />
             </StackPanel>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -833,7 +864,7 @@
                   <TextBlock x:Name="SettingsPlaybackSpeedSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsPlaybackSpeedSlider" Minimum="0.25" Maximum="2" StepFrequency="0.25" SmallChange="0.25" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsPlaybackSpeedSlider" Minimum="0.25" Maximum="2" StepFrequency="0.25" SmallChange="0.25" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Playback speed" />
             </StackPanel>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -847,7 +878,7 @@
                   <TextBlock x:Name="SettingsFpsSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsFpsSlider" Minimum="15" Maximum="240" StepFrequency="1" SmallChange="1" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsFpsSlider" Minimum="15" Maximum="240" StepFrequency="1" SmallChange="1" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="FPS limit" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -864,7 +895,7 @@
                   <TextBlock x:Name="SettingsBrightnessSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsBrightnessSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsBrightnessSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Brightness" />
             </StackPanel>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -878,7 +909,7 @@
                   <TextBlock x:Name="SettingsContrastSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsContrastSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsContrastSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Contrast" />
             </StackPanel>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -892,14 +923,14 @@
                   <TextBlock x:Name="SettingsSaturationSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsSaturationSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsSaturationSlider" Minimum="0" Maximum="200" StepFrequency="5" SmallChange="5" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Saturation" />
             </StackPanel>
           </StackPanel>
         </Border>
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Application playback rules" FontSize="18" FontWeight="SemiBold" />
-                    <ToggleButton x:Name="SettingsPauseFocusToggle" Style="{StaticResource XenMotionChipStyle}" Content="Pause while another application has focus" Click="OnSettingsToggleClicked" />
+                    <ToggleButton x:Name="SettingsPauseFocusToggle" Style="{StaticResource XenMotionChipStyle}" Content="Pause while another application has focus" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Pause while another application has focus" />
                     <TextBox x:Name="SettingsPauseAppsText" Header="Pause for these foreground applications" PlaceholderText="game.exe, obs64.exe" TextChanged="OnAdvancedTextChanged" />
                     <TextBlock Text="Comma-separated process names. Playback resumes when focus returns to the desktop, unless manually paused. Fullscreen, maximized and coverage rules remain in Performance." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     <TextBlock Text="Economy presents at up to 15 FPS to save power. For smoother movement, raise the frame-rate limit or choose Balanced / High; playback speed stays unchanged." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
@@ -945,7 +976,7 @@
                     <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
                     <TextBlock x:Name="SettingsQualityText" Foreground="{StaticResource XenMotionMintTextBrush}" FontSize="13" FontWeight="SemiBold" TextWrapping="Wrap" />
 <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                    <Button x:Name="SettingsRecommendedButton" Content="Automatic — measure my system" ToolTipService.ToolTip="Optional measurement, up to 3.5 minutes. Starts from your display resolution and lowers quality only when needed. Playback pauses during measurement." Click="OnMeasureQualityClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch" />
+                    <Button x:Name="SettingsRecommendedButton" Content="Automatic — measure my system" ToolTipService.ToolTip="Optional measurement, up to 3.5 minutes. Starts from your display resolution and lowers quality only when needed. Playback pauses during measurement." Click="OnMeasureQualityClicked" Style="{StaticResource XenMotionButtonStyle}" HorizontalAlignment="Stretch"  AutomationProperties.Name="Optional measurement, up to 3.5 minutes. Starts from your display resolution and lowers quality only when needed. Playback pauses during measurement." />
 <FontIcon Grid.Column="1" Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE946;" FontSize="15" Width="24" VerticalAlignment="Center" ToolTipService.ToolTip="Optional test, up to 3.5 minutes. Uses your display resolution and pauses playback while measuring." AutomationProperties.Name="About automatic quality" />
 </Grid>
                     <Grid ColumnSpacing="16">
@@ -965,7 +996,7 @@
                   <StackPanel Spacing="12">
                     <TextBlock Text="Maximum video processing height" Style="{StaticResource XenMotionLabelTextStyle}" />
                     <TextBlock Text="Reduce conversion and texture cost. Originals are preserved; this does not remove the cost of decoding the original codec." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
-                    <ComboBox x:Name="SettingsVideoHeightCombo" HorizontalAlignment="Stretch" SelectionChanged="OnVideoHeightChanged">
+                    <ComboBox x:Name="SettingsVideoHeightCombo" HorizontalAlignment="Stretch" SelectionChanged="OnVideoHeightChanged" AutomationProperties.Name="Video resolution limit">
                       <ComboBoxItem Content="Native / original" Tag="0" /><ComboBoxItem Content="720p" Tag="720" /><ComboBoxItem Content="1080p" Tag="1080" /><ComboBoxItem Content="1440p" Tag="1440" /><ComboBoxItem Content="2160p / 4K" Tag="2160" />
                     </ComboBox>
                     <TextBlock x:Name="SettingsRenderScaleText" Style="{StaticResource XenMotionLabelTextStyle}" />
@@ -1003,7 +1034,7 @@
                 <TextBlock Text="Pause for full-screen apps" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Games and videos get every frame." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsPauseFullscreenToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsPauseFullscreenToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause during fullscreen" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -1012,7 +1043,7 @@
                 <TextBlock Text="Pause behind maximized windows" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Nothing to see, nothing to render." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsPauseMaximizedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsPauseMaximizedToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause behind maximized windows" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <Grid ColumnSpacing="16" MinHeight="48">
@@ -1021,7 +1052,7 @@
                 <TextBlock Text="Pause on battery" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Stretch your charge a little further." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsPauseBatteryToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsPauseBatteryToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause on battery" />
             </Grid>
           </StackPanel>
         </Border>
@@ -1033,7 +1064,7 @@
                 <TextBlock Text="Pause when covered" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Pause video decoding when windows cover the desktop." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsPauseCoveredToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsPauseCoveredToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Pause when covered" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel x:Name="SettingsCoverageControls" Spacing="8">
@@ -1054,7 +1085,7 @@
                 <TextBlock Text="Mute when covered" Style="{StaticResource XenMotionLabelTextStyle}" />
                 <TextBlock Text="Keep the sound down while hidden." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
               </StackPanel>
-              <ToggleButton x:Name="SettingsMuteCoveredToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" />
+              <ToggleButton x:Name="SettingsMuteCoveredToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Mute when covered" />
             </Grid>
             <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
             <StackPanel Spacing="6">
@@ -1068,7 +1099,7 @@
                   <TextBlock x:Name="SettingsHeartbeatSliderText" Text="-" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{StaticResource XenMotionMintTextBrush}" />
                 </Border>
               </Grid>
-              <Slider x:Name="SettingsHeartbeatSlider" Minimum="250" Maximum="5000" StepFrequency="250" SmallChange="250" ValueChanged="OnSettingsSliderChanged" />
+              <Slider x:Name="SettingsHeartbeatSlider" Minimum="250" Maximum="5000" StepFrequency="250" SmallChange="250" ValueChanged="OnSettingsSliderChanged" AutomationProperties.Name="Check interval" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -1081,9 +1112,9 @@
               <ColumnDefinition Width="*" />
               <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Button Content="Reset settings" Click="OnResetSettingsClicked" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <Button Content="Reset settings" Click="OnResetSettingsClicked" HorizontalAlignment="Left" VerticalAlignment="Top"  AutomationProperties.Name="Reset settings" />
             <TextBlock Margin="0,40,0,0" x:Name="SettingsStatusTextBlock" Style="{StaticResource XenMotionCaptionTextStyle}" VerticalAlignment="Center" TextWrapping="Wrap" />
-            <Button Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" Height="46" CornerRadius="16" Padding="26,0" Content="Apply changes" Click="OnSaveSettingsClicked" />
+            <Button Grid.Column="1" Style="{StaticResource XenMotionPrimaryButtonStyle}" Height="46" CornerRadius="16" Padding="26,0" Content="Apply changes" Click="OnSaveSettingsClicked"  AutomationProperties.Name="Apply changes" />
           </Grid>
         </Grid>
       </Border>

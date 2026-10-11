@@ -37,6 +37,19 @@ public sealed class LibraryService : ILibraryService
         {
             string absolutePath = _storageManager.ResolveAbsolutePath(wp.FilePath);
             wp.IsMissing = !File.Exists(absolutePath);
+            if (!wp.IsMissing)
+            {
+                string thumbnail = await _thumbnailService.CreateThumbnailAsync(wp.FilePath, wp.Id, wp.Type, ct).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(thumbnail))
+                {
+                    string relative = _storageManager.MakeStorageRelativePath(thumbnail);
+                    if (wp.ThumbnailPath != relative)
+                    {
+                        wp.ThumbnailPath = relative;
+                        await _repository.UpdateAsync(wp, ct).ConfigureAwait(false);
+                    }
+                }
+            }
         }
 
         return wallpapers;
@@ -52,6 +65,19 @@ public sealed class LibraryService : ILibraryService
         }
 
         return wp;
+    }
+
+    public async Task RenameWallpaperAsync(Guid id, string title, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        title = title.Trim();
+        if (title.Length > 200) throw new ArgumentException("Title must be at most 200 characters.", nameof(title));
+        var wallpaper = await _repository.GetByIdAsync(id, ct).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Wallpaper is no longer in the library.");
+        wallpaper.Title = title;
+        wallpaper.UpdatedAtUtc = DateTime.UtcNow;
+        await _repository.UpdateAsync(wallpaper, ct).ConfigureAwait(false);
+        LibraryChanged?.Invoke(this, EventArgs.Empty);
     }
 
     public async Task<DeleteResult> DeleteWallpaperAsync(Guid id, CancellationToken ct = default)

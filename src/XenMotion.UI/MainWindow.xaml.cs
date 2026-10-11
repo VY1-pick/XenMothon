@@ -8,6 +8,7 @@ using XenMotion.UI.ViewModels;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Automation;
 using Windows.System;
 
 namespace XenMotion.UI;
@@ -177,6 +178,7 @@ public sealed partial class MainWindow : Window
     {
         if (_syncingPlaybackVolume || _viewModel is null || NowPlayingVolumeText is null) return;
         NowPlayingVolumeText.Text = $"{e.NewValue:0}%";
+        ShowVolumeFeedback(e.NewValue);
         try { await _viewModel.SetVolumeAsync((float)(e.NewValue / 100)); }
         catch (Exception ex) { _viewModel.StatusMessage = $"Could not adjust audio: {ex.Message}"; }
     }
@@ -195,7 +197,9 @@ public sealed partial class MainWindow : Window
 
         // now playing dock
         NowPlayingPanel.Visibility = _viewModel.HasActiveWallpaper ? Visibility.Visible : Visibility.Collapsed;
+        UpdatePlaybackDockSpace();
         NowPlayingTitleTextBlock.Text = _viewModel.ActiveWallpaperTitle;
+        ToolTipService.SetToolTip(NowPlayingTitleTextBlock, _viewModel.ActiveWallpaperTitle);
         NowPlayingPauseIcon.Glyph = _viewModel.IsPaused ? "" : "";
         _syncingPlaybackVolume = true;
         NowPlayingVolumeSlider.Value = _viewModel.VolumePercentage;
@@ -203,6 +207,11 @@ public sealed partial class MainWindow : Window
         _syncingPlaybackVolume = false;
         NowPlayingMuteIcon.Glyph = _viewModel.IsMuted ? "" : "";
         ToolTipService.SetToolTip(PauseResumeButton, _viewModel.IsPaused ? "Resume" : "Pause");
+        AutomationProperties.SetName(PauseResumeButton, _viewModel.IsPaused ? "Resume wallpaper" : "Pause wallpaper");
+        AutomationProperties.SetItemStatus(PauseResumeButton, _viewModel.IsPaused ? "Paused" : "Playing");
+        AutomationProperties.SetName(NowPlayingMuteButton, _viewModel.IsMuted ? "Unmute wallpaper" : "Mute wallpaper");
+        AutomationProperties.SetItemStatus(NowPlayingMuteButton, _viewModel.IsMuted ? "Muted" : "Unmuted");
+        ToolTipService.SetToolTip(NowPlayingMuteButton, _viewModel.IsMuted ? "Unmute" : "Mute");
 
         // explore
         ExploreLoadingPanel.Visibility = explore.IsLoading && explore.SearchResults.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -221,7 +230,8 @@ public sealed partial class MainWindow : Window
         LoadingPanel.Visibility = _viewModel.IsLoading ? Visibility.Visible : Visibility.Collapsed;
         EmptyStatePanel.Visibility = _viewModel.IsEmpty ? Visibility.Visible : Visibility.Collapsed;
         WallpaperGridView.Visibility = _viewModel.HasWallpapers ? Visibility.Visible : Visibility.Collapsed;
-        LibrarySubtitleText.Text = $"{_viewModel.Wallpapers.Count} wallpapers  •  {_viewModel.StorageSummary}";
+        LibrarySubtitleText.Text = _viewModel.StorageSummary;
+        UpdateLibrarySelectionState();
         StorageUsageTextBlock.Text = _viewModel.StorageSummary;
         StorageRootTextBlock.Text = _viewModel.StorageRootText;
 

@@ -39,7 +39,7 @@ internal sealed class DesktopSwapChain : IDisposable
             Marshal.ThrowExceptionForHR(hr);
             // Media Foundation workers and the presenter share the immediate context.
             var multithreadId = new Guid("9B7E4E00-342C-4106-A19F-4F2704F689F0");
-            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(_context, ref multithreadId, out _multithread));
+            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(_context, in multithreadId, out _multithread));
             Method<ProtectMultithread>(_multithread, 5)(_multithread, true);
             _frames = new GpuFramePipeline(_device, _context);
             AcquireSurface();

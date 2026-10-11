@@ -156,7 +156,7 @@ public sealed partial class MainWindow
             if (_filterWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
             {
                 presenter.IsResizable = presenter.IsMinimizable = presenter.IsMaximizable = false;
-                presenter.SetBorderAndTitleBar(false, false);
+                presenter.SetBorderAndTitleBar(true, false);
             }
             _filterWindow.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(_filterWindow));
             FiltersDragRegion.SizeChanged += (_, _) => UpdateFilterDragRegion();

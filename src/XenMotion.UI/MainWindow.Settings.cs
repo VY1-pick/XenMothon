@@ -39,7 +39,7 @@ public sealed partial class MainWindow
             if (_settingsWindow.AppWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
             {
                 presenter.IsResizable = presenter.IsMaximizable = presenter.IsMinimizable = false;
-                presenter.SetBorderAndTitleBar(false, false);
+                presenter.SetBorderAndTitleBar(true, false);
             }
             _settingsWindow.Activated += (_, _) => DispatcherQueue.TryEnqueue(() => ApplyViewerFrame(_settingsWindow));
             SettingsDragRegion.SizeChanged += (_, _) => UpdateSettingsDragRegion();
@@ -268,7 +268,7 @@ public sealed partial class MainWindow
             UpdateSettingsUiState();
             TrySetBackdrop();
             CloseSettingsSheet();
-            ShowToast("Settings saved. " + personalization.Status);
+            ShowToast(_settingsViewModel.StatusMessage + " " + personalization.Status);
         }
         catch (Exception ex)
         {

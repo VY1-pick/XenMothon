@@ -41,11 +41,11 @@ internal static class NativeMetrics
         try
         {
             var id = new Guid("54ec77fa-1377-44e6-8c32-88fd5f44c84c");
-            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(device, ref id, out dxgi));
+            Marshal.ThrowExceptionForHR(Marshal.QueryInterface(device, in id, out dxgi));
             Marshal.ThrowExceptionForHR(Method<GetAdapter>(dxgi, 7)(dxgi, out adapter));
             string? name = Method<GetDescription>(adapter, 10)(adapter, out var desc) == 0 ? desc.Description : null;
             id = new Guid("645967a4-1392-4310-a798-8053ce3e93fd");
-            if (Marshal.QueryInterface(adapter, ref id, out adapter3) < 0) return new { adapter = name, local = (object?)null, nonLocal = (object?)null };
+            if (Marshal.QueryInterface(adapter, in id, out adapter3) < 0) return new { adapter = name, local = (object?)null, nonLocal = (object?)null };
             object? Read(uint segment)
             {
                 if (Method<QueryMemory>(adapter3, 14)(adapter3, 0, segment, out var info) < 0) return null;

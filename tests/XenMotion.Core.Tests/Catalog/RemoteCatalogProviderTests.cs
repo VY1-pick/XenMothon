@@ -171,11 +171,13 @@ public sealed class RemoteCatalogProviderTests
         using var client = CreateClient((request, _) =>
         {
             Assert.Equal("bytes=128-", request.Headers.Range!.ToString());
+            Assert.Equal("\"version-1\"", request.Headers.IfRange!.ToString());
             var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
             {
                 Content = new ByteArrayContent(Encoding.UTF8.GetBytes("tail"))
             };
             response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(128, 131, 132);
+            response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"version-1\"");
             return response;
         });
         var provider = CreateProvider(client);
@@ -188,7 +190,7 @@ public sealed class RemoteCatalogProviderTests
         };
 
         var resumable = (XenMotion.Core.Interfaces.IResumableCatalogDownloadProvider)provider;
-        await using var stream = await resumable.OpenDownloadStreamAsync(item, 128);
+        await using var stream = await resumable.OpenDownloadStreamAsync(item, 128, entityTag: "\"version-1\"");
         Assert.True(stream.IsPartial);
         Assert.Equal(4, stream.ContentLength);
     }
@@ -207,8 +209,58 @@ public sealed class RemoteCatalogProviderTests
         var item = new CatalogItem { Id = Guid.NewGuid(), Title = "Resume", Description = "", Author = "Test",
             ThumbnailUrl = "", PreviewUrl = "", DownloadUrl = "/downloads/test.mp4", Type = WallpaperType.Video,
             Width = 1920, Height = 1080, CategoryId = "test", CategoryName = "Test" };
-        await Assert.ThrowsAsync<HttpRequestException>(() => CreateProvider(client).OpenDownloadStreamAsync(item, 128));
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateProvider(client).OpenDownloadStreamAsync(item, 128, entityTag: "\"version-1\""));
     }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("W/\"version-1\"")]
+    [InlineData("not-an-etag")]
+    public async Task ResumeWithoutStrongValidatorRestarts(string? tag)
+    {
+        using var client = CreateClient((request, _) =>
+        {
+            Assert.Null(request.Headers.Range);
+            Assert.Null(request.Headers.IfRange);
+            return new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([9, 8, 7]) };
+        });
+        await using var result = await CreateProvider(client).OpenDownloadStreamAsync(DownloadItem(), 128, entityTag: tag);
+        Assert.False(result.IsPartial);
+    }
+
+    [Fact]
+    public async Task ChangedEntityTagCannotBeAppended()
+    {
+        using var client = CreateClient((_, _) =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.PartialContent) { Content = new ByteArrayContent([1, 2, 3, 4]) };
+            response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(128, 131, 132);
+            response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"version-2\"");
+            return response;
+        });
+        await Assert.ThrowsAsync<HttpRequestException>(() => CreateProvider(client).OpenDownloadStreamAsync(DownloadItem(), 128, entityTag: "\"version-1\""));
+    }
+
+    [Fact]
+    public async Task ChangedVersionFullResponseRestartsAndExposesNewTag()
+    {
+        using var client = CreateClient((_, _) =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent([9, 8, 7]) };
+            response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue("\"version-2\"");
+            return response;
+        });
+        await using var result = await CreateProvider(client).OpenDownloadStreamAsync(DownloadItem(), 128, entityTag: "\"version-1\"");
+        Assert.False(result.IsPartial);
+        Assert.Equal("\"version-2\"", result.EntityTag);
+    }
+
+    private static CatalogItem DownloadItem() => new()
+    {
+        Id = Guid.NewGuid(), Title = "Resume", Description = "", Author = "Test",
+        ThumbnailUrl = "", PreviewUrl = "", DownloadUrl = "/downloads/test.mp4", Type = WallpaperType.Video,
+        Width = 1920, Height = 1080, CategoryId = "test", CategoryName = "Test"
+    };
 
     private static RemoteCatalogProvider CreateProvider(HttpClient client, ICatalogProvider? fallback = null)
         => new(

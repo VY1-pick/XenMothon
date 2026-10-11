@@ -208,6 +208,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             StorageUsage = usage;
+            if (_activeWallpaperId is { } activeId && _wallpapers.FirstOrDefault(w => w.Id == activeId) is { } active)
+                SetActiveWallpaper(activeId, active.Title);
             StatusMessage = $"Library loaded ({_wallpapers.Count} wallpapers)";
         }
         catch (Exception ex)

@@ -83,6 +83,8 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             _logger.LogInformation("First-run display preset: {Preset}; no benchmark was run.", preset);
         }
 
+        await _serviceProvider.GetRequiredService<WindowsStartupService>().ApplyInstallerChoiceAsync(settingsService);
+
         // 3. Resolve Services
         _windowManager = _serviceProvider.GetRequiredService<IWindowManagementService>();
         _orchestrator = _serviceProvider.GetRequiredService<IWallpaperEngineOrchestrator>();

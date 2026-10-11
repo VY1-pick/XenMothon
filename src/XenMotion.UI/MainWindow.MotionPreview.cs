@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Storage;
@@ -22,6 +23,7 @@ public sealed partial class MainWindow
         _motionPlayer?.Dispose(); _motionPlayer = null;
         DetailsMotionPreview.Visibility = Visibility.Collapsed;
         DetailsMotionButton.Visibility = Visibility.Collapsed;
+        UpdateMotionPreviewState();
     }
 
     private async Task LoadMotionPreviewAsync(Wallpaper wallpaper)
@@ -36,6 +38,7 @@ public sealed partial class MainWindow
             DetailsMotionButton.Visibility = Visibility.Visible;
             DetailsMotionButton.Content = "Preparing small motion preview…";
             DetailsMotionButton.IsEnabled = false;
+            DetailsPreviewStatusText.Text = "Preparing motion preview…";
             var storage = App.Current.ServiceProvider.GetRequiredService<IStorageManager>();
             string source = storage.ResolveAbsolutePath(wallpaper.FilePath);
             var info = new FileInfo(source);
@@ -63,6 +66,7 @@ public sealed partial class MainWindow
             {
                 DetailsMotionButton.Content = "Motion preview unavailable · still preview shown";
                 DetailsMotionButton.IsEnabled = false;
+                DetailsPreviewStatusText.Text = "Motion preview unavailable · Still preview";
             }
         }
         finally
@@ -75,21 +79,28 @@ public sealed partial class MainWindow
 
     private void PlayMotionPreview(MediaSource source, Guid id, CancellationToken ct)
     {
-        _motionPlayer = new MediaPlayer { IsMuted = true, IsLoopingEnabled = true };
-        _motionPlayer.Source = source;
-        _motionPlayer.MediaFailed += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        var player = new MediaPlayer { IsMuted = true, IsLoopingEnabled = true };
+        _motionPlayer = player;
+        player.PlaybackSession.PlaybackStateChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!ct.IsCancellationRequested && _viewerId == id && ReferenceEquals(_motionPlayer, player)) UpdateMotionPreviewState();
+        });
+        player.MediaFailed += (_, _) => DispatcherQueue.TryEnqueue(() =>
         {
             if (ct.IsCancellationRequested || _viewerId != id) return;
             DetailsMotionPreview.Visibility = Visibility.Collapsed;
             DetailsMotionButton.Content = "Motion preview unavailable · still preview shown";
             DetailsMotionButton.IsEnabled = false;
+            DetailsPreviewStatusText.Text = "Motion preview unavailable · Still preview";
         });
+        player.Source = source;
         DetailsMotionPreview.SetMediaPlayer(_motionPlayer);
         DetailsMotionPreview.Visibility = Visibility.Visible;
         DetailsMotionButton.Visibility = Visibility.Visible;
         DetailsMotionButton.Content = "Pause motion preview";
         DetailsMotionButton.IsEnabled = true;
         _motionPlayer.Play();
+        UpdateMotionPreviewState();
     }
 
     private void LoadCatalogMotionPreview(Guid id)
@@ -120,6 +131,20 @@ public sealed partial class MainWindow
         bool playing = DetailsMotionPreview.Visibility == Visibility.Visible;
         DetailsMotionPreview.Visibility = playing ? Visibility.Collapsed : Visibility.Visible;
         if (playing) _motionPlayer.Pause(); else _motionPlayer.Play();
-        DetailsMotionButton.Content = playing ? "Play motion preview" : "Pause motion preview";
+        UpdateMotionPreviewState();
+    }
+
+    private void UpdateMotionPreviewState()
+    {
+        var state = _motionPlayer?.PlaybackSession.PlaybackState;
+        bool visible = DetailsMotionPreview.Visibility == Visibility.Visible;
+        DetailsPreviewStatusText.Text = !visible ? "Still preview"
+            : state == MediaPlaybackState.Playing ? "Motion preview playing"
+            : state == MediaPlaybackState.Paused ? "Motion preview paused"
+            : "Loading motion preview…";
+        if (_motionPlayer != null && DetailsMotionButton.IsEnabled)
+            DetailsMotionButton.Content = visible ? "Pause motion preview" : "Play motion preview";
+        AutomationProperties.SetName(DetailsMotionButton, DetailsMotionButton.Content?.ToString() ?? "Motion preview");
+        AutomationProperties.SetItemStatus(DetailsMotionButton, DetailsPreviewStatusText.Text);
     }
 }

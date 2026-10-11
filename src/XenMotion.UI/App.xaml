@@ -46,6 +46,8 @@
     </LinearGradientBrush>
     <SolidColorBrush x:Key="XenMotionGlassDarkBrush" Color="#8C060B14" />
     <SolidColorBrush x:Key="XenMotionSectionBrush" Color="#0DFFFFFF" />
+    <!-- Keep the floating player translucent even when Windows disables acrylic blur. -->
+    <AcrylicBrush x:Key="XenMotionPlaybackGlassBrush" TintColor="#142838" TintOpacity="0.08" TintLuminosityOpacity="0.05" FallbackColor="#28142838" />
     <SolidColorBrush x:Key="XenMotionFieldBrush" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="XenMotionSwitchOffBrush" Color="#33FFFFFF" />
 
