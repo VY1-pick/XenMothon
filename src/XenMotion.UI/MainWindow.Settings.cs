@@ -1,5 +1,6 @@
 using System.Numerics;
 using XenMotion.Core.Enums;
+using XenMotion.Core.Interfaces;
 using XenMotion.Core.Models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -52,6 +53,7 @@ public sealed partial class MainWindow
         _settingsWindow.Activate();
         ApplyViewerFrame(_settingsWindow);
         DispatcherQueue.TryEnqueue(UpdateSettingsDragRegion);
+        RefreshAutomationChoices();
     }
     private void UpdateSettingsDragRegion()
     {
@@ -77,9 +79,13 @@ public sealed partial class MainWindow
         SettingsGeneralSection.Visibility = tab == "General" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPlaybackSection.Visibility = tab == "Playback" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPerformanceSection.Visibility = tab == "Performance" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsScheduleSection.Visibility = tab == "Schedule" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsAppsSection.Visibility = tab == "Apps" ? Visibility.Visible : Visibility.Collapsed;
         SettingsTabGeneral.IsChecked = tab == "General";
         SettingsTabPlayback.IsChecked = tab == "Playback";
         SettingsTabPerformance.IsChecked = tab == "Performance";
+        SettingsTabSchedule.IsChecked = tab == "Schedule";
+        SettingsTabApps.IsChecked = tab == "Apps";
     }
 
     // ------------------------------------------------------------------ view model -> controls
@@ -99,8 +105,18 @@ public sealed partial class MainWindow
             SettingsSyncBackgroundToggle.IsChecked = s.SyncDesktopBackground;
             SettingsLockScreenCombo.SelectedIndex = (int)s.LockScreenMode;
             SettingsLockScreenImageText.Text = s.LockScreenImagePath;
-            SettingsRemoteCatalogToggle.IsChecked = s.UseRemoteCatalog;
+            SettingsCatalogSourceCombo.SelectedIndex = s.CatalogSourceIndex;
+            SettingsCatalogManifestText.Text = s.CatalogManifestUrl;
             SettingsCatalogUrlText.Text = s.CatalogBackendUrl;
+            SettingsCheckUpdatesToggle.IsChecked = s.CheckForUpdates;
+            SettingsUpdateUrlText.Text = s.UpdateManifestUrl;
+            SettingsUpdateStatusText.Text = s.UpdateStatus;
+            SettingsScheduleToggle.IsChecked = s.ScheduleEnabled;
+            SettingsRotationIntervalNumber.Value = s.RotationIntervalMinutes;
+            SettingsScheduleSummaryText.Text = s.ScheduleSummary;
+            SettingsAutomationStatusText.Text = s.AutomationStatus;
+            RefreshScheduleEntryRows();
+            RefreshApplicationRuleRows();
             SettingsCatalogTimeoutNumber.Value = s.CatalogRequestTimeoutSeconds;
             SettingsLocalFallbackToggle.IsChecked = s.UseLocalCatalogFallback;
             SettingsPauseFocusToggle.IsChecked = s.PauseOnApplicationFocus;
@@ -200,8 +216,9 @@ public sealed partial class MainWindow
         else if (ReferenceEquals(toggle, SettingsAutoTuneToggle)) s.AutoTunePlayback = on;
         else if (ReferenceEquals(toggle, SettingsSyncAccentToggle)) s.SyncWindowsAccent = on;
         else if (ReferenceEquals(toggle, SettingsSyncBackgroundToggle)) s.SyncDesktopBackground = on;
-        else if (ReferenceEquals(toggle, SettingsRemoteCatalogToggle)) s.UseRemoteCatalog = on;
         else if (ReferenceEquals(toggle, SettingsLocalFallbackToggle)) s.UseLocalCatalogFallback = on;
+        else if (ReferenceEquals(toggle, SettingsScheduleToggle)) s.ScheduleEnabled = on;
+        else if (ReferenceEquals(toggle, SettingsCheckUpdatesToggle)) s.CheckForUpdates = on;
         else if (ReferenceEquals(toggle, SettingsPauseFocusToggle)) s.PauseOnApplicationFocus = on;
         RefreshCoverageControls();
         RefreshQualitySummary();
@@ -268,6 +285,20 @@ public sealed partial class MainWindow
             UpdateSettingsUiState();
             TrySetBackdrop();
             CloseSettingsSheet();
+            // Apply the new schedule and per-application rules without waiting for the next timer tick.
+            try
+            {
+                var services = App.Current.ServiceProvider;
+                await services.GetRequiredService<WallpaperScheduleService>().ApplyAsync();
+                var foregroundMonitor = services.GetRequiredService<IForegroundApplicationMonitor>();
+                await services.GetRequiredService<ApplicationWallpaperService>().HandleAsync(foregroundMonitor.CurrentProcessName);
+            }
+            catch (Exception automationEx)
+            {
+                // The schedule and rules stay saved; the next timer tick retries them.
+                ShowToast("Settings saved, but the schedule could not apply yet: " + automationEx.Message);
+            }
+
             ShowToast(_settingsViewModel.StatusMessage + " " + personalization.Status);
         }
         catch (Exception ex)
@@ -336,7 +367,26 @@ public sealed partial class MainWindow
     {
         if (_loadingSettings || _settingsViewModel is null) return;
         if (ReferenceEquals(sender, SettingsCatalogUrlText)) _settingsViewModel.CatalogBackendUrl = SettingsCatalogUrlText.Text;
+        else if (ReferenceEquals(sender, SettingsCatalogManifestText)) _settingsViewModel.CatalogManifestUrl = SettingsCatalogManifestText.Text;
+        else if (ReferenceEquals(sender, SettingsUpdateUrlText)) _settingsViewModel.UpdateManifestUrl = SettingsUpdateUrlText.Text;
         else if (ReferenceEquals(sender, SettingsPauseAppsText)) _settingsViewModel.PauseApplications = SettingsPauseAppsText.Text;
+    }
+
+    private void OnCatalogSourceChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null || SettingsCatalogSourceCombo.SelectedIndex < 0) return;
+        _settingsViewModel.CatalogSourceIndex = SettingsCatalogSourceCombo.SelectedIndex;
+        // The two URL fields only matter for their own mode; keep them visible but explain the choice.
+        SettingsCatalogManifestText.IsEnabled = _settingsViewModel.IsStaticCatalogSelected;
+        SettingsCatalogUrlText.IsEnabled = _settingsViewModel.IsServerCatalogSelected;
+        SettingsLocalFallbackToggle.IsEnabled = _settingsViewModel.CatalogSource != CatalogSource.Local;
+    }
+
+    private void OnRotationIntervalChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
+    {
+        if (_loadingSettings || _settingsViewModel is null || !double.IsFinite(e.NewValue)) return;
+        _settingsViewModel.RotationIntervalMinutes = (int)Math.Round(Math.Clamp(e.NewValue, 0, 1440));
+        SettingsScheduleSummaryText.Text = _settingsViewModel.ScheduleSummary;
     }
 
     private void OnCatalogTimeoutChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)

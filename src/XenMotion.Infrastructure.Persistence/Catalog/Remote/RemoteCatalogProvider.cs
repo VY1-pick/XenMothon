@@ -95,13 +95,15 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
         => ExecuteWithFallbackAsync(
             async () =>
             {
-                using var response = await _httpClient.GetAsync($"api/v1/catalog/{id:D}", HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+                using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                deadline.CancelAfter(_options.RequestTimeout);
+                using var response = await _httpClient.GetAsync($"api/v1/catalog/{id:D}", HttpCompletionOption.ResponseHeadersRead, deadline.Token).ConfigureAwait(false);
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     return null;
                 }
                 await EnsureSuccessAsync(response, "catalog item").ConfigureAwait(false);
-                var dto = await response.Content.ReadFromJsonAsync<CatalogItemDto>(JsonOptions, ct).ConfigureAwait(false);
+                var dto = await response.Content.ReadFromJsonAsync<CatalogItemDto>(JsonOptions, deadline.Token).ConfigureAwait(false);
                 return dto is null ? null : MapItem(dto);
             },
             value => value,
@@ -169,7 +171,9 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 }
 
                 bool partial = response.StatusCode == System.Net.HttpStatusCode.PartialContent;
-                if (partial && (offset == 0 || response.Content.Headers.ContentRange is not { From: var start, To: not null, Unit: "bytes" } || start != offset ||
+                if (partial && (offset == 0 || response.Content.Headers.ContentRange is not { From: var start, To: var end, Length: var total, Unit: "bytes" } || start != offset ||
+                    end is null || total is null || end >= total ||
+                    (response.Content.Headers.ContentLength is { } partLength && partLength != end - start + 1) ||
                     (offset > 0 && response.Headers.ETag?.ToString() != validator!.ToString())))
                 {
                     response.Dispose();
@@ -177,9 +181,10 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 }
                 var content = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
                 string? tag = response.Headers.ETag is { IsWeak: false } etag && etag.Tag != "*" ? etag.ToString() : null;
-                return new CatalogDownloadStream(new ResponseOwnedStream(response, content), response.Content.Headers.ContentLength, partial, tag);
+                return new CatalogDownloadStream(new ResponseOwnedStream(response, content, _options.RequestTimeout), response.Content.Headers.ContentLength, partial, tag,
+                    response.Content.Headers.ContentType?.MediaType, partial ? response.Content.Headers.ContentRange!.Length : response.Content.Headers.ContentLength);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
                 throw;
             }
@@ -217,7 +222,7 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
             var value = await remoteCall().ConfigureAwait(false);
             return map(value);
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             throw;
         }
@@ -230,6 +235,9 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
 
     private async Task<T?> GetJsonAsync<T>(string relativePath, CancellationToken ct)
     {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(_options.RequestTimeout);
+        ct = deadline.Token;
         using var response = await _httpClient.GetAsync(relativePath, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
         await EnsureSuccessAsync(response, relativePath).ConfigureAwait(false);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false);
@@ -393,11 +401,13 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
     {
         private readonly HttpResponseMessage _response;
         private readonly Stream _inner;
+        private readonly TimeSpan _readTimeout;
 
-        public ResponseOwnedStream(HttpResponseMessage response, Stream inner)
+        public ResponseOwnedStream(HttpResponseMessage response, Stream inner, TimeSpan readTimeout)
         {
             _response = response;
             _inner = inner;
+            _readTimeout = readTimeout;
         }
 
         public override bool CanRead => _inner.CanRead;
@@ -409,8 +419,16 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
         public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
         public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
         public override int Read(Span<byte> buffer) => _inner.Read(buffer);
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => _inner.ReadAsync(buffer, offset, count, cancellationToken);
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => _inner.ReadAsync(buffer, cancellationToken);
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            deadline.CancelAfter(_readTimeout);
+            try { return await _inner.ReadAsync(buffer, deadline.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            { throw new TimeoutException("The media server stopped sending data.", ex); }
+        }
         public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
         public override void SetLength(long value) => throw new NotSupportedException();
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();

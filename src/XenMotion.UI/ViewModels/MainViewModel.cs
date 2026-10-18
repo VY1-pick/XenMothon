@@ -20,6 +20,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly IWindowManagementService _windowManager;
     private readonly ILibraryService _libraryService;
     private readonly IWallpaperImportService _importService;
+    private readonly IRemoteWallpaperImportService _remoteImportService;
     private readonly IStorageManager _storageManager;
     private readonly ExploreViewModel _exploreViewModel;
     private readonly ILogger<MainViewModel> _logger;
@@ -146,6 +147,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         IWindowManagementService windowManager,
         ILibraryService libraryService,
         IWallpaperImportService importService,
+        IRemoteWallpaperImportService remoteImportService,
         IStorageManager storageManager,
         ExploreViewModel exploreViewModel,
         ILogger<MainViewModel> logger,
@@ -156,11 +158,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _windowManager = windowManager ?? throw new ArgumentNullException(nameof(windowManager));
         _libraryService = libraryService ?? throw new ArgumentNullException(nameof(libraryService));
         _importService = importService ?? throw new ArgumentNullException(nameof(importService));
+        _remoteImportService = remoteImportService ?? throw new ArgumentNullException(nameof(remoteImportService));
         _storageManager = storageManager ?? throw new ArgumentNullException(nameof(storageManager));
         _exploreViewModel = exploreViewModel ?? throw new ArgumentNullException(nameof(exploreViewModel));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _settingsService = settingsService ?? throw new ArgumentNullException(nameof(settingsService));
         _savedWallpapers = savedWallpapers;
+        _savedWallpapers.ActiveWallpaperChanged += (_, _) => RunOnUi(() =>
+            SetActiveWallpaper(_savedWallpapers.ActiveWallpaper?.Id, _savedWallpapers.ActiveWallpaper?.Title ?? string.Empty));
 
         Wallpapers = new ReadOnlyObservableCollection<WallpaperItemViewModel>(_wallpapers);
 
@@ -263,6 +268,56 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             _logger.LogError(ex, "Batch import encountered an unexpected error.");
             ErrorMessage = $"Import failed: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+            _importing = false;
+        }
+    }
+
+    /// <summary>
+    /// Downloads a media link and adds it to the library through the same pipeline as a file import.
+    /// Returns true when the wallpaper is now in the library (including a duplicate hit).
+    /// </summary>
+    public async Task<bool> ImportFromUrlAsync(string url, IProgress<double>? progress = null, CancellationToken ct = default)
+    {
+        if (_importing) return false;
+        _importing = true;
+        IsLoading = true;
+        StatusMessage = "Downloading the link…";
+        ErrorMessage = null;
+
+        try
+        {
+            var result = await _remoteImportService.ImportFromUrlAsync(url, progress, ct);
+            await RefreshLibraryAsync();
+
+            if (!result.Success)
+            {
+                ErrorMessage = result.ErrorMessage ?? "The link could not be imported.";
+                return false;
+            }
+
+            if (result.IsDuplicate)
+            {
+                StatusMessage = $"'{result.ExistingWallpaper?.Title}' is already in your library.";
+                return true;
+            }
+
+            StatusMessage = $"Successfully imported '{result.ImportedWallpaper?.Title}' from the link.";
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "Link import cancelled.";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("Link import failed ({Error}).", ex.GetType().Name);
+            ErrorMessage = $"Link import failed: {ex.Message}";
+            return false;
         }
         finally
         {

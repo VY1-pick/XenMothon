@@ -16,15 +16,16 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
     private readonly IDesktopWallpaperHost _host;
     private readonly MonitorTopologyService _monitors;
     private readonly ILogger _logger;
+    private readonly string _monitorId;
     private DesktopSurface? _surface;
     private readonly SemaphoreSlim _surfaceGate = new(1, 1);
     private MonitorBounds _monitorBounds;
     private IntPtr _shellHwnd;
     private bool _disposed;
     public DesktopWallpaperRenderer(IWallpaperRenderer inner, IDesktopWallpaperHost host,
-        MonitorTopologyService monitors, ILogger logger)
+        MonitorTopologyService monitors, ILogger logger, string monitorId)
     {
-        _inner = inner; _host = host; _monitors = monitors; _logger = logger;
+        _inner = inner; _host = host; _monitors = monitors; _logger = logger; _monitorId = monitorId;
         _monitors.TopologyChanged += OnTopologyChanged;
     }
     public WallpaperType SupportedType => _inner.SupportedType;
@@ -41,7 +42,7 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
             if (!File.Exists(mediaPath)) throw new FileNotFoundException("Wallpaper file was not found.", mediaPath);
             if (!await _host.EnsureAttachedAsync(ct).ConfigureAwait(false))
                 throw new InvalidOperationException("The desktop shell is unavailable. Retry after Explorer has started.");
-            var monitor = _monitors.CurrentMonitors.FirstOrDefault(m => m.IsPrimary) ?? _monitors.Refresh().FirstOrDefault();
+            var monitor = FindMonitor(_monitors.CurrentMonitors) ?? FindMonitor(_monitors.Refresh());
             if (monitor is null) throw new InvalidOperationException("No display was found.");
             if (_surface == null || _shellHwnd != _host.DesktopWorkerWHwnd)
             {
@@ -104,11 +105,16 @@ public sealed class DesktopWallpaperRenderer : IWallpaperRenderer
     }
     private async void OnTopologyChanged(object? sender, MonitorTopologyChangedEventArgs e)
     {
-        var monitor = e.Monitors.FirstOrDefault(m => m.IsPrimary) ?? e.Monitors.FirstOrDefault();
+        var monitor = FindMonitor(e.Monitors);
         if (monitor is null) return;
         try { await ResizeAsync(monitor.Bounds).ConfigureAwait(false); }
         catch (Exception ex) { _logger.LogError(ex, "Could not resize wallpaper after display topology changed."); }
     }
+    private MonitorInfo? FindMonitor(IReadOnlyList<MonitorInfo> monitors)
+        => _monitorId == WallpaperSchedule.PrimaryMonitorId
+            ? monitors.FirstOrDefault(m => m.IsPrimary)
+            : monitors.FirstOrDefault(m => string.Equals(m.DeviceId, _monitorId, StringComparison.OrdinalIgnoreCase));
+
     public async ValueTask DisposeAsync()
     {
         _monitors.TopologyChanged -= OnTopologyChanged;

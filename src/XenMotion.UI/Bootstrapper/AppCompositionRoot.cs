@@ -5,6 +5,7 @@ using XenMotion.Core.Enums;
 using XenMotion.Core.Interfaces;
 using XenMotion.Infrastructure.Persistence.Catalog;
 using XenMotion.Infrastructure.Persistence.Catalog.Remote;
+using XenMotion.Infrastructure.Persistence.Catalog.Static;
 using XenMotion.Infrastructure.Persistence.Creator;
 using XenMotion.Infrastructure.Persistence.Database;
 using XenMotion.Infrastructure.Persistence.Services;
@@ -78,6 +79,7 @@ public static class AppCompositionRoot
         services.AddSingleton<CrashReportService>(sp =>
             new CrashReportService(appDataRoot, sp.GetRequiredService<ILogger<CrashReportService>>()));
         services.AddSingleton<ReleaseReadinessService>();
+        services.AddSingleton<UpdateCheckService>();
 
         services.AddSingleton<IUpdateService>(sp =>
         {
@@ -111,6 +113,10 @@ public static class AppCompositionRoot
         services.AddSingleton<IWallpaperImportService, WallpaperImportService>();
         services.AddSingleton<ILibraryService, LibraryService>();
 
+        // Link imports download with resume and then reuse the file-import pipeline unchanged.
+        services.AddSingleton<RemoteMediaFetcher>();
+        services.AddSingleton<IRemoteWallpaperImportService, UrlImportService>();
+
         // 6. Catalog & Explore Services
         // The provider is selected after settings are loaded. Remote catalog is opt-in and
         // transparently falls back to the deterministic local catalog when configured.
@@ -119,8 +125,35 @@ public static class AppCompositionRoot
         {
             var settings = sp.GetRequiredService<ISettingsService>().CurrentSettings;
             var localProvider = sp.GetRequiredService<LocalCatalogProvider>();
+            var fallback = settings.UseLocalCatalogFallback ? localProvider : null;
+            var timeout = TimeSpan.FromSeconds(Math.Clamp(settings.CatalogRequestTimeoutSeconds, 5, 120));
 
-            if (!settings.UseRemoteCatalog || !Uri.TryCreate(settings.CatalogBackendUrl, UriKind.Absolute, out var catalogUri)
+            if (settings.CatalogSource == CatalogSource.StaticManifest)
+            {
+                // One static catalog.json plus relative media, as served by a CDN, an object store or
+                // `XenMotion.Server --static`. Media downloads reuse the API transport's range rules.
+                if (!Uri.TryCreate(settings.CatalogManifestUrl, UriKind.Absolute, out var manifestUri)
+                    || (manifestUri.Scheme != Uri.UriSchemeHttps && !(manifestUri.Scheme == Uri.UriSchemeHttp && manifestUri.IsLoopback))
+                    || !string.IsNullOrEmpty(manifestUri.UserInfo))
+                {
+                    return localProvider;
+                }
+
+                return new StaticCatalogProvider(
+                    new HttpClient(),
+                    new StaticCatalogOptions
+                    {
+                        ManifestUrl = settings.CatalogManifestUrl,
+                        RequestTimeout = timeout,
+                        UseLocalFallback = settings.UseLocalCatalogFallback
+                    },
+                    CreateDownloadTransport(timeout),
+                    sp.GetRequiredService<ILogger<StaticCatalogProvider>>(),
+                    fallback);
+            }
+
+            if (settings.CatalogSource != CatalogSource.ServerApi
+                || !Uri.TryCreate(settings.CatalogBackendUrl, UriKind.Absolute, out var catalogUri)
                 || (catalogUri.Scheme != Uri.UriSchemeHttps && !(catalogUri.Scheme == Uri.UriSchemeHttp && catalogUri.IsLoopback))
                 || !string.IsNullOrEmpty(catalogUri.UserInfo) || !string.IsNullOrEmpty(catalogUri.Query) || !string.IsNullOrEmpty(catalogUri.Fragment))
             {
@@ -131,7 +164,7 @@ public static class AppCompositionRoot
             {
                 UseRemoteCatalog = true,
                 BaseUrl = settings.CatalogBackendUrl,
-                RequestTimeout = TimeSpan.FromSeconds(Math.Clamp(settings.CatalogRequestTimeoutSeconds, 5, 120)),
+                RequestTimeout = timeout,
                 UseLocalFallback = settings.UseLocalCatalogFallback
             };
 
@@ -143,7 +176,7 @@ public static class AppCompositionRoot
                 httpClient,
                 options,
                 sp.GetRequiredService<ILogger<RemoteCatalogProvider>>(),
-                options.UseLocalFallback ? localProvider : null);
+                fallback);
         });
         services.AddSingleton<IExploreCatalogService, ExploreCatalogService>();
         services.AddSingleton<ICreatorService>(sp =>
@@ -167,10 +200,10 @@ public static class AppCompositionRoot
         services.AddSingleton<IWallpaperCatalogProvider, LocalWallpaperCatalogProvider>();
 
         // 7. Engine Orchestration & Renderer Factory
-        services.AddSingleton<Func<WallpaperType, IWallpaperRenderer>>(sp =>
+        services.AddSingleton<Func<string, WallpaperType, IWallpaperRenderer>>(sp =>
         {
             var loggerFactory = sp.GetRequiredService<ILoggerFactory>();
-            return type =>
+            return (monitorId, type) =>
             {
                 var inner = WallpaperRendererFactory.CreateRenderer(type, loggerFactory, sp.GetRequiredService<HardwareTuningService>().RecordPlaybackReport,
                     250.0 / Math.Max(1, sp.GetRequiredService<MonitorTopologyService>().CurrentMonitors.Count), sp.GetRequiredService<AdaptiveQualityService>().TuneAsync);
@@ -178,15 +211,15 @@ public static class AppCompositionRoot
                     inner,
                     sp.GetRequiredService<IDesktopWallpaperHost>(),
                     sp.GetRequiredService<MonitorTopologyService>(),
-                    loggerFactory.CreateLogger<DesktopWallpaperRenderer>());
+                    loggerFactory.CreateLogger<DesktopWallpaperRenderer>(), monitorId);
             };
         });
 
         services.AddSingleton<IWallpaperEngineOrchestrator>(sp =>
             new WallpaperEngineOrchestrator(
                 sp.GetRequiredService<ILogger<WallpaperEngineOrchestrator>>(),
-                sp.GetRequiredService<Func<WallpaperType, IWallpaperRenderer>>(),
-                sp.GetRequiredService<ISettingsService>()));
+                settingsService: sp.GetRequiredService<ISettingsService>(),
+                monitorRendererFactory: sp.GetRequiredService<Func<string, WallpaperType, IWallpaperRenderer>>()));
         services.AddSingleton<SavedWallpaperService>();
         services.AddSingleton<WindowsPersonalizationService>();
 
@@ -208,6 +241,11 @@ public static class AppCompositionRoot
             sp.GetRequiredService<HardwareTuningService>(), sp.GetRequiredService<ILogger<AdaptiveQualityService>>()));
         services.AddSingleton<IPerformanceMonitorService, PerformanceMonitorService>();
 
+        // 8b. Automatic wallpaper changes: schedule/rotation and per-application rules.
+        services.AddSingleton<IForegroundApplicationMonitor, ForegroundApplicationMonitor>();
+        services.AddSingleton<ApplicationWallpaperService>();
+        services.AddSingleton<WallpaperScheduleService>();
+
         // 9. UI Management & ViewModels
         services.AddSingleton<IWindowManagementService, WindowManagementService>();
         services.AddSingleton<ISystemTrayManager, SystemTrayManager>();
@@ -217,4 +255,20 @@ public static class AppCompositionRoot
 
         return services.BuildServiceProvider();
     }
+
+    /// <summary>
+    /// Transport used for media downloads from a static catalog. Items carry absolute URLs, so the
+    /// base address only satisfies transport validation.
+    /// </summary>
+    private static RemoteCatalogProvider CreateDownloadTransport(TimeSpan requestTimeout)
+        => new(
+            new HttpClient(),
+            new RemoteCatalogOptions
+            {
+                UseRemoteCatalog = true,
+                BaseUrl = "https://media.invalid/",
+                UseLocalFallback = false,
+                RequestTimeout = requestTimeout
+            },
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<RemoteCatalogProvider>.Instance);
 }

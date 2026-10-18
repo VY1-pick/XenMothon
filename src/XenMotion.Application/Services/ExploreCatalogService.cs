@@ -262,7 +262,9 @@ public sealed class ExploreCatalogService : IExploreCatalogService
             {
                 SetState(item.Id, CatalogDownloadState.NotDownloaded);
                 // Keep a resumable partial file when the provider supports ranges.
-                if (_catalogProvider is not IResumableCatalogDownloadProvider && File.Exists(stagedPath))
+                if (string.IsNullOrEmpty(stagedPath))
+                    await CleanUpArtifactsAsync(null, item.Id).ConfigureAwait(false);
+                else if (_catalogProvider is not IResumableCatalogDownloadProvider && File.Exists(stagedPath))
                 {
                     TryDelete(stagedPath);
                     TryDelete(stagedPath + ".etag");
@@ -323,6 +325,8 @@ public sealed class ExploreCatalogService : IExploreCatalogService
                 await target.FlushAsync(ct).ConfigureAwait(false);
                 if (source.ContentLength is { } expected && written - offset != expected)
                     throw new IOException("Catalog download ended before the expected content length.");
+                if (source.TotalLength is { } totalLength && written != totalLength)
+                    throw new IOException("Catalog download has not reached the end of the media file.");
                 return;
             }
             catch (OperationCanceledException)

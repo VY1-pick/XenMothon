@@ -11,6 +11,7 @@ public interface IWallpaperEngineOrchestrator : IAsyncDisposable
 {
     IReadOnlyDictionary<string, WallpaperState> GetActiveMonitorStates();
     WallpaperState GetMonitorState(string monitorDeviceId);
+    Wallpaper? GetActiveWallpaper(string monitorDeviceId);
     bool IsGloballyPaused { get; }
 
     Task ApplyWallpaperAsync(string monitorDeviceId, Wallpaper wallpaper, WallpaperSettings? settings = null, CancellationToken ct = default);

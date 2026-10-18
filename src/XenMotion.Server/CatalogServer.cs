@@ -14,7 +14,21 @@ public static class CatalogServer
         builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
         builder.Services.AddProblemDetails();
         builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
-        var catalog = await CatalogSnapshot.LoadAsync(dataRoot ?? builder.Configuration["Catalog:DataRoot"] ?? Path.Combine(builder.Environment.ContentRootPath, "data"));
+        // The documented command line (--Catalog:DataRoot <path>) is parsed explicitly: the argument
+        // is also readable through configuration, and reading it here keeps the tools working even if
+        // the host's configuration sources change.
+        string root = Path.GetFullPath(
+            dataRoot
+            ?? ReadArgument(args, "Catalog:DataRoot")
+            ?? builder.Configuration["Catalog:DataRoot"]
+            ?? Path.Combine(builder.Environment.ContentRootPath, "data"));
+        if (!Directory.Exists(root))
+        {
+            throw new DirectoryNotFoundException($"Catalog directory not found: {root}. Pass --Catalog:DataRoot <path> or set Catalog:DataRoot.");
+        }
+
+        bool staticMode = args.Any(arg => string.Equals(arg, "--static", StringComparison.OrdinalIgnoreCase))
+            || builder.Configuration.GetValue("Catalog:Static", false);
         var app = builder.Build();
         app.UseExceptionHandler();
         app.Use(async (context, next) =>
@@ -23,13 +37,34 @@ public static class CatalogServer
             if (context.Request.Path.StartsWithSegments("/api")) context.Response.Headers.CacheControl = "no-cache";
             await next(context);
         });
+
+        if (staticMode)
+        {
+            // Static mode serves the catalog directory verbatim: catalog.json plus relative media.
+            // That is the same layout a CDN, object store or GitHub Pages deployment exposes, and the
+            // static file middleware supplies ETag, Last-Modified and HTTP range support for resume.
+            string contentRoot = root;
+            var provider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(contentRoot);
+            app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = provider });
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = provider,
+                ServeUnknownFileTypes = true,
+                ContentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider(),
+                OnPrepareResponse = context => context.Context.Response.Headers.CacheControl = "public, max-age=300"
+            });
+            app.MapGet("/health", () => Results.Ok(new { status = "ready", mode = "static", root = contentRoot }));
+            return app;
+        }
+
+        var catalog = await CatalogSnapshot.LoadAsync(root);
         app.MapGet("/", () => Results.Ok(new { name = "XenMotion Catalog", version = "v1", wallpapers = catalog.Items.Count, catalog = "/api/v1/catalog/search", health = "/health" }));
         app.MapGet("/health", () => Results.Ok(new { status = "ready", wallpapers = catalog.Items.Count }));
         app.MapGet("/api/v1/catalog/categories", () => catalog.Categories);
         app.MapGet("/api/v1/catalog/{id:guid}", (Guid id) => catalog.Items.FirstOrDefault(i => i.Id == id) is { } item ? Results.Ok(CatalogSnapshot.ToWire(item)) : Results.NotFound());
-        app.MapGet("/api/v1/catalog/featured", (HttpRequest request) => Top(request, catalog.Items.Where(i => i.IsFeatured).OrderByDescending(i => i.Rating)));
-        app.MapGet("/api/v1/catalog/popular", (HttpRequest request) => Top(request, catalog.Items.OrderByDescending(i => i.DownloadsCount).ThenByDescending(i => i.Rating)));
-        app.MapGet("/api/v1/catalog/recent", (HttpRequest request) => Top(request, catalog.Items.OrderByDescending(i => i.CreatedAtUtc)));
+        app.MapGet("/api/v1/catalog/featured", (HttpRequest request) => Top(request, catalog.Items, "featured"));
+        app.MapGet("/api/v1/catalog/popular", (HttpRequest request) => Top(request, catalog.Items, "popular"));
+        app.MapGet("/api/v1/catalog/recent", (HttpRequest request) => Top(request, catalog.Items, "recent"));
         app.MapGet("/api/v1/catalog/search", (HttpRequest request) => Search(request, catalog.Items));
         app.MapMethods("/media/{hash}/{fileName}", ["GET", "HEAD"], (HttpContext context, string hash, string fileName) =>
         {
@@ -44,9 +79,29 @@ public static class CatalogServer
         return app;
     }
 
-    private static IResult Top(HttpRequest request, IEnumerable<CatalogItem> items)
+    /// <summary>Reads <c>--Name=value</c> or <c>--Name value</c> from the command line.</summary>
+    private static string? ReadArgument(string[] args, string name)
     {
-        try { return Results.Ok(items.Take(ReadInt(request, "limit", 10, 1, 100)).Select(CatalogSnapshot.ToWire)); }
+        for (int index = 0; index < args.Length; index++)
+        {
+            string argument = args[index];
+            if (argument.StartsWith("--" + name + "=", StringComparison.OrdinalIgnoreCase))
+            {
+                return argument[(name.Length + 3)..];
+            }
+
+            if (string.Equals(argument, "--" + name, StringComparison.OrdinalIgnoreCase) && index + 1 < args.Length)
+            {
+                return args[index + 1];
+            }
+        }
+
+        return null;
+    }
+
+    private static IResult Top(HttpRequest request, IEnumerable<CatalogItem> items, string shelf)
+    {
+        try { return Results.Ok(CatalogQueryEngine.Top(items, shelf, ReadInt(request, "limit", 10, 1, 100)).Select(CatalogSnapshot.ToWire)); }
         catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
     }
 
@@ -65,26 +120,25 @@ public static class CatalogServer
             var tags = request.Query["tags"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             if (tags.Length > 20 || tags.Any(t => t.Length > 64)) throw new ArgumentException("Use at most 20 tags of up to 64 characters.");
             double? rating = ReadNumber(request, "minRating", 5), duration = ReadNumber(request, "maxDurationSeconds", 86400);
-            var tokens = term.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
-            IEnumerable<CatalogItem> matches = items.Where(i =>
-                (string.IsNullOrWhiteSpace(category) || category.Equals("all", StringComparison.OrdinalIgnoreCase) || category.Equals(i.CategoryId, StringComparison.OrdinalIgnoreCase)) &&
-                (type is null || type == i.Type) && (resolution == CatalogResolutionFilter.All || resolution == i.ResolutionCategory) &&
-                (orientation == CatalogOrientationFilter.All || orientation == i.Orientation) && (rating is null || i.Rating >= rating) &&
-                (duration is null || duration == 0 || i.Type != WallpaperType.Video || i.Duration.TotalSeconds <= duration) &&
-                (tags.Length == 0 || i.Tags.Any(t => tags.Contains(t, StringComparer.OrdinalIgnoreCase))) &&
-                tokens.All(t => $"{i.Title} {i.Description} {i.Author} {i.CategoryName} {string.Join(' ', i.Tags)}".Contains(t, StringComparison.OrdinalIgnoreCase)));
-            var ordered = sort switch
+            // The client's static-manifest transport uses this same engine, so both transports agree.
+            var result = CatalogQueryEngine.Search(items, new CatalogSearchQuery
             {
-                CatalogSortOption.Newest => matches.OrderByDescending(i => i.CreatedAtUtc),
-                CatalogSortOption.Rating => matches.OrderByDescending(i => i.Rating).ThenByDescending(i => i.RatingCount),
-                CatalogSortOption.TitleAsc => matches.OrderBy(i => i.Title, StringComparer.OrdinalIgnoreCase),
-                CatalogSortOption.TitleDesc => matches.OrderByDescending(i => i.Title, StringComparer.OrdinalIgnoreCase),
-                CatalogSortOption.Relevance when tokens.Length > 0 => matches.OrderByDescending(i => i.Title.Contains(term, StringComparison.OrdinalIgnoreCase) ? 2 : tokens.Count(t => i.Title.Contains(t, StringComparison.OrdinalIgnoreCase))).ThenByDescending(i => i.DownloadsCount),
-                _ => matches.OrderByDescending(i => i.DownloadsCount).ThenByDescending(i => i.Rating)
-            };
-            long skip = ((long)page - 1) * pageSize;
-            var selected = skip > int.MaxValue ? [] : ordered.Skip((int)skip).Take(pageSize).Select(CatalogSnapshot.ToWire).ToArray();
-            return Results.Ok(new { items = selected, pageNumber = page, pageSize, totalCount = matches.Count() });
+                SearchTerm = term,
+                SortBy = sort,
+                PageNumber = page,
+                PageSize = pageSize,
+                Filter = new CatalogFilter
+                {
+                    CategoryId = string.IsNullOrWhiteSpace(category) ? null : category,
+                    Type = type,
+                    Resolution = resolution,
+                    Orientation = orientation,
+                    MaxDuration = duration is { } seconds ? TimeSpan.FromSeconds(seconds) : null,
+                    Tags = tags.Length == 0 ? null : tags,
+                    MinRating = rating
+                }
+            });
+            return Results.Ok(new { items = result.Items.Select(CatalogSnapshot.ToWire).ToArray(), pageNumber = result.PageNumber, pageSize = result.PageSize, totalCount = result.TotalCount });
         }
         catch (ArgumentException ex) { return Results.BadRequest(new { error = ex.Message }); }
     }

@@ -12,17 +12,17 @@ namespace XenMotion.UI.ViewModels;
 /// Presentation model for application personalization and performance settings.
 /// Changes are kept in memory until the user explicitly saves them.
 /// </summary>
-public sealed class SettingsViewModel : INotifyPropertyChanged
+public sealed partial class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly ISettingsService _settingsService;
     private readonly IWallpaperEngineOrchestrator _orchestrator;
     private readonly ILogger<SettingsViewModel> _logger;
-    private readonly (bool Online, string Url, int Timeout, bool Fallback) _initialCatalog;
+    private readonly (CatalogSource Source, string Manifest, string Url, int Timeout, bool Fallback) _initialCatalog;
 
     private bool _hasDraftChanges;
     private string _displayName = "Guest";
     private string _theme = "Dark";
-    private bool _syncWindowsAccent, _syncDesktopBackground, _useRemoteCatalog, _useLocalCatalogFallback = true, _pauseOnApplicationFocus;
+    private bool _syncWindowsAccent, _syncDesktopBackground, _useLocalCatalogFallback = true, _pauseOnApplicationFocus;
     private string _lockScreenImagePath = "", _catalogBackendUrl = "", _pauseApplications = "";
     private int _catalogRequestTimeoutSeconds = 15;
     private LockScreenWallpaperMode _lockScreenMode;
@@ -30,7 +30,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool SyncDesktopBackground { get => _syncDesktopBackground; set => SetField(ref _syncDesktopBackground, value); }
     public LockScreenWallpaperMode LockScreenMode { get => _lockScreenMode; set => SetField(ref _lockScreenMode, value); }
     public string LockScreenImagePath { get => _lockScreenImagePath; set => SetField(ref _lockScreenImagePath, value); }
-    public bool UseRemoteCatalog { get => _useRemoteCatalog; set => SetField(ref _useRemoteCatalog, value); }
+    // UseRemoteCatalog now derives from CatalogSource and lives in SettingsViewModel.Automation.cs.
     public string CatalogBackendUrl { get => _catalogBackendUrl; set => SetField(ref _catalogBackendUrl, value); }
     public int CatalogRequestTimeoutSeconds { get => _catalogRequestTimeoutSeconds; set => SetField(ref _catalogRequestTimeoutSeconds, value); }
     public bool UseLocalCatalogFallback { get => _useLocalCatalogFallback; set => SetField(ref _useLocalCatalogFallback, value); }
@@ -145,9 +145,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _tuning.PlaybackReportChanged += (_, _) => OnPropertyChanged(nameof(PlaybackMeasurement));
 
         var initial = _settingsService.CurrentSettings;
-        _initialCatalog = (initial.UseRemoteCatalog, initial.CatalogBackendUrl, initial.CatalogRequestTimeoutSeconds, initial.UseLocalCatalogFallback);
+        _initialCatalog = (initial.CatalogSource, initial.CatalogManifestUrl, initial.CatalogBackendUrl, initial.CatalogRequestTimeoutSeconds, initial.UseLocalCatalogFallback);
         LoadFromSettings(initial);
         _settingsService.SettingsChanged += OnSettingsChanged;
+        LoadAutomationDraft(initial);
     }
 
     public void ResetDraft() => LoadFromSettings(new ApplicationSettings());
@@ -177,10 +178,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 settings.SyncDesktopBackground = SyncDesktopBackground;
                 settings.LockScreenMode = LockScreenMode;
                 settings.LockScreenImagePath = LockScreenImagePath;
-                settings.UseRemoteCatalog = UseRemoteCatalog;
+                settings.CatalogSource = CatalogSource;
+                // Kept in sync so a downgrade to an older build still reads the selection.
+                settings.UseRemoteCatalog = CatalogSource == CatalogSource.ServerApi;
+                settings.CatalogManifestUrl = CatalogManifestUrl.Trim();
                 settings.CatalogBackendUrl = CatalogBackendUrl.Trim();
                 settings.CatalogRequestTimeoutSeconds = CatalogRequestTimeoutSeconds;
                 settings.UseLocalCatalogFallback = UseLocalCatalogFallback;
+                settings.CheckForUpdates = CheckForUpdates;
+                settings.UpdateManifestUrl = UpdateManifestUrl.Trim();
+                ApplyAutomationDraft(settings);
                 settings.Performance.PauseOnApplicationFocus = PauseOnApplicationFocus;
                 settings.Performance.PauseApplications = PauseApplications.Trim();
                 settings.StartWithWindows = StartWithWindows;
@@ -220,7 +227,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             await _orchestrator.ApplyPlaybackSettingsAllAsync(_settingsService.CurrentSettings.CreatePlaybackSettings(), ct).ConfigureAwait(false);
 
             var saved = _settingsService.CurrentSettings;
-            bool catalogChanged = _initialCatalog != (saved.UseRemoteCatalog, saved.CatalogBackendUrl, saved.CatalogRequestTimeoutSeconds, saved.UseLocalCatalogFallback);
+            bool catalogChanged = _initialCatalog != (saved.CatalogSource, saved.CatalogManifestUrl, saved.CatalogBackendUrl, saved.CatalogRequestTimeoutSeconds, saved.UseLocalCatalogFallback);
             StatusMessage = catalogChanged ? "Settings saved. Restart XenMotion to apply catalog changes." : "Settings saved.";
             SettingsSaved?.Invoke(this, EventArgs.Empty);
         }
@@ -238,10 +245,17 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     private void Validate()
     {
-        if (UseRemoteCatalog && (!Uri.TryCreate(CatalogBackendUrl.Trim(), UriKind.Absolute, out var endpoint) ||
+        if (CatalogSource == CatalogSource.ServerApi && (!Uri.TryCreate(CatalogBackendUrl.Trim(), UriKind.Absolute, out var endpoint) ||
             (endpoint.Scheme != Uri.UriSchemeHttps && !(endpoint.Scheme == Uri.UriSchemeHttp && endpoint.IsLoopback)) ||
             !string.IsNullOrEmpty(endpoint.UserInfo) || !string.IsNullOrEmpty(endpoint.Query) || !string.IsNullOrEmpty(endpoint.Fragment)))
             throw new ArgumentException("Catalog server must be an HTTPS base URL (HTTP is allowed only on localhost).");
+        if (CatalogSource == CatalogSource.StaticManifest && (!Uri.TryCreate(CatalogManifestUrl.Trim(), UriKind.Absolute, out var manifest) ||
+            (manifest.Scheme != Uri.UriSchemeHttps && !(manifest.Scheme == Uri.UriSchemeHttp && manifest.IsLoopback)) ||
+            !string.IsNullOrEmpty(manifest.UserInfo)))
+            throw new ArgumentException("The online catalog file must be an HTTPS link to a catalog.json (HTTP is allowed only on localhost).");
+        if (CheckForUpdates && !string.IsNullOrWhiteSpace(UpdateManifestUrl) &&
+            (!Uri.TryCreate(UpdateManifestUrl.Trim(), UriKind.Absolute, out var updateManifest) || updateManifest.Scheme != Uri.UriSchemeHttps))
+            throw new ArgumentException("The update manifest must be an HTTPS link or left empty.");
         if (CatalogRequestTimeoutSeconds is < 1 or > 60)
             throw new ArgumentOutOfRangeException(nameof(CatalogRequestTimeoutSeconds), "Server timeout must be between 1 and 60 seconds.");
         if (LockScreenMode == LockScreenWallpaperMode.SeparateImage &&
@@ -275,7 +289,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _syncDesktopBackground = settings.SyncDesktopBackground;
         _lockScreenMode = settings.LockScreenMode;
         _lockScreenImagePath = settings.LockScreenImagePath;
-        _useRemoteCatalog = settings.UseRemoteCatalog;
+        _catalogSource = settings.CatalogSource;
+        _catalogManifestUrl = settings.CatalogManifestUrl;
+        _checkForUpdates = settings.CheckForUpdates;
+        _updateManifestUrl = settings.UpdateManifestUrl;
         _catalogBackendUrl = settings.CatalogBackendUrl;
         _catalogRequestTimeoutSeconds = settings.CatalogRequestTimeoutSeconds;
         _useLocalCatalogFallback = settings.UseLocalCatalogFallback;
@@ -321,20 +338,25 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     private void OnSettingsChanged(object? sender, ApplicationSettings settings)
     {
-        if (!_hasDraftChanges || IsSaving) LoadFromSettings(settings);
+        if (!_hasDraftChanges || IsSaving)
+        {
+            LoadFromSettings(settings);
+            LoadAutomationDraft(settings);
+        }
     }
 
-    private void SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    private bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
     {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return;
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
         field = value;
-        if (propertyName is not (nameof(IsSaving) or nameof(StatusMessage))) _hasDraftChanges = true;
+        if (propertyName is not (nameof(IsSaving) or nameof(StatusMessage) or nameof(UpdateStatus) or nameof(AutomationStatus) or nameof(IsCheckingForUpdates))) _hasDraftChanges = true;
         if (propertyName is nameof(GlobalTargetFps) or nameof(VideoHeightLimit) or nameof(RenderScale) or nameof(HighQualityFiltering) or nameof(UseHardwareDecoding) or nameof(EnableGlassEffects) or nameof(BatteryFps) or nameof(PauseOnBattery) or nameof(PauseOnFullscreen) or nameof(PauseOnMaximized) or nameof(PauseWhenCovered) or nameof(PauseOnlyWhenFullyCovered) or nameof(CoveredThresholdPercentage) or nameof(HeartbeatIntervalMs) or nameof(DefaultSharpness))
         {
             _qualityPreset = QualityPreset.Custom;
             OnPropertyChanged(nameof(QualityPreset));
         }
         OnPropertyChanged(propertyName);
+        return true;
     }
 
     private void OnPropertyChanged([CallerMemberName] string? propertyName = null)

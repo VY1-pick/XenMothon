@@ -93,3 +93,45 @@ Tests start real Kestrel on an ephemeral loopback port and use the desktop's act
 ## Deployment boundary
 
 No public server is deployed yet. Deploy the server separately from the Windows application. Use HTTPS and a reverse proxy on your chosen host; configure its domain, request limits and monitoring there. The catalog directory must be private to the server process, with writable `.published` storage. Do not expose a file editor or a raw catalog-directory static file share. Preserve Range/If-Range and ETag through the proxy/CDN and avoid transforming/compressing media bytes. The default script binds loopback only; public hosting is a separate step after a domain and host are selected.
+
+## Static hosting mode (`--static`)
+
+The same project can serve the catalog directory verbatim, with no API routes and no `.published`
+cache. This is the exact layout a CDN, object store or static web host publishes, and it is what the
+desktop client's **Online catalog file** mode reads.
+
+```powershell
+# Serve the folder (or use tools/Start-CatalogServer.ps1 -Static)
+dotnet run --project src/XenMotion.Server -- --static --urls http://127.0.0.1:5188 --Catalog:DataRoot D:\Catalog
+
+# Then in XenMotion: Settings -> Wallpaper catalog -> Online catalog file
+#   http://127.0.0.1:5188/catalog.json
+```
+
+The static file middleware handles `ETag`, `Last-Modified`, conditional requests and `Range`, so
+resumable downloads work unchanged. Because the manifest's `mediaPath`, `thumbnailPath` and
+`previewPath` are relative, the same folder works on any host:
+
+```text
+catalog-directory/
+  catalog.json
+  media/
+    ocean.mp4
+    ocean-thumbnail.jpg
+```
+
+Differences from API mode:
+
+- Download byte sizes come from the response headers instead of the published asset table, so
+  `fileSizeBytes` in the manifest is optional (accurate values still improve the progress display).
+- Reloading the manifest is the client's business: it caches the file for a few minutes, keeps the
+  last good copy if a refresh fails, and recomputes category counts from the published items so a
+  stale `itemCount` cannot mislead the UI.
+- Media paths must stay inside the manifest's own directory. Items that point above it (or that are
+  missing required fields) are skipped with a log line instead of failing the whole catalog.
+- Both transports share `CatalogQueryEngine`, so search, filters, sorting and shelves behave
+  identically whether the catalog arrives from the API or from a static file.
+
+`CatalogServerTests` and `StaticCatalogProviderTests` both start real Kestrel on a loopback port; the
+static test also asserts search parity against the live API and verifies resume bytes and the
+mismatched-`If-Range` restart.

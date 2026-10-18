@@ -15,7 +15,7 @@ namespace XenMotion.Application.Services;
 public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
 {
     private readonly ILogger<WallpaperEngineOrchestrator> _logger;
-    private readonly Func<WallpaperType, IWallpaperRenderer>? _rendererFactory;
+    private readonly Func<string, WallpaperType, IWallpaperRenderer>? _rendererFactory;
     private readonly ConcurrentDictionary<string, MonitorSession> _sessions = new();
     private readonly object _globalLock = new();
     private volatile bool _isGloballyPaused;
@@ -32,10 +32,11 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
     public WallpaperEngineOrchestrator(
         ILogger<WallpaperEngineOrchestrator> logger,
         Func<WallpaperType, IWallpaperRenderer>? rendererFactory = null,
-        ISettingsService? settingsService = null)
+        ISettingsService? settingsService = null,
+        Func<string, WallpaperType, IWallpaperRenderer>? monitorRendererFactory = null)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _rendererFactory = rendererFactory;
+        _rendererFactory = monitorRendererFactory ?? (rendererFactory is null ? null : (_, type) => rendererFactory(type));
         _settingsService = settingsService;
     }
 
@@ -50,6 +51,14 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
         return _sessions.TryGetValue(monitorDeviceId, out var session)
             ? session.StateMachine.CurrentState
             : WallpaperState.Uninitialized;
+    }
+
+    public Wallpaper? GetActiveWallpaper(string monitorDeviceId)
+    {
+        if (!_sessions.TryGetValue(monitorDeviceId, out var session)) return null;
+        lock (session.SwitchLock)
+            return session.StateMachine.CurrentState is WallpaperState.Playing or WallpaperState.Paused or WallpaperState.PartiallyVisible
+                ? session.ActiveWallpaper : null;
     }
 
     public async Task ApplyWallpaperAsync(
@@ -100,7 +109,7 @@ public sealed class WallpaperEngineOrchestrator : IWallpaperEngineOrchestrator
             var previousRenderer = session.CurrentRenderer;
             session.CurrentRenderer = null;
             // Reuse the device and desktop layer when switching between the same media type.
-            renderer = previousRenderer?.SupportedType == wallpaper.Type ? previousRenderer : _rendererFactory?.Invoke(wallpaper.Type);
+            renderer = previousRenderer?.SupportedType == wallpaper.Type ? previousRenderer : _rendererFactory?.Invoke(monitorDeviceId, wallpaper.Type);
             if (previousRenderer != null && !ReferenceEquals(previousRenderer, renderer))
             {
                 try { await previousRenderer.StopAsync(CancellationToken.None).ConfigureAwait(false); }

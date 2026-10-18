@@ -2,15 +2,19 @@
 
 **Live wallpapers for Windows, with measured automatic quality and a native WinUI 3 interface.**
 
-[فارسی](README.fa.md) · **English** · [Download private beta](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
+[فارسی](README.fa.md) · **English** · [Download Beta 05](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
 
 ![XenMotion Library with imported video wallpapers and playback controls](docs/images/xenmotion-beta.jpg)
 
-*The Library interface in version 0.9.0-beta.3. Wallpapers shown are example user imports; they are not included in the installer.*
+*The Library interface in version 0.9.0-beta.5. Wallpapers shown are example user imports; they are not included in the installer.*
 
 XenMotion turns local images and videos into desktop wallpapers. Import your own media, manage it in a library, control playback and sound, and choose how much work the wallpaper should do while other applications are running.
 
-This is a **private beta**. Repository access is required to download its release assets. Hardware compatibility and physical display/audio behavior still need feedback from testers.
+This is **Beta 05**, a public beta. Source and release downloads are publicly available. Hardware compatibility and physical display/audio behavior still need feedback from testers.
+
+> Beta 05 (**0.9.0-beta.5**) includes online catalogs, link imports, schedule/rotation, per-application wallpaper rules and update notifications. See [release notes](docs/engineering/beta5-release-notes.md).
+
+The installer is unsigned, so Windows may show a publisher warning. See [code-signing.md](docs/engineering/code-signing.md) for the signing procedure.
 
 ## Features
 
@@ -22,6 +26,11 @@ This is a **private beta**. Repository access is required to download its releas
 - Automatic quality measurement and saved profiles for the actual video and display context.
 - Pause policies for fullscreen/maximized applications, desktop coverage and battery use.
 - Notification-area operation, optional Windows startup and restoration of the saved wallpaper.
+- Wallpaper schedule and rotation: daily time windows per monitor plus rotation through a pool at a chosen interval.
+- Wallpaper per application: a different wallpaper while a chosen application has focus.
+- Import from a link: download an image or video over HTTP(S) with resume, then keep it in the library.
+- Online catalogs in two shapes: a live catalog API or a single static `catalog.json` served by any HTTPS host.
+- In-app update check that only notifies; it never downloads or installs a release.
 
 ## Requirements
 
@@ -38,8 +47,8 @@ There is no certified minimum hardware specification yet. Media codec, bitrate, 
 
 ## Install and start
 
-1. Open the [0.9.0-beta.3 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.3) using an account with repository access.
-2. Download `XenMotion-0.9.0-beta.3-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
+1. Open the [0.9.0-beta.5 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5).
+2. Download `XenMotion-0.9.0-beta.5-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
 3. Run the installer and choose the destination. The default is `%LOCALAPPDATA%\Programs\XenMotion`.
 4. Open XenMotion from its shortcut. In **Library**, choose **Import**, or drop media into the window.
 5. Select **Set as wallpaper** on a library card. Use the **Now Playing** dock to pause, adjust volume, mute or stop.
@@ -50,7 +59,7 @@ The beta installer is **unsigned**. Windows may show a publisher or reputation w
 To inspect the downloaded installer hash in PowerShell, run this from its download folder and compare the full result with `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.3-Setup-x64.exe
+Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.5-Setup-x64.exe
 ```
 
 Closing the window keeps XenMotion in the notification area. Open it again from its tray icon. To end the engine, choose **Exit XenMotion** from the tray menu. Stopping all wallpapers clears the saved startup wallpaper assignment.
@@ -71,13 +80,47 @@ The default Explore catalog contains illustrative previews. Its video entries ar
 
 Run `powershell -File .\tools\Start-CatalogServer.ps1` to start the local catalog and download server at `http://127.0.0.1:5188`. The demo contains two downloadable images. See the [server guide](docs/engineering/catalog-server.md) for publishing media, connecting XenMotion and deployment requirements.
 
+### Online catalog modes
+
+Settings → General → **Wallpaper catalog** chooses where Explore reads from. All three modes support progress, cancellation and resume, and the offline catalog always remains available as a fallback:
+
+| Mode | What it reads |
+| --- | --- |
+| Offline built-in catalog | The bundled, deterministic catalog. Works with no network at all. |
+| Online catalog server | The six live `api/v1/catalog/*` routes served by `XenMotion.Server`. |
+| Online catalog file | One static `catalog.json` plus relative media, served by any HTTPS host or CDN. |
+
+Both online modes share the same filtering and sorting engine, so search results, categories and shelves behave identically whichever host you use.
+
+### Static hosting
+
+`powershell -File .\tools\Start-CatalogServer.ps1 -Static` serves the catalog folder exactly as a CDN, object store or static web host would:
+
+```text
+catalog-directory/
+  catalog.json     # categories + items (server manifest shape)
+  media/           # images and videos referenced by relative paths
+```
+
+The static file host provides the strong `ETag`, `Accept-Ranges` and `Range` responses that resumable downloads need. Upload the same folder anywhere and point **Online catalog file** at its `catalog.json`.
+
+Host the catalog and its media on a reachable HTTPS location; the update manifest is published separately in this public repository.
+
 ## Beta controls
 
 Settings open in their own window, with a reset that preserves the library and custom edits. Playback → Global wallpaper edits shares color, flip, opacity, alignment and playback controls across wallpapers. The editor can switch between global and preserved custom edits; global selection is disabled with a tooltip until enabled in Settings. Images and videos both support visual edits and reset.
 
 Library → Select supports multiple selection, Select all and confirmed batch removal. A tray single click opens the menu; double click opens XenMotion. The menu also opens Settings and Windows screenshot capture. Activity options pause on screen saver, energy saver and Remote Desktop. Motion previews are manual by default to reduce background work.
 
-The installer presents [private-beta terms](docs/legal/BETA-TERMS.txt); the original [MIT license](LICENSE) continues to apply to covered material. Silent installs require `/ACCEPTTERMS=yes`.
+Library → **From link** downloads a wallpaper from a direct image or video URL, resumes an interrupted transfer, detects the real container and then runs the normal import pipeline (duplicate detection, hashing, thumbnail, storage, metadata). Use it for media you are allowed to download.
+
+Settings → **Schedule** pins wallpapers to daily time windows (a window may cross midnight) and rotates through a wallpaper pool at a chosen interval, per monitor. A matching time window always wins over rotation, and when nothing applies the saved wallpaper comes back. **Show the next wallpaper now** advances the rotation immediately.
+
+Settings → **Apps** shows a different wallpaper while a chosen application has focus, for example a calm wallpaper while a game or editor is open. Rules match the executable name (`code`, `chrome.exe`). When the application loses focus the saved wallpaper comes back; nothing about a temporary switch is written into your startup wallpaper.
+
+Settings → **Updates** checks a release manifest over HTTPS and reports the result with a link to the release notes. XenMotion only notifies: it never downloads or installs a release on its own. The manifest is published at [`docs/updates/update.json`](docs/updates/update.json) and can be repointed at any HTTPS URL.
+
+The installer presents [beta terms](docs/legal/BETA-TERMS.txt); the original [MIT license](LICENSE) continues to apply to covered material. Silent installs require `/ACCEPTTERMS=yes`.
 
 ## Automatic quality
 
@@ -144,9 +187,9 @@ Do not assume a visually changed video position alone proves pause failure: repo
 
 ## Beta validation and known limits
 
-Version **0.9.0-beta.3** moves the solution to **.NET 10** and **Windows App SDK 2.5.1** (replacing the end-of-life 1.8 servicing line). Its Release build had zero warnings/errors and passed **316 .NET tests**. Installer upgrade, installed-file hashes and uninstall were tested. The dependency audit reported no known vulnerable NuGet packages at release time.
+Beta 05 (**0.9.0-beta.5**) uses .NET 10 and Windows App SDK 2.5.1. Release validation and the fixes for the 14 audit findings are documented in the [Beta 05 review](docs/engineering/beta5-review.md).
 
-These checks are evidence for tested paths, not a security guarantee or certification of every device. Current limits include primary-display targeting, incomplete independent multi-monitor quality allocation, codec/driver-dependent behavior and unverified physical timing on all display/audio devices. Image library metadata still has legacy defaults in parts of persistence. See the [beta review](docs/engineering/private-beta-review.md) for scope and remaining boundaries.
+Hardware codec/driver support, physical display/audio timing and independent multi-monitor quality allocation still need device testing. The installer is unsigned. Image library metadata retains legacy defaults in parts of persistence; see the review for the exact verification boundary.
 
 ## Feedback for testers
 
@@ -177,10 +220,10 @@ For installer packaging, provide Inno Setup at the script's default compiler pat
 
 ```powershell
 .\tools\Build-Release.ps1 -InnoCompiler 'C:\Path\To\Inno Setup\ISCC.exe'
-.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.3'
+.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.5'
 ```
 
-The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.3`. GitHub release publication is a separate step.
+The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.5`. GitHub release publication is a separate step.
 
 ## Documentation and license
 
@@ -188,7 +231,7 @@ The build script restores, audits dependencies, builds/tests, publishes self-con
 - [Algorithm design (Persian)](docs/engineering/adaptive-quality-algorithm.fa.md)
 - [Algorithm flowchart (open the HTML locally)](docs/engineering/adaptive-quality-flowchart.html)
 - [Standalone lab guide (Persian)](tools/AdaptiveQualityLab/README.fa.md)
-- [Private beta review](docs/engineering/private-beta-review.md)
+- [Beta 05 review](docs/engineering/beta5-review.md)
 - [4K playback handoff](docs/engineering/4k-playback-fix.md)
 
 Application source is licensed under [MIT](LICENSE). Bundled dependencies retain their own licenses; the embedded Python runtime includes its license file. User wallpaper artwork is not covered by the application's MIT license.

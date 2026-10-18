@@ -117,6 +117,9 @@
           <Button x:Name="ImportButton" Style="{StaticResource XenMotionButtonStyle}" Click="OnImportButtonClicked" Visibility="Collapsed" AutomationProperties.Name="Import files">
             <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE710;" FontSize="13" /><TextBlock Text="Import" /></StackPanel>
           </Button>
+          <Button x:Name="ImportFromLinkButton" Style="{StaticResource XenMotionButtonStyle}" Click="OnImportFromLinkClicked" Visibility="Collapsed" ToolTipService.ToolTip="Download a wallpaper from a link" AutomationProperties.Name="Import from link">
+            <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE71B;" FontSize="13" /><TextBlock Text="From link" /></StackPanel>
+          </Button>
           <Button x:Name="RefreshButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnRefreshClicked" ToolTipService.ToolTip="Refresh" AutomationProperties.Name="Refresh" ><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE72C;" FontSize="15" /></Button>
           <Button x:Name="SettingsButton" Style="{StaticResource XenMotionIconButtonStyle}" Click="OnSettingsClicked" ToolTipService.ToolTip="Settings" AutomationProperties.Name="Settings"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE713;" FontSize="15" /></Button>
         </StackPanel>
@@ -315,6 +318,9 @@
                   <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
                     <Button Style="{StaticResource XenMotionPrimaryButtonStyle}" Click="OnImportButtonClicked" AutomationProperties.Name="Import files">
                       <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE710;" FontSize="13" /><TextBlock Text="Import files" /></StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource XenMotionButtonStyle}" Click="OnImportFromLinkClicked" ToolTipService.ToolTip="Download a wallpaper from a link" AutomationProperties.Name="Import from link">
+                      <StackPanel Orientation="Horizontal" Spacing="8"><FontIcon Style="{StaticResource XenMotionIconStyle}" Glyph="&#xE71B;" FontSize="13" /><TextBlock Text="From link" /></StackPanel>
                     </Button>
                     <Button Style="{StaticResource XenMotionButtonStyle}" Content="Browse Explore" Click="OnNavExploreClicked"  AutomationProperties.Name="Browse Explore" />
                   </StackPanel>
@@ -728,10 +734,12 @@
 
           <Border Grid.Row="1" Style="{StaticResource XenMotionGlassPanelStyle}" CornerRadius="15" Padding="4">
             <Grid ColumnSpacing="2">
-              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
               <ToggleButton x:Name="SettingsTabGeneral" Grid.Column="0" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="General" Click="OnSettingsTabClicked" Content="General"  AutomationProperties.Name="General" />
               <ToggleButton x:Name="SettingsTabPlayback" Grid.Column="1" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Playback" Click="OnSettingsTabClicked" Content="Playback"  AutomationProperties.Name="Playback" />
               <ToggleButton x:Name="SettingsTabPerformance" Grid.Column="2" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Performance" Click="OnSettingsTabClicked" Content="Performance"  AutomationProperties.Name="Performance" />
+              <ToggleButton x:Name="SettingsTabSchedule" Grid.Column="3" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Schedule" Click="OnSettingsTabClicked" Content="Schedule"  AutomationProperties.Name="Schedule" />
+              <ToggleButton x:Name="SettingsTabApps" Grid.Column="4" Style="{StaticResource XenMotionTabStyle}" HorizontalAlignment="Stretch" Tag="Apps" Click="OnSettingsTabClicked" Content="Apps"  AutomationProperties.Name="Per-application wallpapers" />
             </Grid>
           </Border>
 
@@ -787,12 +795,35 @@
                 </Border>
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
-                    <TextBlock Text="Wallpaper server" FontSize="18" FontWeight="SemiBold" />
-                    <ToggleButton x:Name="SettingsRemoteCatalogToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use online catalog" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Use online catalog" />
-                    <TextBox x:Name="SettingsCatalogUrlText" Header="HTTPS server base URL" PlaceholderText="https://catalog.example.com/" TextChanged="OnAdvancedTextChanged" />
+                    <TextBlock Text="Wallpaper catalog" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="Choose where Explore reads wallpapers from. Every mode supports progress, cancellation and resume; the offline catalog always stays available." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <ComboBox x:Name="SettingsCatalogSourceCombo" Header="Catalog source" HorizontalAlignment="Stretch" SelectionChanged="OnCatalogSourceChanged" AutomationProperties.Name="Catalog source">
+                      <ComboBoxItem Content="Offline built-in catalog" />
+                      <ComboBoxItem Content="Online catalog server (live API)" />
+                      <ComboBoxItem Content="Online catalog file (static catalog.json)" />
+                    </ComboBox>
+                    <TextBox x:Name="SettingsCatalogManifestText" Header="Online catalog file (HTTPS catalog.json)" PlaceholderText="https://cdn.example.com/catalog.json" TextChanged="OnAdvancedTextChanged" AutomationProperties.Name="Catalog manifest URL" />
+                    <TextBox x:Name="SettingsCatalogUrlText" Header="Catalog server base URL" PlaceholderText="https://catalog.example.com/" TextChanged="OnAdvancedTextChanged" />
                     <NumberBox x:Name="SettingsCatalogTimeoutNumber" Header="Request timeout (seconds)" Minimum="1" Maximum="60" SmallChange="1" ValueChanged="OnCatalogTimeoutChanged" />
-                    <ToggleButton x:Name="SettingsLocalFallbackToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use local catalog when server is unavailable" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Use local catalog when server is unavailable" />
-                    <TextBlock Text="Save and restart to change catalog servers. Downloads support progress, cancellation and resume. Leave online catalog disabled until your server is ready." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <ToggleButton x:Name="SettingsLocalFallbackToggle" Style="{StaticResource XenMotionChipStyle}" Content="Use the offline catalog when the server is unavailable" Click="OnSettingsToggleClicked"  AutomationProperties.Name="Use local catalog when server is unavailable" />
+                    <TextBlock Text="Save and restart to switch between the live server API and a static catalog file. `XenMotion.Server --static` serves a ready-to-publish static catalog from any folder." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+                <Border Style="{StaticResource XenMotionSectionStyle}">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Updates" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="XenMotion only notifies you about a newer release. It never downloads or installs a release on its own." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="16" MinHeight="48">
+                      <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Check for updates" Style="{StaticResource XenMotionLabelTextStyle}" />
+                        <TextBlock Text="Runs quietly at startup and shows a tray notification." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleButton x:Name="SettingsCheckUpdatesToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Check for updates" />
+                    </Grid>
+                    <TextBox x:Name="SettingsUpdateUrlText" Header="Release manifest (HTTPS JSON)" PlaceholderText="https://example.com/update.json" TextChanged="OnAdvancedTextChanged" AutomationProperties.Name="Update manifest URL" />
+                    <Button x:Name="SettingsCheckUpdatesButton" Style="{StaticResource XenMotionButtonStyle}" Content="Check now" Click="OnCheckUpdatesNowClicked" HorizontalAlignment="Stretch" AutomationProperties.Name="Check for updates now" />
+                    <TextBlock x:Name="SettingsUpdateStatusText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>
                 </Border>
               </StackPanel>
@@ -1103,6 +1134,58 @@
             </StackPanel>
           </StackPanel>
         </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="SettingsScheduleSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
+              <StackPanel Spacing="14">
+                <Border Style="{StaticResource XenMotionSectionStyle}">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Automatic wallpaper schedule" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="Time windows pin a wallpaper for part of the day. Wallpapers without a window take turns in the rotation pool." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="16" MinHeight="48">
+                      <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                      <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="Use the schedule" Style="{StaticResource XenMotionLabelTextStyle}" />
+                        <TextBlock Text="Off keeps wallpapers exactly where you put them." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ToggleButton x:Name="SettingsScheduleToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Use the wallpaper schedule" />
+                    </Grid>
+                    <NumberBox x:Name="SettingsRotationIntervalNumber" Header="Rotate every (minutes, 0 = never)" Minimum="0" Maximum="1440" SmallChange="5" ValueChanged="OnRotationIntervalChanged" AutomationProperties.Name="Rotation interval in minutes" />
+                    <TextBlock x:Name="SettingsScheduleSummaryText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+                <Border Style="{StaticResource XenMotionSectionStyle}">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Scheduled wallpapers" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel x:Name="ScheduleEntriesPanel" Spacing="8" />
+                    <TextBlock x:Name="ScheduleEmptyText" Text="Nothing scheduled yet. Add a time window or a wallpaper to rotate." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
+                    <ComboBox x:Name="ScheduleWallpaperCombo" Header="Wallpaper" HorizontalAlignment="Stretch" AutomationProperties.Name="Wallpaper to schedule" />
+                    <TextBox x:Name="ScheduleWindowText" Header="Time window (optional)" PlaceholderText="07:00-19:00 — leave empty to rotate this wallpaper" AutomationProperties.Name="Schedule time window" />
+                    <Button x:Name="ScheduleAddButton" Style="{StaticResource XenMotionButtonStyle}" Content="Add to schedule" Click="OnAddScheduleEntryClicked" HorizontalAlignment="Stretch" AutomationProperties.Name="Add to schedule" />
+                    <Button x:Name="ScheduleNextButton" Style="{StaticResource XenMotionButtonStyle}" Content="Show the next wallpaper now" Click="OnRotateNowClicked" HorizontalAlignment="Stretch" AutomationProperties.Name="Show the next wallpaper now" />
+                    <TextBlock x:Name="SettingsAutomationStatusText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+
+            <ScrollViewer x:Name="SettingsAppsSection" VerticalScrollBarVisibility="Auto" Padding="0,0,8,0" Visibility="Collapsed">
+              <StackPanel Spacing="14">
+                <Border Style="{StaticResource XenMotionSectionStyle}">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="Wallpaper per application" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="Show a different wallpaper while a chosen application has focus. When it loses focus the saved wallpaper comes back." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <StackPanel x:Name="AppRulesPanel" Spacing="8" />
+                    <TextBlock x:Name="AppRulesEmptyText" Text="No applications configured yet." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <Rectangle Height="1" Fill="{StaticResource XenMotionDividerBrush}" />
+                    <TextBox x:Name="SettingsProcessNameText" Header="Application" PlaceholderText="code, chrome.exe, steam" AutomationProperties.Name="Application process name" />
+                    <ComboBox x:Name="SettingsRuleWallpaperCombo" Header="Wallpaper" HorizontalAlignment="Stretch" AutomationProperties.Name="Wallpaper for the application" />
+                    <Button x:Name="ApplicationRuleAddButton" Style="{StaticResource XenMotionButtonStyle}" Content="Add application rule" Click="OnAddApplicationRuleClicked" HorizontalAlignment="Stretch" AutomationProperties.Name="Add application rule" />
+                    <TextBlock Text="Windows reports executable names, so 'code' and 'Code.exe' both work. Applications appear here after they run at least once." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </ScrollViewer>
           </Grid>

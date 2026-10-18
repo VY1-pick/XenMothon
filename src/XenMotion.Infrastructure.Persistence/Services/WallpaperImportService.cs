@@ -18,15 +18,10 @@ public sealed class WallpaperImportService : IWallpaperImportService
     private readonly IThumbnailService _thumbnailService;
     private readonly ILogger<WallpaperImportService> _logger;
 
-    private static readonly HashSet<string> SupportedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg", ".jpeg", ".png", ".bmp", ".webp"
-    };
-
-    private static readonly HashSet<string> SupportedVideoExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".mp4", ".m4v", ".webm", ".wmv", ".asf", ".avi", ".mov"
-    };
+    // The recognized extension sets live in MediaFileTypes so link imports and catalog downloads
+    // accept exactly the same containers as the file picker.
+    private static readonly IReadOnlySet<string> SupportedImageExtensions = MediaFileTypes.ImageExtensions;
+    private static readonly IReadOnlySet<string> SupportedVideoExtensions = MediaFileTypes.VideoExtensions;
 
     public WallpaperImportService(
         IStorageManager storageManager,
@@ -103,6 +98,8 @@ public sealed class WallpaperImportService : IWallpaperImportService
                 wallpaperId,
                 type,
                 ct).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(thumbPath))
+                throw new InvalidDataException("The file could not be decoded as a supported image or video.");
 
             // 8. Convert paths to storage-relative for robust storage root migrations
             string relativeMediaPath = _storageManager.MakeStorageRelativePath(finalMediaPath);

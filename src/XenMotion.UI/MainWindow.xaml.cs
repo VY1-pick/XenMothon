@@ -193,6 +193,7 @@ public sealed partial class MainWindow : Window
         ExploreContentGrid.Visibility = exploreSelected ? Visibility.Visible : Visibility.Collapsed;
         LibraryContentGrid.Visibility = exploreSelected ? Visibility.Collapsed : Visibility.Visible;
         ImportButton.Visibility = exploreSelected ? Visibility.Collapsed : Visibility.Visible;
+        ImportFromLinkButton.Visibility = exploreSelected ? Visibility.Collapsed : Visibility.Visible;
         SyncFilterDockWithNavigation();
 
         // now playing dock

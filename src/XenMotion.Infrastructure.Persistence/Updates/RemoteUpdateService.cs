@@ -45,13 +45,14 @@ public sealed class RemoteUpdateService : IUpdateService
             throw new InvalidDataException("Update manifest is missing required version or downloadUrl fields.");
         }
 
-        if (!Version.TryParse(NormalizeVersion(manifest.Version), out var available) ||
-            !Version.TryParse(NormalizeVersion(_currentVersion), out var current))
+        if (!ReleaseVersion.TryParse(manifest.Version, out var available) ||
+            !ReleaseVersion.TryParse(_currentVersion, out var current))
         {
-            throw new InvalidDataException("Update manifest or current application version is not a valid numeric version.");
+            throw new InvalidDataException("Update manifest or current application version is not a valid release version.");
         }
 
-        if (available <= current)
+        // Pre-release labels are ordered too, so a private beta can supersede an earlier beta.
+        if (available!.CompareTo(current) <= 0)
         {
             return null;
         }
@@ -73,11 +74,17 @@ public sealed class RemoteUpdateService : IUpdateService
         return result;
     }
 
+    /// <summary>
+    /// Prefers the informational version, which keeps the pre-release label (0.9.0-beta.3), over the
+    /// numeric assembly version that would collapse every beta into 0.9.0.
+    /// </summary>
     private static string GetEntryAssemblyVersion()
-        => Assembly.GetEntryAssembly()?.GetName().Version?.ToString(3) ?? "0.0.0";
-
-    private static string NormalizeVersion(string version)
-        => version.Trim().TrimStart('v', 'V').Split('-', 2)[0];
+    {
+        var assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+        string? informational = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        if (!string.IsNullOrWhiteSpace(informational)) return informational.Trim();
+        return assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+    }
 
     private static void ValidateOptionalHttpUrl(string value, string field)
     {

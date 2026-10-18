@@ -1,5 +1,5 @@
-﻿XENMOTION PRIVATE BETA — TERMS OF USE
-Version 1.0 — 8 October 2026
+XENMOTION PUBLIC BETA — TERMS OF USE
+Version 1.1 — 18 October 2026
 
 Please read these terms before installing. Selecting “I accept” authorizes
 installation and records your acceptance of these terms for this beta.
@@ -12,10 +12,9 @@ XenMotion material owned by Amir. Installation does not transfer ownership or
 grant rights to the XenMotion name or logo. Rights not expressly granted are
 reserved, subject to the open-source exceptions below.
 
-2. Private beta access
-This build is supplied to invited testers for evaluation and feedback. Do not
-share private download credentials or access to the private repository. Do not
-represent an unofficial or modified build as an official XenMotion release.
+2. Public beta access
+This beta is publicly available for evaluation and feedback. Do not represent
+an unofficial or modified build as an official XenMotion release.
 For proprietary beta material not covered by a separate license, permission
 is limited to personal evaluation; redistribution or resale requires the
 copyright owner's permission. This restriction does not apply to material

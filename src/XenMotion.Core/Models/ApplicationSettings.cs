@@ -16,16 +16,25 @@ public sealed class ApplicationSettings
     public bool SyncDesktopBackground { get; set; }
     public LockScreenWallpaperMode LockScreenMode { get; set; }
     public string LockScreenImagePath { get; set; } = string.Empty;
-    /// <summary>Enables the production HTTP catalog provider. Disabled by default to preserve offline-first behavior.</summary>
+    /// <summary>Enables the production HTTP catalog provider. Kept for compatibility with saved settings.</summary>
     public bool UseRemoteCatalog { get; set; } = false;
     /// <summary>Base URL for the catalog API, for example https://catalog.example.com/.</summary>
     public string CatalogBackendUrl { get; set; } = string.Empty;
+    /// <summary>Where Explore loads catalog metadata from. Local keeps the app fully offline.</summary>
+    public CatalogSource CatalogSource { get; set; } = CatalogSource.Local;
+    /// <summary>
+    /// Absolute HTTPS URL of a static <c>catalog.json</c> (or a loopback URL for local testing).
+    /// Media paths inside the manifest resolve against this URL's directory.
+    /// </summary>
+    public string CatalogManifestUrl { get; set; } = string.Empty;
     public int CatalogRequestTimeoutSeconds { get; set; } = 15;
     public bool UseLocalCatalogFallback { get; set; } = true;
     /// <summary>Optional HTTPS release manifest endpoint. Empty disables update checks.</summary>
-    public string UpdateManifestUrl { get; set; } = string.Empty;
-    /// <summary>Update checks are opt-in until a production release manifest is configured.</summary>
-    public bool CheckForUpdates { get; set; } = false;
+    public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
+    /// <summary>Update checks notify only; XenMotion never installs a release on its own.</summary>
+    public bool CheckForUpdates { get; set; } = true;
+    /// <summary>Default release manifest published with the repository. A private repository needs a reachable manifest.</summary>
+    public const string DefaultUpdateManifestUrl = "https://raw.githubusercontent.com/VY1-pick/XenMothon/main/docs/updates/update.json";
     /// <summary>Optional creator API base URL. Empty keeps creator upload unavailable until a backend is configured.</summary>
     public string CreatorBackendUrl { get; set; } = string.Empty;
     public int GlobalTargetFps { get; set; } = 30;
@@ -47,6 +56,10 @@ public sealed class ApplicationSettings
     public float DefaultContrast { get; set; } = 1.0f;
     public float DefaultSaturation { get; set; } = 1.0f;
     public PerformanceSettings Performance { get; set; } = new();
+    /// <summary>Time-of-day windows and rotation for automatic wallpaper changes.</summary>
+    public WallpaperSchedule Schedule { get; set; } = new();
+    /// <summary>Wallpapers pinned while a specific application owns the foreground window.</summary>
+    public List<ApplicationWallpaperRule> ApplicationWallpaperRules { get; set; } = [];
     public Dictionary<string, Guid> MonitorWallpaperAssignments { get; set; } = [];
     public Dictionary<string, WallpaperEdits> WallpaperEditPresets { get; set; } = [];
     public Dictionary<Guid, WallpaperEdits> WallpaperEdits { get; set; } = [];
@@ -64,6 +77,11 @@ public sealed class ApplicationSettings
         static float Finite(float value, float min, float max, float fallback) => float.IsFinite(value) ? Math.Clamp(value,min,max) : fallback;
         DisplayName ??= "Guest"; Theme ??= "Dark"; StoragePath ??= string.Empty;
         CatalogBackendUrl ??= string.Empty; UpdateManifestUrl ??= string.Empty; CreatorBackendUrl ??= string.Empty;
+        CatalogManifestUrl ??= string.Empty;
+        if (!Enum.IsDefined(CatalogSource)) CatalogSource = CatalogSource.Local;
+        // Settings written before the catalog source selector existed only had the boolean switch.
+        if (CatalogSource == CatalogSource.Local && UseRemoteCatalog && !string.IsNullOrWhiteSpace(CatalogBackendUrl))
+            CatalogSource = CatalogSource.ServerApi;
         LockScreenImagePath ??= string.Empty;
         if (!Enum.IsDefined(LockScreenMode)) LockScreenMode = LockScreenWallpaperMode.Disabled;
         GlobalTargetFps = Math.Clamp(GlobalTargetFps,15,240);
@@ -76,6 +94,8 @@ public sealed class ApplicationSettings
         DefaultContrast = Finite(DefaultContrast,0,2,1);
         DefaultSaturation = Finite(DefaultSaturation,0,2,1);
         Performance ??= new(); MonitorWallpaperAssignments ??= [];
+        Schedule ??= new(); WallpaperSchedulePlanner.Normalize(Schedule);
+        ApplicationWallpaperRules ??= []; XenMotion.Core.Models.ApplicationWallpaperRules.NormalizeRules(ApplicationWallpaperRules);
         WallpaperEdits ??= [];
         WallpaperEditPresets ??= [];
         GlobalEdits ??= new(); CustomEditWallpapers ??= [];

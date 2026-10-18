@@ -4,13 +4,13 @@
 #ifndef ReleaseDir
   #error ReleaseDir is required
 #endif
-#define AppVersion "0.9.0-beta.3"
+#define AppVersion "0.9.0-beta.5"
 [Setup]
 AppId={{E911D190-7392-4D2B-A2D5-86544DDC7C45}
 AppName=XenMotion
 AppVersion={#AppVersion}
-VersionInfoVersion=0.9.0.3
-AppVerName=XenMotion {#AppVersion} Private Beta
+VersionInfoVersion=0.9.0.5
+AppVerName=XenMotion Beta 05 ({#AppVersion})
 AppPublisher=XenMotion
 AppPublisherURL=https://github.com/VY1-pick/XenMothon
 DefaultDirName={localappdata}\Programs\XenMotion
@@ -45,7 +45,7 @@ Name: "{autodesktop}\XenMotion"; Filename: "{app}\XenMotion.exe"; Parameters: "-
 Filename: "{app}\XenMotion.exe"; Parameters: "--show"; Description: "Launch XenMotion"; Flags: nowait postinstall skipifsilent
 
 [Registry]
-Root: HKCU; Subkey: "Software\XenMotion"; ValueType: string; ValueName: "AcceptedBetaTerms"; ValueData: "1.0 / 2026-10-08"
+Root: HKCU; Subkey: "Software\XenMotion"; ValueType: string; ValueName: "AcceptedBetaTerms"; ValueData: "1.1 / 2026-10-18"
 Root: HKCU; Subkey: "Software\XenMotion"; ValueType: dword; ValueName: "PendingStartupChoice"; ValueData: "{code:StartupChoice}"; Flags: uninsdeletevalue
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "XenMotion"; ValueData: """{app}\XenMotion.exe"" --minimized"; Tasks: launchatlogin
 

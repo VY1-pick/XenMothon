@@ -4,3 +4,6 @@ obj/
 *.user
 artifacts/
 *.log
+.freebuff/
+*.pfx
+*.p12

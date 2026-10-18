@@ -1,0 +1,8 @@
+{
+  "_note": "Public Beta 05 release manifest. Notifications only; the application never downloads or installs updates automatically.",
+  "version": "0.9.0-beta.5",
+  "downloadUrl": "https://github.com/VY1-pick/XenMothon/releases/download/v0.9.0-beta.5/XenMotion-0.9.0-beta.5-Setup-x64.exe",
+  "releaseNotesUrl": "https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5",
+  "publishedAtUtc": "2026-10-18T00:00:00Z",
+  "isMandatory": false
+}

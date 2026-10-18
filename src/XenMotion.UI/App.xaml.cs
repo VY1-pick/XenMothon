@@ -3,6 +3,7 @@ using System.Diagnostics;
 using XenMotion.Application.Services;
 using XenMotion.Core.Interfaces;
 using XenMotion.Infrastructure.Persistence.Database;
+using XenMotion.Infrastructure.Persistence.Updates;
 using XenMotion.UI.Bootstrapper;
 using XenMotion.UI.Services;
 using XenMotion.UI.Tray;
@@ -33,6 +34,8 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
     private CrashReportService? _crashReportService;
     private ReleaseReadinessService? _releaseReadinessService;
     private IUpdateService? _updateService;
+    private WallpaperScheduleService? _scheduleService;
+    private ApplicationWallpaperService? _applicationWallpaperService;
     private bool _isShuttingDown;
 
     public static new App Current => (App)global::Microsoft.UI.Xaml.Application.Current;
@@ -146,6 +149,7 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
         finally { adaptiveQuality.AllowMeasurements = false; }
         _logger.LogInformation("Background startup ready in {Elapsed} ms; UI created: {Created}.", startupWatch.ElapsedMilliseconds, _mainWindow is not null);
         _performanceMonitor.Start();
+        StartAutomationServices();
         _trayManager.Initialize();
         _startupService.Apply(settingsService.CurrentSettings.StartWithWindows);
         _ = CheckForUpdatesInBackgroundAsync();
@@ -174,6 +178,29 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
             _windowManager.ShowAndActivate();
         }
         _ = CompleteStartupAsync();
+    }
+
+    /// <summary>
+    /// Starts the schedule/rotation loop and the per-app switcher. Both are cheap when unused: the
+    /// schedule only evaluates once a minute and the per-app switcher short-circuits with no rules.
+    /// </summary>
+    private void StartAutomationServices()
+    {
+        if (_serviceProvider is null) return;
+        try
+        {
+            _scheduleService = _serviceProvider.GetRequiredService<WallpaperScheduleService>();
+            _scheduleService.WallpaperScheduled += (_, message) => _logger?.LogInformation("Wallpaper schedule: {Message}", message);
+            _scheduleService.Start();
+
+            _applicationWallpaperService = _serviceProvider.GetRequiredService<ApplicationWallpaperService>();
+            _applicationWallpaperService.WallpaperSwitched += (_, message) => _logger?.LogInformation("Per-application wallpaper: {Message}", message);
+            _applicationWallpaperService.Start();
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogWarning(ex, "Automatic wallpaper services could not start.");
+        }
     }
 
     private async Task CompleteStartupAsync()
@@ -249,7 +276,10 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
 
         try
         {
-            var update = await _updateService.CheckForUpdateAsync().ConfigureAwait(true);
+            // Read the settings each time so enabling checks or repointing the manifest needs no restart.
+            var update = _serviceProvider is null
+                ? await _updateService.CheckForUpdateAsync().ConfigureAwait(true)
+                : await _serviceProvider.GetRequiredService<UpdateCheckService>().CheckAsync().ConfigureAwait(true);
             if (update is not null)
             {
                 _logger?.LogInformation("A new XenMotion release is available: {Version}", update.Version);
@@ -297,6 +327,10 @@ public sealed partial class App : Microsoft.UI.Xaml.Application
                 _performanceMonitor.Stop();
                 await _performanceMonitor.DisposeAsync().ConfigureAwait(true);
             }
+
+            // 2b. Stop the automatic wallpaper services so they cannot apply after shutdown began.
+            if (_applicationWallpaperService != null) await _applicationWallpaperService.StopAsync().ConfigureAwait(true);
+            if (_scheduleService != null) await _scheduleService.StopAsync().ConfigureAwait(true);
 
             // 3. Stop wallpaper orchestrator and release active sessions
             if (_orchestrator != null)

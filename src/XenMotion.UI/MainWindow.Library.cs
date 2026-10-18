@@ -41,6 +41,88 @@ public sealed partial class MainWindow
         finally { _pickingImport = false; }
     }
 
+    /// <summary>
+    /// Downloads a wallpaper straight from a link. The dialog stays open while the download runs so
+    /// progress and failures are visible, then closes once the wallpaper is in the library.
+    /// </summary>
+    private async void OnImportFromLinkClicked(object sender, RoutedEventArgs e)
+    {
+        var linkBox = new TextBox
+        {
+            Header = "Media link",
+            PlaceholderText = "https://example.com/wallpaper.mp4",
+            MaxLength = 2048,
+            TextWrapping = TextWrapping.NoWrap
+        };
+        var hint = new TextBlock
+        {
+            Text = "Paste a direct image or video link (JPG, PNG, WEBP, MP4, WEBM, MOV, WMV, AVI). The download resumes automatically and the file is validated before it joins your library.",
+            TextWrapping = TextWrapping.Wrap,
+            Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["XenMotionCaptionTextStyle"]
+        };
+        var progress = new ProgressBar { Minimum = 0, Maximum = 100, Value = 0, Visibility = Visibility.Collapsed };
+        var status = new TextBlock
+        {
+            TextWrapping = TextWrapping.Wrap,
+            Style = (Style)Microsoft.UI.Xaml.Application.Current.Resources["XenMotionCaptionTextStyle"]
+        };
+        var content = new StackPanel { Spacing = 14, Width = 420 };
+        content.Children.Add(linkBox);
+        content.Children.Add(hint);
+        content.Children.Add(progress);
+        content.Children.Add(status);
+
+        var dialog = new ContentDialog
+        {
+            XamlRoot = RootGrid.XamlRoot,
+            RequestedTheme = ElementTheme.Dark,
+            Title = "Import from link",
+            Content = content,
+            PrimaryButtonText = "Download and import",
+            CloseButtonText = "Close",
+            DefaultButton = ContentDialogButton.Primary
+        };
+
+        using var cancellation = new CancellationTokenSource();
+        dialog.CloseButtonClick += (_, _) => cancellation.Cancel();
+        dialog.Closing += (_, _) => cancellation.Cancel();
+        bool running = false;
+        dialog.PrimaryButtonClick += async (_, args) =>
+        {
+            if (running) { args.Cancel = true; return; }
+            args.Cancel = true; // keep the sheet open while the download is in flight
+            running = true;
+            dialog.IsPrimaryButtonEnabled = false;
+            progress.Visibility = Visibility.Visible;
+            progress.Value = 0;
+            status.Text = "Starting the download…";
+            try
+            {
+                var reporter = new Progress<double>(value =>
+                {
+                    progress.Value = Math.Clamp(value, 0, 100);
+                    status.Text = value >= 85 ? "Finishing the import…" : $"Downloading… {value:0}% of the transfer";
+                });
+
+                bool imported = await _viewModel.ImportFromUrlAsync(linkBox.Text, reporter, cancellation.Token);
+                progress.Value = 100;
+                status.Text = imported ? ("Added to your library. " + _viewModel.StatusMessage) : ("Could not import this link. " + (_viewModel.ErrorMessage ?? string.Empty));
+                if (imported) dialog.Hide();
+            }
+            catch (Exception ex)
+            {
+                status.Text = "Could not import this link: " + ex.Message;
+            }
+            finally
+            {
+                running = false;
+                dialog.IsPrimaryButtonEnabled = true;
+            }
+        };
+
+        await dialog.ShowAsync();
+    }
+
     private void OnLibrarySelectionClicked(object sender, RoutedEventArgs e)
     {
         bool selecting = LibrarySelectionToggle.IsChecked == true;
