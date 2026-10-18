@@ -47,7 +47,7 @@ XenMotion تصویر و ویدیوی محلی را به والپیپر دسکت�
 
 ## نصب و شروع
 
-۱. با حساب دارای دسترسی به مخزن، [ریلیز 0.9.0-beta.5](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) را باز کن.
+۱. [ریلیز 0.9.0-beta.5](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) را باز کن.
 
 ۲. فایل `XenMotion-0.9.0-beta.5-Setup-x64.exe` را دانلود کن. فایل‌های `SHA256SUMS.txt` و `BETA-REVIEW.md` هم در ریلیز موجودند.
 
