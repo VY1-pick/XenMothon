@@ -65,6 +65,5 @@ desired. Later releases may present revised terms, without retroactively
 changing rights granted under an existing open-source license.
 
 9. Questions
-Contact the maintainer through the private repository's issue tracker or the
-channel through which you received your invitation. The Persian companion
+Contact the maintainer through the public repository's issue tracker. The Persian companion
 document explains the same terms. Neither version limits mandatory legal rights.
