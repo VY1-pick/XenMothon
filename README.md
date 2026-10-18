@@ -6,7 +6,7 @@
 
 ![XenMotion Library with imported video wallpapers and playback controls](docs/images/xenmotion-beta.jpg)
 
-*The Library interface in version 0.9.0-beta.5. Wallpapers shown are example user imports; they are not included in the installer.*
+*The Library interface in an earlier beta build. Wallpapers shown are example user imports; they are not included in the installer.*
 
 XenMotion turns local images and videos into desktop wallpapers. Import your own media, manage it in a library, control playback and sound, and choose how much work the wallpaper should do while other applications are running.
 

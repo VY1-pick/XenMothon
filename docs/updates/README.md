@@ -29,16 +29,8 @@ manifest can only produce a tray notification and the status line in Settings.
 2. Update `version`, `downloadUrl`, `releaseNotesUrl` and `publishedAtUtc` here.
 3. Commit and push to `main` so the raw URL serves the new manifest.
 
-## Private repository caveat
+## Public hosting
 
-This repository is private, so `raw.githubusercontent.com` and release assets require authentication.
-An update check from a private desktop build therefore fails and the client logs it quietly, leaving
-the user on "the check failed" in Settings. To make update notifications work for testers, either
+Beta 05 uses this public repository's raw HTTPS URL. The manifest and release assets can be read without repository credentials. If a future fork is private, point the update setting at a separate public HTTPS manifest; the desktop client does not send GitHub account credentials.
 
-- point the manifest URL at any public HTTPS location (a static site, object store or the public CDN
-  used for the catalog), or
-- make the repository public, or
-- attach the manifest to the release and give testers a URL they can reach.
-
-The same constraint applies to the catalog: a private repository cannot serve the static
-`catalog.json` to unauthenticated clients.
+Catalog hosting remains a separate configuration: place the catalog and its relative media on a reachable HTTPS host.
