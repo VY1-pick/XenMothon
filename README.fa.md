@@ -2,7 +2,7 @@
 
 **والپیپر زنده برای ویندوز، با تنظیم خودکار کیفیت بر اساس اندازه‌گیری واقعی و رابط بومی WinUI 3.**
 
-**فارسی** · [English](README.md) · [دانلود بتای خصوصی](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) · [گزارش مشکل](https://github.com/VY1-pick/XenMothon/issues)
+**فارسی** · [English](README.md) · [دانلود بتای ۰۵](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) · [گزارش مشکل](https://github.com/VY1-pick/XenMothon/issues)
 
 ![صفحهٔ Library در XenMotion، همراه با ویدیوهای واردشده و کنترل‌های پخش](docs/images/xenmotion-beta.jpg)
 
