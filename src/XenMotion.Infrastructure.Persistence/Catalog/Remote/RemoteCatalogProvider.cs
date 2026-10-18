@@ -102,7 +102,7 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 {
                     return null;
                 }
-                await EnsureSuccessAsync(response, "catalog item").ConfigureAwait(false);
+                await EnsureSuccessAsync(response, "catalog item", deadline.Token).ConfigureAwait(false);
                 var dto = await response.Content.ReadFromJsonAsync<CatalogItemDto>(JsonOptions, deadline.Token).ConfigureAwait(false);
                 return dto is null ? null : MapItem(dto);
             },
@@ -161,7 +161,8 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
                 var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode && response.StatusCode != System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
                 {
-                    await EnsureSuccessAsync(response, "catalog download").ConfigureAwait(false);
+                    try { await EnsureSuccessAsync(response, "catalog download", ct).ConfigureAwait(false); }
+                    finally { response.Dispose(); }
                 }
 
                 if (response.StatusCode == System.Net.HttpStatusCode.RequestedRangeNotSatisfiable)
@@ -239,11 +240,11 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
         deadline.CancelAfter(_options.RequestTimeout);
         ct = deadline.Token;
         using var response = await _httpClient.GetAsync(relativePath, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        await EnsureSuccessAsync(response, relativePath).ConfigureAwait(false);
+        await EnsureSuccessAsync(response, relativePath, ct).ConfigureAwait(false);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct).ConfigureAwait(false);
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response, string operation)
+    private async Task EnsureSuccessAsync(HttpResponseMessage response, string operation, CancellationToken ct)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -251,10 +252,13 @@ public sealed class RemoteCatalogProvider : ICatalogProvider, IResumableCatalogD
         }
 
         string body = string.Empty;
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(_options.RequestTimeout);
         try
         {
-            body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            body = await response.Content.ReadAsStringAsync(deadline.Token).ConfigureAwait(false);
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
         catch
         {
             // Preserve the HTTP status even if the error body cannot be read.

@@ -41,8 +41,9 @@ public sealed class DownloadRegressionTests : IAsyncLifetime
             context.Response.ContentLength = end - start + 1;
             await context.Response.Body.WriteAsync(_bytes.AsMemory((int)start, (int)(end - start + 1)));
         });
-        _host.MapGet("/stall", async context =>
+        _host.MapGet("/stall/{error:bool}", async context =>
         {
+            if (bool.Parse((string)context.Request.RouteValues["error"]!)) context.Response.StatusCode = 500;
             context.Response.ContentLength = 100;
             await context.Response.Body.WriteAsync(new byte[] { 1 }); await context.Response.Body.FlushAsync();
             try { await Task.Delay(Timeout.Infinite, context.RequestAborted); } catch (OperationCanceledException) { }
@@ -63,12 +64,15 @@ public sealed class DownloadRegressionTests : IAsyncLifetime
         Assert.Equal(10, result.SizeBytes);
     }
 
-    [Fact]
-    public async Task StalledBodyTimesOutWithoutWaitingForUserCancellation()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StalledBodyTimesOutWithoutWaitingForUserCancellation(bool errorResponse)
     {
         var fetcher = new RemoteMediaFetcher(requestTimeout: TimeSpan.FromMilliseconds(100));
         using var cancel = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-        var result = await fetcher.FetchAsync(new Uri(_baseUrl + "/stall"), Path.Combine(_root, "stalled.part"), ct: cancel.Token);
+        var result = await fetcher.FetchAsync(new Uri(_baseUrl + "/stall/" + errorResponse), Path.Combine(_root, "stalled.part"), ct: cancel.Token)
+            .WaitAsync(TimeSpan.FromSeconds(6));
         Assert.False(result.Success);
         Assert.False(cancel.IsCancellationRequested);
     }
