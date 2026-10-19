@@ -812,7 +812,7 @@
                 <Border Style="{StaticResource XenMotionSectionStyle}">
                   <StackPanel Spacing="12">
                     <TextBlock Text="Updates" FontSize="18" FontWeight="SemiBold" />
-                    <TextBlock Text="XenMotion only notifies you about a newer release. It never downloads or installs a release on its own." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
+                    <TextBlock Text="Checks GitHub releases by default, including published betas. XenMotion only notifies you; it never downloads or installs a release on its own." Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                     <Grid ColumnSpacing="16" MinHeight="48">
                       <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                       <StackPanel VerticalAlignment="Center" Spacing="2">
@@ -821,7 +821,7 @@
                       </StackPanel>
                       <ToggleButton x:Name="SettingsCheckUpdatesToggle" Grid.Column="1" Style="{StaticResource XenMotionSwitchStyle}" Click="OnSettingsToggleClicked" AutomationProperties.Name="Check for updates" />
                     </Grid>
-                    <TextBox x:Name="SettingsUpdateUrlText" Header="Release manifest (HTTPS JSON)" PlaceholderText="https://example.com/update.json" TextChanged="OnAdvancedTextChanged" AutomationProperties.Name="Update manifest URL" />
+                    <TextBox x:Name="SettingsUpdateUrlText" Header="Update source (HTTPS)" PlaceholderText="Leave empty to use GitHub releases" TextChanged="OnAdvancedTextChanged" AutomationProperties.Name="Update source URL" />
                     <Button x:Name="SettingsCheckUpdatesButton" Style="{StaticResource XenMotionButtonStyle}" Content="Check now" Click="OnCheckUpdatesNowClicked" HorizontalAlignment="Stretch" AutomationProperties.Name="Check for updates now" />
                     <TextBlock x:Name="SettingsUpdateStatusText" Style="{StaticResource XenMotionCaptionTextStyle}" TextWrapping="Wrap" />
                   </StackPanel>

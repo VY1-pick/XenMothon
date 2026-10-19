@@ -1,13 +1,14 @@
 # Release manifest
 
-`update.json` is the manifest the desktop client reads for its update check
-(Settings → Updates). The default URL is
+Settings → Updates reads the public GitHub Releases API by default:
 
 ```
-https://raw.githubusercontent.com/VY1-pick/XenMothon/main/docs/updates/update.json
+https://api.github.com/repos/VY1-pick/XenMothon/releases?per_page=100
 ```
 
-and can be repointed at any HTTPS URL in Settings.
+The client selects the highest release version with an uploaded `XenMotion-<version>-Setup-x64.exe` asset. Published betas are included; draft releases and unfinished uploads are ignored. The first 100 releases are checked. No GitHub account or token is sent.
+
+The previous built-in raw `update.json` URL and blank sources migrate to this default. Custom HTTPS manifest URLs and the user's disabled-update preference are preserved. `update.json` remains available for older builds and custom manifest hosting.
 
 ## Shape
 
@@ -25,12 +26,15 @@ manifest can only produce a tray notification and the status line in Settings.
 
 ## Publishing a new beta
 
-1. Publish the GitHub release, then copy its URL.
-2. Update `version`, `downloadUrl`, `releaseNotesUrl` and `publishedAtUtc` here.
-3. Commit and push to `main` so the raw URL serves the new manifest.
+1. Publish a GitHub release with its version tag and uploaded Windows x64 installer. New builds detect it directly.
+2. Also update `update.json` for older builds that still read the legacy manifest.
 
 ## Public hosting
 
-Beta 05 uses this public repository's raw HTTPS URL. The manifest and release assets can be read without repository credentials. If a future fork is private, point the update setting at a separate public HTTPS manifest; the desktop client does not send GitHub account credentials.
+The published Beta 05 installer still reads the raw HTTPS manifest. 0.1.2 Beta uses GitHub Releases directly. Both sources and the release assets are public. A private fork needs a separately accessible HTTPS source.
 
 Catalog hosting remains a separate configuration: place the catalog and its relative media on a reachable HTTPS host.
+
+## Numbering reset
+
+`0.1.2-beta` follows the historical `0.9.0-beta.*` series. The GitHub update source explicitly orders that legacy series before the new versions; the generic semantic-version parser and custom manifest ordering are unchanged. Published Beta 05 binaries need a one-time manual install because they compare numeric versions only.

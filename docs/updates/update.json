@@ -1,8 +1,8 @@
 {
-  "_note": "Public Beta 05 release manifest. Notifications only; the application never downloads or installs updates automatically.",
-  "version": "0.9.0-beta.5",
-  "downloadUrl": "https://github.com/VY1-pick/XenMothon/releases/download/v0.9.0-beta.5/XenMotion-0.9.0-beta.5-Setup-x64.exe",
-  "releaseNotesUrl": "https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5",
-  "publishedAtUtc": "2026-10-18T00:00:00Z",
+  "_note": "0.1.2 Beta follows the legacy 0.9.0 beta series. Old Beta 05 builds require a one-time manual install because their version comparison predates the numbering reset.",
+  "version": "0.1.2-beta",
+  "downloadUrl": "https://github.com/VY1-pick/XenMothon/releases/download/v0.1.2-beta/XenMotion-0.1.2-beta-Setup-x64.exe",
+  "releaseNotesUrl": "https://github.com/VY1-pick/XenMothon/releases/tag/v0.1.2-beta",
+  "publishedAtUtc": "2026-10-19T00:00:00Z",
   "isMandatory": false
 }

@@ -45,13 +45,13 @@ Signed certificates must cover the installer first, and ideally the application 
 # 2. Sign the published binaries with a standard OV certificate in the current-user store.
 #    (Azure Trusted Signing uses its own CLI; see the link at the end.)
 ./tools/Sign-Release.ps1 `
-    -PublisherPath 'artifacts\publish\0.9.0-beta.5' `
-    -InstallerPath 'artifacts\releases\0.9.0-beta.5\XenMotion-0.9.0-beta.5-Setup-x64.exe' `
+    -PublisherPath 'artifacts\publish\0.1.2-beta' `
+    -InstallerPath 'artifacts\releases\0.1.2-beta\XenMotion-0.1.2-beta-Setup-x64.exe' `
     -Thumbprint '<certificate thumbprint>'
 
 # 3. Verify before publishing.
-signtool verify /pa /v 'artifacts\releases\0.9.0-beta.5\XenMotion-0.9.0-beta.5-Setup-x64.exe'
-Get-AuthenticodeSignature 'artifacts\releases\0.9.0-beta.5\XenMotion-0.9.0-beta.5-Setup-x64.exe' |
+signtool verify /pa /v 'artifacts\releases\0.1.2-beta\XenMotion-0.1.2-beta-Setup-x64.exe'
+Get-AuthenticodeSignature 'artifacts\releases\0.1.2-beta\XenMotion-0.1.2-beta-Setup-x64.exe' |
     Format-List Status, SignerCertificate
 ```
 

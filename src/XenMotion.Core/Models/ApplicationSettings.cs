@@ -29,12 +29,12 @@ public sealed class ApplicationSettings
     public string CatalogManifestUrl { get; set; } = string.Empty;
     public int CatalogRequestTimeoutSeconds { get; set; } = 15;
     public bool UseLocalCatalogFallback { get; set; } = true;
-    /// <summary>Optional HTTPS release manifest endpoint. Empty disables update checks.</summary>
+    /// <summary>HTTPS update source. Empty uses GitHub releases; CheckForUpdates controls opt-out.</summary>
     public string UpdateManifestUrl { get; set; } = DefaultUpdateManifestUrl;
     /// <summary>Update checks notify only; XenMotion never installs a release on its own.</summary>
     public bool CheckForUpdates { get; set; } = true;
-    /// <summary>Default release manifest published with the repository. A private repository needs a reachable manifest.</summary>
-    public const string DefaultUpdateManifestUrl = "https://raw.githubusercontent.com/VY1-pick/XenMothon/main/docs/updates/update.json";
+    /// <summary>Includes public beta releases, which GitHub's /latest endpoint excludes.</summary>
+    public const string DefaultUpdateManifestUrl = "https://api.github.com/repos/VY1-pick/XenMothon/releases?per_page=100";
     /// <summary>Optional creator API base URL. Empty keeps creator upload unavailable until a backend is configured.</summary>
     public string CreatorBackendUrl { get; set; } = string.Empty;
     public int GlobalTargetFps { get; set; } = 30;
@@ -77,6 +77,9 @@ public sealed class ApplicationSettings
         static float Finite(float value, float min, float max, float fallback) => float.IsFinite(value) ? Math.Clamp(value,min,max) : fallback;
         DisplayName ??= "Guest"; Theme ??= "Dark"; StoragePath ??= string.Empty;
         CatalogBackendUrl ??= string.Empty; UpdateManifestUrl ??= string.Empty; CreatorBackendUrl ??= string.Empty;
+        if (string.IsNullOrWhiteSpace(UpdateManifestUrl) || string.Equals(UpdateManifestUrl.Trim(),
+            "https://raw.githubusercontent.com/VY1-pick/XenMothon/main/docs/updates/update.json", StringComparison.OrdinalIgnoreCase))
+            UpdateManifestUrl = DefaultUpdateManifestUrl;
         CatalogManifestUrl ??= string.Empty;
         if (!Enum.IsDefined(CatalogSource)) CatalogSource = CatalogSource.Local;
         // Settings written before the catalog source selector existed only had the boolean switch.

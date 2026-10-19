@@ -2,7 +2,7 @@
 
 **Live wallpapers for Windows, with measured automatic quality and a native WinUI 3 interface.**
 
-[فارسی](README.fa.md) · **English** · [Download Beta 05](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
+[فارسی](README.fa.md) · **English** · [Download 0.1.2 Beta](https://github.com/VY1-pick/XenMothon/releases/tag/v0.1.2-beta) · [Report an issue](https://github.com/VY1-pick/XenMothon/issues)
 
 ![XenMotion Library with imported video wallpapers and playback controls](docs/images/xenmotion-beta.jpg)
 
@@ -10,9 +10,9 @@
 
 XenMotion turns local images and videos into desktop wallpapers. Import your own media, manage it in a library, control playback and sound, and choose how much work the wallpaper should do while other applications are running.
 
-This is **Beta 05**, a public beta. Source and release downloads are publicly available. Hardware compatibility and physical display/audio behavior still need feedback from testers.
+This is **0.1.2 Beta**, a public beta. Source and release downloads are publicly available. Hardware compatibility and physical display/audio behavior still need feedback from testers.
 
-> Beta 05 (**0.9.0-beta.5**) includes online catalogs, link imports, schedule/rotation, per-application wallpaper rules and update notifications. See [release notes](docs/engineering/beta5-release-notes.md).
+> 0.1.2 Beta (**0.1.2-beta**) includes online catalogs, link imports, schedule/rotation, per-application wallpaper rules and update notifications. See [release notes](docs/engineering/0.1.2-beta-release-notes.md).
 
 The installer is unsigned, so Windows may show a publisher warning. See [code-signing.md](docs/engineering/code-signing.md) for the signing procedure.
 
@@ -47,8 +47,10 @@ There is no certified minimum hardware specification yet. Media codec, bitrate, 
 
 ## Install and start
 
-1. Open the [0.9.0-beta.5 release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.9.0-beta.5).
-2. Download `XenMotion-0.9.0-beta.5-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
+**Numbering reset:** this release follows the old 0.9.0 beta series. Install 0.1.2 Beta manually once; the published Beta 05 updater cannot recognize a numerically smaller version. New builds order the legacy releases correctly.
+
+1. Open the [0.1.2-beta release](https://github.com/VY1-pick/XenMothon/releases/tag/v0.1.2-beta).
+2. Download `XenMotion-0.1.2-beta-Setup-x64.exe`. The release also includes `SHA256SUMS.txt` and `BETA-REVIEW.md`.
 3. Run the installer and choose the destination. The default is `%LOCALAPPDATA%\Programs\XenMotion`.
 4. Open XenMotion from its shortcut. In **Library**, choose **Import**, or drop media into the window.
 5. Select **Set as wallpaper** on a library card. Use the **Now Playing** dock to pause, adjust volume, mute or stop.
@@ -59,7 +61,7 @@ The beta installer is **unsigned**. Windows may show a publisher or reputation w
 To inspect the downloaded installer hash in PowerShell, run this from its download folder and compare the full result with `SHA256SUMS.txt`:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.9.0-beta.5-Setup-x64.exe
+Get-FileHash -Algorithm SHA256 -LiteralPath .\XenMotion-0.1.2-beta-Setup-x64.exe
 ```
 
 Closing the window keeps XenMotion in the notification area. Open it again from its tray icon. To end the engine, choose **Exit XenMotion** from the tray menu. Stopping all wallpapers clears the saved startup wallpaper assignment.
@@ -118,7 +120,7 @@ Settings → **Schedule** pins wallpapers to daily time windows (a window may cr
 
 Settings → **Apps** shows a different wallpaper while a chosen application has focus, for example a calm wallpaper while a game or editor is open. Rules match the executable name (`code`, `chrome.exe`). When the application loses focus the saved wallpaper comes back; nothing about a temporary switch is written into your startup wallpaper.
 
-Settings → **Updates** checks a release manifest over HTTPS and reports the result with a link to the release notes. XenMotion only notifies: it never downloads or installs a release on its own. The manifest is published at [`docs/updates/update.json`](docs/updates/update.json) and can be repointed at any HTTPS URL.
+Settings → **Updates** checks this repository's GitHub releases by default, including published betas with an uploaded Windows x64 installer. Existing default sources migrate automatically; custom HTTPS manifests remain supported. XenMotion only notifies: it never downloads or installs a release on its own. See [update sources](docs/updates/README.md).
 
 The installer presents [beta terms](docs/legal/BETA-TERMS.txt); the original [MIT license](LICENSE) continues to apply to covered material. Silent installs require `/ACCEPTTERMS=yes`.
 
@@ -187,7 +189,7 @@ Do not assume a visually changed video position alone proves pause failure: repo
 
 ## Beta validation and known limits
 
-Beta 05 (**0.9.0-beta.5**) uses .NET 10 and Windows App SDK 2.5.1. Release validation and the fixes for the 14 audit findings are documented in the [Beta 05 review](docs/engineering/beta5-review.md).
+0.1.2 Beta (**0.1.2-beta**) uses .NET 10 and Windows App SDK 2.5.1. Release validation and the fixes for the 14 audit findings are documented in the [0.1.2 Beta review](docs/engineering/0.1.2-beta-review.md).
 
 Hardware codec/driver support, physical display/audio timing and independent multi-monitor quality allocation still need device testing. The installer is unsigned. Image library metadata retains legacy defaults in parts of persistence; see the review for the exact verification boundary.
 
@@ -220,10 +222,10 @@ For installer packaging, provide Inno Setup at the script's default compiler pat
 
 ```powershell
 .\tools\Build-Release.ps1 -InnoCompiler 'C:\Path\To\Inno Setup\ISCC.exe'
-.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.9.0-beta.5'
+.\tools\Verify-Release.ps1 -PublishDirectory '.\artifacts\publish\0.1.2-beta'
 ```
 
-The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.9.0-beta.5`. GitHub release publication is a separate step.
+The build script restores, audits dependencies, builds/tests, publishes self-contained runtimes, downloads/verifies the embedded Python archive, checks packaged files and compiles the installer. Output is under `artifacts/releases/0.1.2-beta`. GitHub release publication is a separate step.
 
 ## Documentation and license
 
@@ -231,7 +233,7 @@ The build script restores, audits dependencies, builds/tests, publishes self-con
 - [Algorithm design (Persian)](docs/engineering/adaptive-quality-algorithm.fa.md)
 - [Algorithm flowchart (open the HTML locally)](docs/engineering/adaptive-quality-flowchart.html)
 - [Standalone lab guide (Persian)](tools/AdaptiveQualityLab/README.fa.md)
-- [Beta 05 review](docs/engineering/beta5-review.md)
+- [0.1.2 Beta review](docs/engineering/0.1.2-beta-review.md)
 - [4K playback handoff](docs/engineering/4k-playback-fix.md)
 
 Application source is licensed under [MIT](LICENSE). Bundled dependencies retain their own licenses; the embedded Python runtime includes its license file. User wallpaper artwork is not covered by the application's MIT license.

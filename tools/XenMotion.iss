@@ -4,13 +4,13 @@
 #ifndef ReleaseDir
   #error ReleaseDir is required
 #endif
-#define AppVersion "0.9.0-beta.5"
+#define AppVersion "0.1.2-beta"
 [Setup]
 AppId={{E911D190-7392-4D2B-A2D5-86544DDC7C45}
 AppName=XenMotion
 AppVersion={#AppVersion}
-VersionInfoVersion=0.9.0.5
-AppVerName=XenMotion Beta 05 ({#AppVersion})
+VersionInfoVersion=0.1.2.0
+AppVerName=XenMotion 0.1.2 Beta
 AppPublisher=XenMotion
 AppPublisherURL=https://github.com/VY1-pick/XenMothon
 DefaultDirName={localappdata}\Programs\XenMotion

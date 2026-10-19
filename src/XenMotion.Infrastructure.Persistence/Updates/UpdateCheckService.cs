@@ -44,8 +44,9 @@ public sealed class UpdateCheckService
             throw new InvalidOperationException("Update checks need an absolute HTTPS manifest URL.");
         }
 
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         var service = new RemoteUpdateService(
-            new HttpClient { Timeout = TimeSpan.FromSeconds(15) },
+            client,
             manifestUri.ToString(),
             NullLogger<RemoteUpdateService>.Instance,
             CurrentVersion);

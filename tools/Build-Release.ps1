@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Configuration = 'Release',
-    [string]$OutputDirectory = "$PSScriptRoot\..\artifacts\publish\0.9.0-beta.5",
+    [string]$OutputDirectory,
     [switch]$SkipTests,
     [switch]$SkipInstaller,
     [string]$InnoCompiler = "$PSScriptRoot\..\artifacts\build-dependencies\inno\ISCC.exe"
@@ -9,6 +9,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path "$PSScriptRoot\..").Path
 Set-Location $root
+$version = ([xml](Get-Content 'src/XenMotion.UI/XenMotion.UI.csproj' -Raw)).Project.PropertyGroup.Version
+if (-not $OutputDirectory) { $OutputDirectory = Join-Path $root "artifacts/publish/$version" }
 function Run-Dotnet([string[]]$Arguments) {
     & dotnet @Arguments
     if ($LASTEXITCODE -ne 0) { throw "dotnet $($Arguments[0]) failed ($LASTEXITCODE)" }
@@ -38,10 +40,9 @@ $optimizer = Join-Path $publish 'tools/AdaptiveQualityLab'
 New-Item -ItemType Directory -Path $optimizer -Force | Out-Null
 Copy-Item -LiteralPath tools/AdaptiveQualityLab/lab.py,tools/AdaptiveQualityLab/report-template.html -Destination $optimizer
 Copy-Item -LiteralPath LICENSE,docs/legal/BETA-TERMS.txt,docs/legal/BETA-TERMS.fa.txt -Destination $publish
-Copy-Item -LiteralPath docs/engineering/beta5-review.md -Destination (Join-Path $publish 'BETA-REVIEW.md')
-$version = ([xml](Get-Content 'src/XenMotion.UI/XenMotion.UI.csproj' -Raw)).Project.PropertyGroup.Version
+Copy-Item -LiteralPath "docs/engineering/$version-review.md" -Destination (Join-Path $publish 'BETA-REVIEW.md')
 $commit = git rev-parse HEAD
-@("XenMotion Beta 05 — Public Beta", "Version: $version", "Commit: $commit", "Runtime: win-x64", "BuiltUtc: $([DateTime]::UtcNow.ToString('O'))") |
+@("XenMotion $version — Public Beta", "Version: $version", "Commit: $commit", "Runtime: win-x64", "BuiltUtc: $([DateTime]::UtcNow.ToString('O'))") |
     Set-Content -LiteralPath (Join-Path $publish 'XENMOTION-RELEASE.txt') -Encoding UTF8
 $hashFile = Join-Path $publish 'SHA256SUMS.txt'
 Get-ChildItem -LiteralPath $publish -Recurse -File | Where-Object { $_.FullName -ne $hashFile } |
